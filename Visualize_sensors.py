@@ -270,7 +270,7 @@ class SensorManager:
             b = int(abs(clamp(- 1.0, 0.0, - 1.0 - norm_velocity)) * 255.0)
 
             if self.display_man.render_enabled():
-                self.surface = pygame.surfarray.draw_point(
+                self.surface = pygame.surfarray.make_surface(
                     radar_data.transform.location + fw_vec,
                     size=0.075,
                     life_time=0.06,
