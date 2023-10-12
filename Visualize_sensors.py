@@ -305,7 +305,7 @@ def run_simulation(args, client):
                       display_pos=[1, 0])
         SensorManager(world, display_manager, 'Radar', carla.Transform(carla.Location(x=0, z=2.4)),
                       vehicle,
-                      {'range': '150', 'points_per_second': '100000'},
+                      {'range': '100', 'points_per_second': '1500'},
                       display_pos=[1, 2])
 
         # Simulation loop
