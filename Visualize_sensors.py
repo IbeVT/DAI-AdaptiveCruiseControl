@@ -150,6 +150,8 @@ class SensorManager:
 
         elif sensor_type == "Radar":
             radar_bp = self.world.get_blueprint_library().find('sensor.other.radar')
+            radar_bp.set_attribute('horizontal_fov', str(35))
+            radar_bp.set_attribute('vertical_fov', str(20))
             for key in sensor_options:
                 radar_bp.set_attribute(key, sensor_options[key])
 
@@ -236,6 +238,7 @@ class SensorManager:
         t_start = self.timer.time()
         points = np.frombuffer(radar_data.raw_data, dtype=np.dtype('f4'))
         points = np.reshape(points, (len(radar_data), 4))
+        print(points)
 
         t_end = self.timer.time()
         self.time_processing += (t_end - t_start)
