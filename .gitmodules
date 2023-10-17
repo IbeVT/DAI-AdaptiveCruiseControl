@@ -1,0 +1,3 @@
+[submodule "dataset/Carla-Object-Detection-Dataset"]
+	path = dataset/Carla-Object-Detection-Dataset
+	url = https://github.com/DanielHfnr/Carla-Object-Detection-Dataset

@@ -1,0 +1,11 @@
+path: ./Carla-Object-Detection-Dataset
+train: train_yolo.txt
+val: val_yolo.txt
+test: test_yolo.txt
+
+names:
+    0: vehicle
+    1: bike
+    2: motorbike
+    3: traffic_light
+    4: traffic_sign
