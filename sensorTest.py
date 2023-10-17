@@ -1,6 +1,7 @@
 import glob
 import os
 import sys
+from typing import Any
 
 try:
     sys.path.append(glob.glob('../carla/dist/carla-*%d.%d-%s.egg' % (
@@ -12,15 +13,12 @@ except IndexError:
 
 import carla
 import argparse
-import random
 import time
-import datetime
-import logging
 import math
 import random
-import re
-import weakref
 import numpy as np
+from queue import Queue
+from queue import Empty
 
 try:
     import pygame
@@ -85,7 +83,8 @@ class DisplayManager:
 
 
 class SensorManager:
-    def __init__(self, world, display_man, sensor_type, transform, attached, sensor_options, display_pos):
+    def __init__(self, world, display_man, sensor_type, transform, attached, sensor_options, display_pos, sensor_queue):
+        self.sensor_queue = sensor_queue
         self.surface = None
         self.world = world
         self.display_man = display_man
@@ -142,6 +141,8 @@ class SensorManager:
         if self.display_man.render_enabled():
             self.surface = pygame.surfarray.make_surface(array.swapaxes(0, 1))
 
+        self.sensor_queue.put(image.frame, "RGBCamera")
+
         t_end = self.timer.time()
         self.time_processing += (t_end - t_start)
         self.tics_processing += 1
@@ -181,6 +182,7 @@ class SensorManager:
                     persistent_lines=False,
                     color=carla.Color(r, g, b)
                 )
+        self.sensor_queue.put(radar_data.frame, "Radar")
 
         t_end = self.timer.time()
         self.time_processing += (t_end - t_start)
@@ -231,16 +233,19 @@ def run_simulation(args, client):
         # It can easily configure the grid and the total window size
         display_manager = DisplayManager(grid_size=[1, 1], window_size=[args.width, args.height])
 
+        # make Queue for synchronizing sensordata.
+        sensor_queue = Queue()
+
         # Then, SensorManager is used to spawn RGBCamera and Radar and assign each of them to a grid position.
         SensorManager(world, display_manager, 'RGBCamera',
                       carla.Transform(carla.Location(x=0, z=2.4), carla.Rotation(yaw=+00)),
-                      vehicle, {}, display_pos=[0, 0])
+                      vehicle, {}, display_pos=[0, 0], sensor_queue=sensor_queue)
 
         SensorManager(world, display_manager, 'Radar',
                       carla.Transform(carla.Location(x=0, z=2.4)),
                       vehicle,
                       {'horizontal_fov': '90', 'points_per_second': '5000', 'range': '100',
-                       'sensor_tick': '0.0', 'vertical_fov': '60'}, display_pos=[0, 0])
+                       'sensor_tick': '0.0', 'vertical_fov': '60'}, display_pos=[0, 0], sensor_queue=sensor_queue)
 
         # But the city now is probably quite empty, let's add a few more vehicles.
         transform.location += carla.Location(x=40, y=-3.2)
@@ -272,6 +277,18 @@ def run_simulation(args, client):
 
             # Render received data
             display_manager.render()
+
+            # Now, we wait to the sensors data to be received.
+            # As the queue is blocking, we will wait in the queue.get() methods
+            # until all the information is processed and we continue with the next frame.
+            # We include a timeout of 1.0 s (in the get method) and if some information is
+            # not received in this time we continue.
+            try:
+                for _ in range(len(display_manager.sensor_list)):
+                    s_frame = sensor_queue.get(True, 1.0)
+                    print("    Frame: %d   Sensor: %s" % (s_frame[0], s_frame[1]))
+            except Empty:
+                print(" Some of the sensor information is missed. ")
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
