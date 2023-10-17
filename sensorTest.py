@@ -97,7 +97,7 @@ class SensorManager:
         self.time_processing = 0.0
         self.tics_processing = 0
 
-        self.velocity_range = 2.5  # m/s
+        self.velocity_range = 7.5  # m/s
 
         self.display_man.add_sensor(self)
 
@@ -176,8 +176,8 @@ class SensorManager:
             if self.display_man.render_enabled():
                 self.world.debug.draw_point(
                     radar_data.transform.location + fw_vec,
-                    size=0.075,
-                    life_time=0.06,
+                    size=0.005,
+                    life_time=0.05,
                     persistent_lines=False,
                     color=carla.Color(r, g, b)
                 )
@@ -231,8 +231,7 @@ def run_simulation(args, client):
         # It can easily configure the grid and the total window size
         display_manager = DisplayManager(grid_size=[1, 1], window_size=[args.width, args.height])
 
-        # Then, SensorManager can be used to spawn RGBCamera, LiDARs and SemanticLiDARs as needed
-        # and assign each of them to a grid position,
+        # Then, SensorManager is used to spawn RGBCamera and Radar and assign each of them to a grid position.
         SensorManager(world, display_manager, 'RGBCamera',
                       carla.Transform(carla.Location(x=0, z=2.4), carla.Rotation(yaw=+00)),
                       vehicle, {}, display_pos=[0, 0])
@@ -243,11 +242,11 @@ def run_simulation(args, client):
                       {'horizontal_fov': '60', 'points_per_second': '5000', 'range': '100',
                        'sensor_tick': '0.0', 'vertical_fov': '60'}, display_pos=[0, 0])
 
-        # But the city now is probably quite empty, let's add a few more
-        # vehicles.
+        # But the city now is probably quite empty, let's add a few more vehicles.
         transform.location += carla.Location(x=40, y=-3.2)
         transform.rotation.yaw = -180.0
-        for _ in range(0, 10):
+        number_of_vehicles = 0
+        while number_of_vehicles < 10:
             transform.location.x += 8.0
 
             bp = random.choice(world.get_blueprint_library().filter('vehicle'))
@@ -258,6 +257,7 @@ def run_simulation(args, client):
             if npc is not None:
                 vehicle_list.append(npc)
                 npc.set_autopilot(True)
+                number_of_vehicles += 1
                 print('created %s' % npc.type_id)
 
         # Simulation loop
