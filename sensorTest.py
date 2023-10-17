@@ -1,11 +1,3 @@
-"""
-Script that render multiple sensors in the same pygame window
-
-By default, it renders four cameras, one LiDAR and one Semantic LiDAR.
-It can easily be configured for any different number of sensors.
-To do that, check lines 290-308.
-"""
-
 import glob
 import os
 import sys
@@ -20,9 +12,14 @@ except IndexError:
 
 import carla
 import argparse
+import random
 import time
+import datetime
+import logging
 import math
 import random
+import re
+import weakref
 import numpy as np
 
 try:
@@ -89,7 +86,6 @@ class DisplayManager:
 
 class SensorManager:
     def __init__(self, world, display_man, sensor_type, transform, attached, sensor_options, display_pos):
-        self.velocity_range = 7.5
         self.surface = None
         self.world = world
         self.display_man = display_man
@@ -100,6 +96,8 @@ class SensorManager:
 
         self.time_processing = 0.0
         self.tics_processing = 0
+
+        self.velocity_range = 2.5  # m/s
 
         self.display_man.add_sensor(self)
 
@@ -115,51 +113,15 @@ class SensorManager:
 
             camera = self.world.spawn_actor(camera_bp, transform, attach_to=attached)
             camera.listen(self.save_rgb_image)
-
             return camera
-
-        elif sensor_type == 'LiDAR':
-            lidar_bp = self.world.get_blueprint_library().find('sensor.lidar.ray_cast')
-            lidar_bp.set_attribute('range', '100')
-            lidar_bp.set_attribute('dropoff_general_rate',
-                                   lidar_bp.get_attribute('dropoff_general_rate').recommended_values[0])
-            lidar_bp.set_attribute('dropoff_intensity_limit',
-                                   lidar_bp.get_attribute('dropoff_intensity_limit').recommended_values[0])
-            lidar_bp.set_attribute('dropoff_zero_intensity',
-                                   lidar_bp.get_attribute('dropoff_zero_intensity').recommended_values[0])
-
-            for key in sensor_options:
-                lidar_bp.set_attribute(key, sensor_options[key])
-
-            lidar = self.world.spawn_actor(lidar_bp, transform, attach_to=attached)
-
-            lidar.listen(self.save_lidar_image)
-
-            return lidar
-
-        elif sensor_type == 'SemanticLiDAR':
-            lidar_bp = self.world.get_blueprint_library().find('sensor.lidar.ray_cast_semantic')
-            lidar_bp.set_attribute('range', '100')
-
-            for key in sensor_options:
-                lidar_bp.set_attribute(key, sensor_options[key])
-
-            lidar = self.world.spawn_actor(lidar_bp, transform, attach_to=attached)
-
-            lidar.listen(self.save_semanticlidar_image)
-
-            return lidar
 
         elif sensor_type == "Radar":
             radar_bp = self.world.get_blueprint_library().find('sensor.other.radar')
-            radar_bp.set_attribute('horizontal_fov', str(35))
-            radar_bp.set_attribute('vertical_fov', str(20))
             for key in sensor_options:
                 radar_bp.set_attribute(key, sensor_options[key])
 
             radar = self.world.spawn_actor(radar_bp, transform, attach_to=attached)
             radar.listen(self.save_radar_image)
-
             return radar
 
         else:
@@ -184,69 +146,41 @@ class SensorManager:
         self.time_processing += (t_end - t_start)
         self.tics_processing += 1
 
-    def save_lidar_image(self, image):
-        t_start = self.timer.time()
-
-        disp_size = self.display_man.get_display_size()
-        lidar_range = 2.0 * float(self.sensor_options['range'])
-
-        points = np.frombuffer(image.raw_data, dtype=np.dtype('f4'))
-        points = np.reshape(points, (int(points.shape[0] / 4), 4))
-        lidar_data = np.array(points[:, :2])
-        lidar_data *= min(disp_size) / lidar_range
-        lidar_data += (0.5 * disp_size[0], 0.5 * disp_size[1])
-        lidar_data = np.fabs(lidar_data)  # pylint: disable=E1111
-        lidar_data = lidar_data.astype(np.int32)
-        lidar_data = np.reshape(lidar_data, (-1, 2))
-        lidar_img_size = (disp_size[0], disp_size[1], 3)
-        lidar_img = np.zeros((lidar_img_size), dtype=np.uint8)
-
-        lidar_img[tuple(lidar_data.T)] = (255, 255, 255)
-
-        if self.display_man.render_enabled():
-            self.surface = pygame.surfarray.make_surface(lidar_img)
-
-        t_end = self.timer.time()
-        self.time_processing += (t_end - t_start)
-        self.tics_processing += 1
-
-    def save_semanticlidar_image(self, image):
-        t_start = self.timer.time()
-
-        disp_size = self.display_man.get_display_size()
-        lidar_range = 2.0 * float(self.sensor_options['range'])
-
-        points = np.frombuffer(image.raw_data, dtype=np.dtype('f4'))
-        points = np.reshape(points, (int(points.shape[0] / 6), 6))
-        lidar_data = np.array(points[:, :2])
-        lidar_data *= min(disp_size) / lidar_range
-        lidar_data += (0.5 * disp_size[0], 0.5 * disp_size[1])
-        lidar_data = np.fabs(lidar_data)  # pylint: disable=E1111
-        lidar_data = lidar_data.astype(np.int32)
-        lidar_data = np.reshape(lidar_data, (-1, 2))
-        lidar_img_size = (disp_size[0], disp_size[1], 3)
-        lidar_img = np.zeros((lidar_img_size), dtype=np.uint8)
-
-        lidar_img[tuple(lidar_data.T)] = (255, 255, 255)
-
-        if self.display_man.render_enabled():
-            self.surface = pygame.surfarray.make_surface(lidar_img)
-
-        t_end = self.timer.time()
-        self.time_processing += (t_end - t_start)
-        self.tics_processing += 1
-
     def save_radar_image(self, radar_data):
         t_start = self.timer.time()
         points = np.frombuffer(radar_data.raw_data, dtype=np.dtype('f4'))
         points = np.reshape(points, (len(radar_data), 4))
+        #print(points)
 
         current_rot = radar_data.transform.rotation
         for detect in radar_data:
             azi = math.degrees(detect.azimuth)
             alt = math.degrees(detect.altitude)
-            vel = detect.velocity
+            # The 0.25 adjusts a bit the distance so the dots can
+            # be properly seen
+            fw_vec = carla.Vector3D(x=detect.depth - 0.25)
+            carla.Transform(
+                carla.Location(),
+                carla.Rotation(
+                    pitch=current_rot.pitch + alt,
+                    yaw=current_rot.yaw + azi,
+                    roll=current_rot.roll)).transform(fw_vec)
 
+            def clamp(min_v, max_v, value):
+                return max(min_v, min(value, max_v))
+
+            norm_velocity = detect.velocity / self.velocity_range  # range [-1, 1]
+            r = int(clamp(0.0, 1.0, 1.0 - norm_velocity) * 255.0)
+            g = int(clamp(0.0, 1.0, 1.0 - abs(norm_velocity)) * 255.0)
+            b = int(abs(clamp(- 1.0, 0.0, - 1.0 - norm_velocity)) * 255.0)
+            if self.display_man.render_enabled():
+                self.world.debug.draw_point(
+                    radar_data.transform.location + fw_vec,
+                    size=0.075,
+                    life_time=0.06,
+                    persistent_lines=False,
+                    color=carla.Color(r, g, b)
+                )
 
         t_end = self.timer.time()
         self.time_processing += (t_end - t_start)
@@ -265,6 +199,7 @@ def run_simulation(args, client):
     """This function performed one test run using the args parameters
     and connecting to the carla client passed.
     """
+
     display_manager = None
     vehicle = None
     vehicle_list = []
@@ -284,38 +219,46 @@ def run_simulation(args, client):
             world.apply_settings(settings)
 
         # Instantiating the vehicle to which we attached the sensors
-        bp = world.get_blueprint_library().filter('charger_2020')[0]
-        vehicle = world.spawn_actor(bp, random.choice(world.get_map().get_spawn_points()))
+        transform = random.choice(world.get_map().get_spawn_points())
+        ego_bp = random.choice(world.get_blueprint_library().filter('vehicle'))
+        ego_bp.set_attribute('role_name', 'ego')
+        vehicle = world.spawn_actor(ego_bp, transform)
         vehicle_list.append(vehicle)
+        print('created %s' % vehicle.type_id)
         vehicle.set_autopilot(True)
 
         # Display Manager organize all the sensors and its display in a window
         # It can easily configure the grid and the total window size
-        display_manager = DisplayManager(grid_size=[2, 3], window_size=[args.width, args.height])
+        display_manager = DisplayManager(grid_size=[1, 1], window_size=[args.width, args.height])
 
-        # Then, SensorManager can be used to spawn RGBCamera, LiDARs and Radars as needed
+        # Then, SensorManager can be used to spawn RGBCamera, LiDARs and SemanticLiDARs as needed
         # and assign each of them to a grid position,
         SensorManager(world, display_manager, 'RGBCamera',
-                      carla.Transform(carla.Location(x=0, z=2.4), carla.Rotation(yaw=-90)),
-                      vehicle, {}, display_pos=[0, 0])
-        SensorManager(world, display_manager, 'RGBCamera',
                       carla.Transform(carla.Location(x=0, z=2.4), carla.Rotation(yaw=+00)),
-                      vehicle, {}, display_pos=[0, 1])
-        SensorManager(world, display_manager, 'RGBCamera',
-                      carla.Transform(carla.Location(x=0, z=2.4), carla.Rotation(yaw=+90)),
-                      vehicle, {}, display_pos=[0, 2])
-        SensorManager(world, display_manager, 'RGBCamera',
-                      carla.Transform(carla.Location(x=0, z=2.4), carla.Rotation(yaw=180)),
-                      vehicle, {}, display_pos=[1, 1])
+                      vehicle, {}, display_pos=[0, 0])
 
-        SensorManager(world, display_manager, 'LiDAR', carla.Transform(carla.Location(x=0, z=2.4)),
+        SensorManager(world, display_manager, 'Radar',
+                      carla.Transform(carla.Location(x=0, z=2.4)),
                       vehicle,
-                      {'channels': '64', 'range': '100', 'points_per_second': '250000', 'rotation_frequency': '20'},
-                      display_pos=[1, 0])
-        SensorManager(world, display_manager, 'Radar', carla.Transform(carla.Location(x=0, z=2.4)),
-                      vehicle,
-                      {'range': '100', 'points_per_second': '1500'},
-                      display_pos=[1, 2])
+                      {'horizontal_fov': '60', 'points_per_second': '5000', 'range': '100',
+                       'sensor_tick': '0.0', 'vertical_fov': '60'}, display_pos=[0, 0])
+
+        # But the city now is probably quite empty, let's add a few more
+        # vehicles.
+        transform.location += carla.Location(x=40, y=-3.2)
+        transform.rotation.yaw = -180.0
+        for _ in range(0, 10):
+            transform.location.x += 8.0
+
+            bp = random.choice(world.get_blueprint_library().filter('vehicle'))
+
+            # This time we are using try_spawn_actor. If the spot is already
+            # occupied by another object, the function will return None.
+            npc = world.try_spawn_actor(bp, transform)
+            if npc is not None:
+                vehicle_list.append(npc)
+                npc.set_autopilot(True)
+                print('created %s' % npc.type_id)
 
         # Simulation loop
         call_exit = False
