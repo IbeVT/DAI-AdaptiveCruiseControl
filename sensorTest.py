@@ -247,7 +247,7 @@ def run_simulation(args, client):
                       carla.Transform(carla.Location(x=0, z=2.4)),
                       vehicle,
                       {'horizontal_fov': '90', 'points_per_second': '5000', 'range': '100',
-                       'sensor_tick': '0.0', 'vertical_fov': '60'}, display_pos=[0, 0])
+                       'sensor_tick': '1.0', 'vertical_fov': '60'}, display_pos=[0, 0])
 
         # But the city now is probably quite empty, let's add a few more vehicles.
         transform.location += carla.Location(x=40, y=-3.2)
