@@ -176,8 +176,8 @@ class SensorManager:
             if self.display_man.render_enabled():
                 self.world.debug.draw_point(
                     radar_data.transform.location + fw_vec,
-                    size=0.05,
-                    life_time=0.05,
+                    size=0.075,
+                    life_time=0.06,
                     persistent_lines=False,
                     color=carla.Color(r, g, b)
                 )
@@ -239,7 +239,7 @@ def run_simulation(args, client):
         SensorManager(world, display_manager, 'Radar',
                       carla.Transform(carla.Location(x=0, z=2.4)),
                       vehicle,
-                      {'horizontal_fov': '60', 'points_per_second': '10000', 'range': '100',
+                      {'horizontal_fov': '60', 'points_per_second': '1500', 'range': '100',
                        'sensor_tick': '0.0', 'vertical_fov': '60'}, display_pos=[0, 0])
 
         # But the city now is probably quite empty, let's add a few more vehicles.
