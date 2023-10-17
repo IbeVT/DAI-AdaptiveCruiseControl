@@ -1,3 +1,3 @@
 datasets/*
-!datasets/Carla-Object-Detection-Dataset/
+!dataset/Carla-Object-Detection-Dataset
 runs/
