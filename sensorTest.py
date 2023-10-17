@@ -183,7 +183,7 @@ class SensorManager:
 
             data_list = [alt, azi, round(detect.depth, 3), round(detect.velocity, 3)]
             try:
-                with open('RadarData.csv', 'w') as file:
+                with open('RadarData.csv', 'a') as file:
                     writer = csv.writer(file)
                     writer.writerow(data_list)
             except Exception as e:
