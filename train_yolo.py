@@ -4,7 +4,7 @@ from ultralytics import YOLO
 model = YOLO('yolov8n.pt')
 
 # Train the model on the custom dataset
-results = model.train(data="./yolo_train.yaml", workers=2)
+results = model.train(data="./yolo_train.yaml", workers=1)
 print("results:\n" + results)
 
 model.export()
