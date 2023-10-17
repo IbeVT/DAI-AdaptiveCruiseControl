@@ -1,3 +1,1 @@
-datasets/*
-!dataset/Carla-Object-Detection-Dataset
 runs/
