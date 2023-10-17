@@ -149,12 +149,6 @@ class SensorManager:
         points = np.frombuffer(radar_data.raw_data, dtype=np.dtype('f4'))
         points = np.reshape(points, (len(radar_data), 4))
 
-        try:
-            with open('RadarData.csv', 'w') as file:
-                writer = csv.writer(file)
-                writer.writerow(points)
-        except Exception as e:
-            print(f"Error writing row to CSV: {e}")
 
         current_rot = radar_data.transform.rotation
         for detect in radar_data:
@@ -186,6 +180,14 @@ class SensorManager:
                     persistent_lines=False,
                     color=carla.Color(r, g, b)
                 )
+
+            data_list = [alt, azi, round(detect.depth, 3), round(detect.velocity, 3)]
+            try:
+                with open('RadarData.csv', 'w') as file:
+                    writer = csv.writer(file)
+                    writer.writerow(data_list)
+            except Exception as e:
+                print(f"Error writing row to CSV: {e}")
 
         t_end = self.timer.time()
         self.time_processing += (t_end - t_start)
