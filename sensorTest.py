@@ -17,8 +17,7 @@ import time
 import math
 import random
 import numpy as np
-from queue import Queue
-from queue import Empty
+import csv
 
 try:
     import pygame
@@ -83,8 +82,7 @@ class DisplayManager:
 
 
 class SensorManager:
-    def __init__(self, world, display_man, sensor_type, transform, attached, sensor_options, display_pos, sensor_queue):
-        self.sensor_queue = sensor_queue
+    def __init__(self, world, display_man, sensor_type, transform, attached, sensor_options, display_pos):
         self.surface = None
         self.world = world
         self.display_man = display_man
@@ -96,8 +94,6 @@ class SensorManager:
         self.time_processing = 0.0
         self.tics_processing = 0
 
-        self.velocity_range = 7.5  # m/s
-
         self.display_man.add_sensor(self)
 
     def init_sensor(self, sensor_type, transform, attached, sensor_options):
@@ -106,6 +102,7 @@ class SensorManager:
             disp_size = self.display_man.get_display_size()
             camera_bp.set_attribute('image_size_x', str(disp_size[0]))
             camera_bp.set_attribute('image_size_y', str(disp_size[1]))
+            camera_bp.set_attribute('sensor_tick', '1.0')
 
             for key in sensor_options:
                 camera_bp.set_attribute(key, sensor_options[key])
@@ -141,7 +138,7 @@ class SensorManager:
         if self.display_man.render_enabled():
             self.surface = pygame.surfarray.make_surface(array.swapaxes(0, 1))
 
-        self.sensor_queue.put(image.frame, "RGBCamera")
+        image.save_to_disk(f"{image.frame}.png")
 
         t_end = self.timer.time()
         self.time_processing += (t_end - t_start)
@@ -151,7 +148,13 @@ class SensorManager:
         t_start = self.timer.time()
         points = np.frombuffer(radar_data.raw_data, dtype=np.dtype('f4'))
         points = np.reshape(points, (len(radar_data), 4))
-        #print(points)
+
+        try:
+            with open('RadarData.csv', 'w') as file:
+                writer = csv.writer(file)
+                writer.writerow(points)
+        except Exception as e:
+            print(f"Error writing row to CSV: {e}")
 
         current_rot = radar_data.transform.rotation
         for detect in radar_data:
@@ -170,7 +173,8 @@ class SensorManager:
             def clamp(min_v, max_v, value):
                 return max(min_v, min(value, max_v))
 
-            norm_velocity = detect.velocity / self.velocity_range  # range [-1, 1]
+            velocity_range = 7.5 #m/s
+            norm_velocity = detect.velocity / velocity_range  # range [-1, 1]
             r = int(clamp(0.0, 1.0, 1.0 - norm_velocity) * 255.0)
             g = int(clamp(0.0, 1.0, 1.0 - abs(norm_velocity)) * 255.0)
             b = int(abs(clamp(- 1.0, 0.0, - 1.0 - norm_velocity)) * 255.0)
@@ -182,7 +186,6 @@ class SensorManager:
                     persistent_lines=False,
                     color=carla.Color(r, g, b)
                 )
-        self.sensor_queue.put(radar_data.frame, "Radar")
 
         t_end = self.timer.time()
         self.time_processing += (t_end - t_start)
@@ -233,19 +236,16 @@ def run_simulation(args, client):
         # It can easily configure the grid and the total window size
         display_manager = DisplayManager(grid_size=[1, 1], window_size=[args.width, args.height])
 
-        # make Queue for synchronizing sensordata.
-        sensor_queue = Queue()
-
         # Then, SensorManager is used to spawn RGBCamera and Radar and assign each of them to a grid position.
         SensorManager(world, display_manager, 'RGBCamera',
                       carla.Transform(carla.Location(x=0, z=2.4), carla.Rotation(yaw=+00)),
-                      vehicle, {}, display_pos=[0, 0], sensor_queue=sensor_queue)
+                      vehicle, {}, display_pos=[0, 0])
 
         SensorManager(world, display_manager, 'Radar',
                       carla.Transform(carla.Location(x=0, z=2.4)),
                       vehicle,
                       {'horizontal_fov': '90', 'points_per_second': '5000', 'range': '100',
-                       'sensor_tick': '0.0', 'vertical_fov': '60'}, display_pos=[0, 0], sensor_queue=sensor_queue)
+                       'sensor_tick': '0.0', 'vertical_fov': '60'}, display_pos=[0, 0])
 
         # But the city now is probably quite empty, let's add a few more vehicles.
         transform.location += carla.Location(x=40, y=-3.2)
@@ -265,6 +265,13 @@ def run_simulation(args, client):
                 number_of_vehicles += 1
                 print('created %s' % npc.type_id)
 
+        # We create a csv file to save our radar-data.
+        # Let's define the headings of our csv file and save them.
+        headers = ['Altitude', 'Azimuth', 'Depth', 'Velocity']
+        with open('RadarData.csv', 'w') as file:
+            writer = csv.writer(file)
+            writer.writerow(headers)
+
         # Simulation loop
         call_exit = False
         time_init_sim = timer.time()
@@ -278,17 +285,6 @@ def run_simulation(args, client):
             # Render received data
             display_manager.render()
 
-            # Now, we wait to the sensors data to be received.
-            # As the queue is blocking, we will wait in the queue.get() methods
-            # until all the information is processed and we continue with the next frame.
-            # We include a timeout of 1.0 s (in the get method) and if some information is
-            # not received in this time we continue.
-            try:
-                for _ in range(len(display_manager.sensor_list)):
-                    s_frame = sensor_queue.get(True, 1.0)
-                    print("    Frame: %d   Sensor: %s" % (s_frame[0], s_frame[1]))
-            except Empty:
-                print(" Some of the sensor information is missed. ")
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
