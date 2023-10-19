@@ -160,7 +160,6 @@ class SensorManager:
             with open('RadarData.csv', 'a') as file:
                 writer = csv.writer(file)
                 writer.writerow(data_points)
-                writer.writerow("next point:")
         except Exception as e:
             print(f"Error writing row to CSV: {e}")
 
@@ -278,7 +277,7 @@ def run_simulation(args, client):
 
         # We create a csv file to save our radar-data.
         # Let's define the headings of our csv file and save them.
-        header = "['Velocity', 'Altitude', 'Azimuth', 'Depth']"
+        header = ['Velocity', 'Altitude', 'Azimuth', 'Depth']
         with open('RadarData.csv', 'w') as file:
             writer = csv.writer(file)
             writer.writerow(header)
