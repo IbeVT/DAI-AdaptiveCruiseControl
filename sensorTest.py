@@ -151,8 +151,8 @@ class SensorManager:
         points = np.reshape(points, (len(radar_data), 4))
 
         # sava radar data to disk
-        points[:, 1] = math.degrees(points[:, 1])  # change Altitude from rad to degrees.
-        points[:, 2] = math.degrees(points[:, 2])  # change Azimuth from rad to degrees.
+        points[:, 1] = np.degrees(points[:, 1])  # change Altitude from rad to degrees.
+        points[:, 2] = np.degrees(points[:, 2])  # change Azimuth from rad to degrees.
         points[:, 0] = round(points[:, 0], 0)  # round Velocity.
         points[:, 3] = round(points[:, 3], 0)  # round Depth.
         try:
