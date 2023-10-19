@@ -154,8 +154,8 @@ class SensorManager:
         # sava radar data to disk
         data_points[:, 1] = np.degrees(data_points[:, 1])  # change Altitude from rad to degrees.
         data_points[:, 2] = np.degrees(data_points[:, 2])  # change Azimuth from rad to degrees.
-        data_points[:, 0] = round(data_points[:, 0], 0)  # round Velocity.
-        data_points[:, 3] = round(data_points[:, 3], 0)  # round Depth.
+        data_points[:, 0] = np.round(data_points[:, 0], 0)  # round Velocity.
+        data_points[:, 3] = np.round(data_points[:, 3], 0)  # round Depth.
         try:
             with open('RadarData.csv', 'a') as file:
                 writer = csv.writer(file)
