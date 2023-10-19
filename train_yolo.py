@@ -6,7 +6,7 @@ comet_ml.init()
 model = YOLO('yolov8n.pt')
 
 # Train the model on the custom dataset
-results = model.train(data="./yolo_train.yaml", workers=1)
+results = model.train(data="./yolo_train.yaml", workers=0)
 
 model.export()
 
