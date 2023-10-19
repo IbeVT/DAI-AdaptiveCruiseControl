@@ -1,3 +1,4 @@
+import datetime
 import glob
 import os
 import sys
@@ -17,6 +18,7 @@ import math
 import random
 import numpy as np
 import csv
+import datetime
 
 try:
     import pygame
@@ -139,7 +141,8 @@ class SensorManager:
             self.surface = pygame.surfarray.make_surface(array.swapaxes(0, 1))
 
         # save camera data to disk.
-        image.save_to_disk(f"RGBCameraData/{image.frame}.png")
+        now = datetime.datetime.now()
+        image.save_to_disk(f"RGBCameraData/{now}.png")
 
         t_end = self.timer.time()
         self.time_processing += (t_end - t_start)
@@ -160,6 +163,7 @@ class SensorManager:
             with open('RadarData.csv', 'a') as file:
                 writer = csv.writer(file)
                 writer.writerow(data_points)
+                writer.writerow(str(datetime.datetime.now()))
         except Exception as e:
             print(f"Error writing row to CSV: {e}")
 
