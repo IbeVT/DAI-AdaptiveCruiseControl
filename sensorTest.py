@@ -149,12 +149,17 @@ class SensorManager:
         t_start = self.timer.time()
         points = np.frombuffer(radar_data.raw_data, dtype=np.dtype('f4'))
         points = np.reshape(points, (len(radar_data), 4))
+
         # sava radar data to disk
-        #data_list = [alt, azi, round(detect.depth, 3), round(detect.velocity, 3)]
+        points[:, 1] = math.degrees(points[:, 1])  # change Altitude from rad to degrees.
+        points[:, 2] = math.degrees(points[:, 2])  # change Azimuth from rad to degrees.
+        points[:, 0] = round(points[:, 0], 0)  # round Velocity.
+        points[:, 3] = round(points[:, 3], 0)  # round Depth.
         try:
             with open('RadarData.csv', 'a') as file:
                 writer = csv.writer(file)
                 writer.writerow(points)
+                writer.writerow("point")
         except Exception as e:
             print(f"Error writing row to CSV: {e}")
 
@@ -272,10 +277,10 @@ def run_simulation(args, client):
 
         # We create a csv file to save our radar-data.
         # Let's define the headings of our csv file and save them.
-        headers = ['Altitude', 'Azimuth', 'Depth', 'Velocity']
+        header = "['Velocity', 'Altitude', 'Azimuth', 'Depth']"
         with open('RadarData.csv', 'w') as file:
             writer = csv.writer(file)
-            writer.writerow(headers)
+            writer.writerow(header)
 
         # Simulation loop
         call_exit = False
