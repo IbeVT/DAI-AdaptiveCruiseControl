@@ -149,17 +149,18 @@ class SensorManager:
         t_start = self.timer.time()
         points = np.frombuffer(radar_data.raw_data, dtype=np.dtype('f4'))
         points = np.reshape(points, (len(radar_data), 4))
+        data_points = points.copy()
 
         # sava radar data to disk
-        points[:, 1] = np.degrees(points[:, 1])  # change Altitude from rad to degrees.
-        points[:, 2] = np.degrees(points[:, 2])  # change Azimuth from rad to degrees.
-        points[:, 0] = round(points[:, 0], 0)  # round Velocity.
-        points[:, 3] = round(points[:, 3], 0)  # round Depth.
+        data_points[:, 1] = np.degrees(data_points[:, 1])  # change Altitude from rad to degrees.
+        data_points[:, 2] = np.degrees(data_points[:, 2])  # change Azimuth from rad to degrees.
+        data_points[:, 0] = round(data_points[:, 0], 0)  # round Velocity.
+        data_points[:, 3] = round(data_points[:, 3], 0)  # round Depth.
         try:
             with open('RadarData.csv', 'a') as file:
                 writer = csv.writer(file)
-                writer.writerow(points)
-                writer.writerow("point")
+                writer.writerow(data_points)
+                writer.writerow("next point:")
         except Exception as e:
             print(f"Error writing row to CSV: {e}")
 
