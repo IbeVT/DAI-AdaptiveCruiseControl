@@ -1,7 +1,6 @@
 import glob
 import os
 import sys
-from typing import Any
 
 try:
     sys.path.append(glob.glob('../carla/dist/carla-*%d.%d-%s.egg' % (
@@ -37,7 +36,7 @@ class CustomTimer:
     def time(self):
         return self.timer()
 
-
+# The DisplayManager is in charge of displaying the data collected from the sensors on the screen.
 class DisplayManager:
     def __init__(self, grid_size, window_size):
         pygame.init()
@@ -135,9 +134,11 @@ class SensorManager:
         array = array[:, :, :3]
         array = array[:, :, ::-1]
 
+        # Display camera data on screen.
         if self.display_man.render_enabled():
             self.surface = pygame.surfarray.make_surface(array.swapaxes(0, 1))
 
+        # save camera data to disk.
         image.save_to_disk(f"RGBCameraData/{image.frame}.png")
 
         t_end = self.timer.time()
@@ -148,7 +149,14 @@ class SensorManager:
         t_start = self.timer.time()
         points = np.frombuffer(radar_data.raw_data, dtype=np.dtype('f4'))
         points = np.reshape(points, (len(radar_data), 4))
-
+        # sava radar data to disk
+        #data_list = [alt, azi, round(detect.depth, 3), round(detect.velocity, 3)]
+        try:
+            with open('RadarData.csv', 'a') as file:
+                writer = csv.writer(file)
+                writer.writerow(points)
+        except Exception as e:
+            print(f"Error writing row to CSV: {e}")
 
         current_rot = radar_data.transform.rotation
         for detect in radar_data:
@@ -164,14 +172,15 @@ class SensorManager:
                     yaw=current_rot.yaw + azi,
                     roll=current_rot.roll)).transform(fw_vec)
 
+            # give color to radar data: white = neutral; red= move closer; blue=moving away.
             def clamp(min_v, max_v, value):
                 return max(min_v, min(value, max_v))
-
-            velocity_range = 7.5 #m/s
+            velocity_range = 7.5  # m/s
             norm_velocity = detect.velocity / velocity_range  # range [-1, 1]
             r = int(clamp(0.0, 1.0, 1.0 - norm_velocity) * 255.0)
             g = int(clamp(0.0, 1.0, 1.0 - abs(norm_velocity)) * 255.0)
             b = int(abs(clamp(- 1.0, 0.0, - 1.0 - norm_velocity)) * 255.0)
+            # display radar data on screen.
             if self.display_man.render_enabled():
                 self.world.debug.draw_point(
                     radar_data.transform.location + fw_vec,
@@ -181,13 +190,6 @@ class SensorManager:
                     color=carla.Color(r, g, b)
                 )
 
-            data_list = [alt, azi, round(detect.depth, 3), round(detect.velocity, 3)]
-            try:
-                with open('RadarData.csv', 'a') as file:
-                    writer = csv.writer(file)
-                    writer.writerow(data_list)
-            except Exception as e:
-                print(f"Error writing row to CSV: {e}")
 
         t_end = self.timer.time()
         self.time_processing += (t_end - t_start)
@@ -213,8 +215,9 @@ def run_simulation(args, client):
     timer = CustomTimer()
 
     try:
-        # Getting the world and
+        # Getting the world
         world = client.get_world()
+        # get original_settings to reset the world after use.
         original_settings = world.get_settings()
 
         if args.sync:
