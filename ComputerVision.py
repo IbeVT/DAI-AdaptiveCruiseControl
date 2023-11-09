@@ -50,13 +50,12 @@ class ComputerVision:
             azi_left = ((x_lower - self.camera_x_pixels / 2) / self.camera_x_pixels) * self.camera_h_fov
             azi_right = ((x_upper - self.camera_x_pixels / 2) / self.camera_x_pixels) * self.camera_h_fov
 
-            counter = 0
             object_point_depths = []
             object_point_speeds = []
             for point in radar_points:
-                [alt, azi, depth, delta_v] = point
-                if alt > alt_lower and alt < alt_upper and azi > azi_left and azi < azi_right:
-                    counter += 1
+                # [alt, azi, depth, delta_v] = point
+                [delta_v, alt, azi, depth] = point
+                if alt_lower < alt < alt_upper and azi_left < azi < azi_right:
                     object_point_depths.append(depth)
                     object_point_speeds.append(delta_v)
 
