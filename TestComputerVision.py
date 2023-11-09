@@ -88,6 +88,7 @@ class DisplayManager:
 class SensorManager:
     def __init__(self, world, display_man, sensor_type, transform, attached, sensor_options, display_pos):
         self.computer_vision = ComputerVision()
+        print(f"Test computer vision: {self.computer_vision}\n\n\n\n\n\n\n")
         self.last_radar = None
         self.surface = None
         self.world = world
