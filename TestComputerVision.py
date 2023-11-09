@@ -87,6 +87,7 @@ class DisplayManager:
 
 class SensorManager:
     def __init__(self, world, display_man, sensor_type, transform, attached, sensor_options, display_pos):
+        self.radar_updated = False
         self.last_radar = None
         self.surface = None
         self.world = world
@@ -168,7 +169,7 @@ class SensorManager:
         if self.display_man.render_enabled():
             self.surface = pygame.surfarray.make_surface(array.swapaxes(0, 1))
 
-        if self.last_radar is not None:
+        if self.radar_updated:
             print("Predicting")
             distance, speed = self.computer_vision.predict(image, radar_points)
             print("Distance:", distance, "Speed:", speed)
@@ -177,15 +178,19 @@ class SensorManager:
             now = datetime.datetime.now()
             image.save_to_disk(f"RGBCameraData/{now}-{distance}-{speed}.png")
 
+            self.radar_updated = False
+
             t_end = self.timer.time()
             self.time_processing += (t_end - t_start)
             self.tics_processing += 1
+
 
     def save_radar_data(self, radar_points):
         print("Saving radar data")
         points = np.frombuffer(radar_points.raw_data, dtype=np.dtype('f4'))
         points = np.reshape(points, (len(radar_points), 4))
         self.last_radar = points.copy()
+        self.radar_updated = True
 
     def save_radar_image(self, radar_data):
         t_start = self.timer.time()
