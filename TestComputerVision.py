@@ -156,7 +156,6 @@ class SensorManager:
         self.tics_processing += 1
 
     def print_predict(self, image):
-        print("Predicting")
         t_start = self.timer.time()
         radar_points = self.last_radar
         image.convert(carla.ColorConverter.Raw)
@@ -170,6 +169,7 @@ class SensorManager:
             self.surface = pygame.surfarray.make_surface(array.swapaxes(0, 1))
 
         if self.last_radar is not None:
+            print("Predicting")
             distance, speed = self.computer_vision.predict(image, radar_points)
             print("Distance:", distance, "Speed:", speed)
 
