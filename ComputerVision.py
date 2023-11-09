@@ -1,4 +1,3 @@
-import comet_ml
 from ultralytics import YOLO
 import numpy as np
 
