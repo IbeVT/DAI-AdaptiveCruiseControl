@@ -165,7 +165,7 @@ class SensorManager:
         # Display camera data on screen.
         if self.display_man.render_enabled():
             self.surface = pygame.surfarray.make_surface(array.swapaxes(0, 1))
-        self.computer_vision.update_image(image)
+        self.computer_vision.update_image(array)
 
         t_end = self.timer.time()
         self.time_processing += (t_end - t_start)
