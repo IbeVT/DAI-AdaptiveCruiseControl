@@ -114,8 +114,8 @@ class SensorManager:
                 camera_bp.set_attribute(key, sensor_options[key])
 
             camera = self.world.spawn_actor(camera_bp, transform, attach_to=attached)
-            # camera.listen(self.save_rgb_image)
-            camera.listen(self.print_predict)
+            camera.listen(self.save_rgb_image)
+            # camera.listen(self.print_predict)
             return camera
 
         elif sensor_type == "Radar":
@@ -124,8 +124,8 @@ class SensorManager:
                 radar_bp.set_attribute(key, sensor_options[key])
 
             radar = self.world.spawn_actor(radar_bp, transform, attach_to=attached)
-            # radar.listen(self.save_radar_image)
-            radar.listen(self.save_radar_data)
+            radar.listen(self.save_radar_image)
+            # radar.listen(self.save_radar_data)
             return radar
 
         else:
