@@ -115,7 +115,7 @@ class SensorManager:
 
             camera = self.world.spawn_actor(camera_bp, transform, attach_to=attached)
             # camera.listen(self.save_rgb_image)
-            camera.listen(self.print_predict())
+            camera.listen(self.print_predict)
             return camera
 
         elif sensor_type == "Radar":
