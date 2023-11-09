@@ -70,8 +70,9 @@ class ComputerVision:
                   round(np.median(object_point_speeds), 1))
 
             # Add bounding box to image
-            print(image.shape)
-            print(type(image))
+            print(type(image[1,1,1]))
+            print(type(image[1,1,2]))
+            print(type(image[1,1,3]))
             print("\n\n\n\n\n\n")
             cv2.rectangle(image, (x_lower, y_lower), (x_upper, y_upper), (0, 255, 0), 2)
             # Add statistics to image
