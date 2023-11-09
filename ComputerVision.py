@@ -5,6 +5,7 @@ from ultralytics import YOLO
 import numpy as np
 from PIL import Image
 
+
 class ComputerVision:
     def __init__(self):
         self.model = YOLO('best.pt')
@@ -69,7 +70,7 @@ class ComputerVision:
                   round(np.median(object_point_speeds), 1))
 
             # Add bounding box to image
-            cv2.rectangle(image,(384,0),(510,128),(0,255,0),3)
+            cv2.rectangle(image, (100, 0), (200, 100), (0, 255, 0), 3)
             # cv2.rectangle(image, (x_lower, y_lower), (x_upper, y_upper), (0, 255, 0), 2)
             # Add statistics to image
             text = f'Depth: ({np.median(object_point_depths)}, speed: {np.median(object_point_speeds)})'
