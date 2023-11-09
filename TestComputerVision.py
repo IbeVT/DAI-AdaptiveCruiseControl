@@ -114,8 +114,8 @@ class SensorManager:
                 camera_bp.set_attribute(key, sensor_options[key])
 
             camera = self.world.spawn_actor(camera_bp, transform, attach_to=attached)
-            camera.listen(self.save_rgb_image)
-            # camera.listen(self.print_predict)
+            # camera.listen(self.save_rgb_image)
+            camera.listen(self.print_predict)
             return camera
 
         elif sensor_type == "Radar":
@@ -124,8 +124,8 @@ class SensorManager:
                 radar_bp.set_attribute(key, sensor_options[key])
 
             radar = self.world.spawn_actor(radar_bp, transform, attach_to=attached)
-            radar.listen(self.save_radar_image)
-            # radar.listen(self.save_radar_data)
+            # radar.listen(self.save_radar_image)
+            radar.listen(self.save_radar_data)
             return radar
 
         else:
@@ -155,27 +155,22 @@ class SensorManager:
         self.time_processing += (t_end - t_start)
         self.tics_processing += 1
 
-    def save_radar_data(self, radar_points):
-        points = np.frombuffer(radar_points.raw_data, dtype=np.dtype('f4'))
-        points = np.reshape(points, (len(radar_points), 4))
-        self.last_radar = points.copy()
-
     def print_predict(self, image):
-        if self.last_radar is not None:
-            t_start = self.timer.time()
-            radar_points = self.last_radar
-            image.convert(carla.ColorConverter.Raw)
-            array = np.frombuffer(image.raw_data, dtype=np.dtype("uint8"))
-            array = np.reshape(array, (image.height, image.width, 4))
-            array = array[:, :, :3]
-            array = array[:, :, ::-1]
+        t_start = self.timer.time()
+        radar_points = self.last_radar
+        image.convert(carla.ColorConverter.Raw)
+        array = np.frombuffer(image.raw_data, dtype=np.dtype("uint8"))
+        array = np.reshape(array, (image.height, image.width, 4))
+        array = array[:, :, :3]
+        array = array[:, :, ::-1]
 
+        # Display camera data on screen.
+        if self.display_man.render_enabled():
+            self.surface = pygame.surfarray.make_surface(array.swapaxes(0, 1))
+
+        if self.last_radar is not None:
             distance, speed = self.computer_vision.predict(image, radar_points)
             print("Distance:", distance, "Speed:", speed)
-
-            # Display camera data on screen.
-            if self.display_man.render_enabled():
-                self.surface = pygame.surfarray.make_surface(array.swapaxes(0, 1))
 
             # save camera data to disk.
             now = datetime.datetime.now()
@@ -184,6 +179,11 @@ class SensorManager:
             t_end = self.timer.time()
             self.time_processing += (t_end - t_start)
             self.tics_processing += 1
+
+    def save_radar_data(self, radar_points):
+        points = np.frombuffer(radar_points.raw_data, dtype=np.dtype('f4'))
+        points = np.reshape(points, (len(radar_points), 4))
+        self.last_radar = points.copy()
 
     def save_radar_image(self, radar_data):
         t_start = self.timer.time()
