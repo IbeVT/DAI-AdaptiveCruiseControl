@@ -69,11 +69,9 @@ class ComputerVision:
             print('Median depth:', round(np.median(object_point_depths), 1), '  Median speed:',
                   round(np.median(object_point_speeds), 1))
 
+            print(image.shape)
+            print("\n\n\n\n\n\n\n\n\n\n\n\n\n")
             # Add bounding box to image
-            print(type(image[1,1,1]))
-            print(type(image[1,1,2]))
-            print(type(image[1,1,3]))
-            print("\n\n\n\n\n\n")
             cv2.rectangle(image, (x_lower, y_lower), (x_upper, y_upper), (0, 255, 0), 2)
             # Add statistics to image
             text = f'Depth: ({np.median(object_point_depths)}, speed: {np.median(object_point_speeds)})'
