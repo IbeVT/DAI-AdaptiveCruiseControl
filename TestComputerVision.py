@@ -87,6 +87,7 @@ class DisplayManager:
 
 class SensorManager:
     def __init__(self, world, display_man, sensor_type, transform, attached, sensor_options, display_pos):
+        self.computer_vision = ComputerVision()
         self.last_radar = None
         self.surface = None
         self.world = world
@@ -95,7 +96,6 @@ class SensorManager:
         self.sensor = self.init_sensor(sensor_type, transform, attached, sensor_options)
         self.sensor_options = sensor_options
         self.timer = CustomTimer()
-        self.computer_vision = ComputerVision()
 
         self.time_processing = 0.0
         self.tics_processing = 0
