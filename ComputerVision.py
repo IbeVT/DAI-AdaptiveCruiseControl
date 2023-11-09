@@ -69,6 +69,7 @@ class ComputerVision:
                   round(np.median(object_point_speeds), 1))
 
             # Add bounding box to image
+            print(f"x_lower: {x_lower}, y_lower: {y_lower}, x_upper: {x_upper}, y_upper: {y_upper}")
             cv2.rectangle(image, (x_lower, y_lower), (x_upper, y_upper), (0, 255, 0), 2)
             # Add statistics to image
             text = f'Depth: ({np.median(object_point_depths)}, speed: {np.median(object_point_speeds)})'
