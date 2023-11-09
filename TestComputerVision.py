@@ -156,6 +156,7 @@ class SensorManager:
         self.tics_processing += 1
 
     def print_predict(self, image):
+        print("Predicting")
         t_start = self.timer.time()
         radar_points = self.last_radar
         image.convert(carla.ColorConverter.Raw)
@@ -181,6 +182,7 @@ class SensorManager:
             self.tics_processing += 1
 
     def save_radar_data(self, radar_points):
+        print("Saving radar data")
         points = np.frombuffer(radar_points.raw_data, dtype=np.dtype('f4'))
         points = np.reshape(points, (len(radar_points), 4))
         self.last_radar = points.copy()
