@@ -15,6 +15,7 @@ class ComputerVision:
         self.max_depth = 100
         self.max_speed = 120 / 3.6
         self.n_points_median = 11
+        print(f"model: {self.model}")
 
     def predict(self, image, radar_points):
         results = self.model.predict(source=image, save=True)
