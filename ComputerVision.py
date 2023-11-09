@@ -3,7 +3,7 @@ import numpy as np
 
 
 class ComputerVision:
-    def __int__(self):
+    def __init__(self):
         self.model = YOLO('best.pt')
         self.vehicle_classes = ['bus', 'bike', 'car', 'motorcycle', 'vehicle']
         self.camera_h_fov = 90 * (2 * 3.14159 / 360)
@@ -15,6 +15,10 @@ class ComputerVision:
         self.max_depth = 100
         self.max_speed = 120 / 3.6
         self.n_points_median = 11
+        self.image = None
+        self.radar = None
+        self.image_updated = False
+        self.radar_updated = False
 
     def predict(self, image, radar_points):
         results = self.model.predict(source=image, save=True)
@@ -63,3 +67,22 @@ class ComputerVision:
             return np.median(object_point_depths), np.median(object_point_speeds)
         else:
             return self.max_depth, 0
+
+    def update_image(self, image):
+        self.image = image
+        if self.radar_updated:
+            self.predict(self.image, self.radar)
+            self.image_updated = False
+            self.radar_updated = False
+        else:
+            self.image_updated = True
+
+    def update_radar(self, radar):
+        self.radar = radar
+        self.radar_updated = True
+        if self.image_updated:
+            self.predict(self.image, self.radar)
+            self.image_updated = False
+            self.radar_updated = False
+        else:
+            self.radar_updated = True

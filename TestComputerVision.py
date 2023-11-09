@@ -86,10 +86,8 @@ class DisplayManager:
 
 
 class SensorManager:
-    def __init__(self, world, display_man, sensor_type, transform, attached, sensor_options, display_pos):
-        self.computer_vision = ComputerVision()
-        print(f"Test computer vision: {self.computer_vision}\n\n\n\n\n\n\n")
-        self.last_radar = None
+    def __init__(self, world, display_man, sensor_type, transform, attached, sensor_options, display_pos, computer_vision):
+        self.computer_vision = computer_vision
         self.surface = None
         self.world = world
         self.display_man = display_man
@@ -116,7 +114,7 @@ class SensorManager:
 
             camera = self.world.spawn_actor(camera_bp, transform, attach_to=attached)
             # camera.listen(self.save_rgb_image)
-            camera.listen(self.print_predict)
+            camera.listen(self.camera_computer_vision)
             return camera
 
         elif sensor_type == "Radar":
@@ -126,7 +124,7 @@ class SensorManager:
 
             radar = self.world.spawn_actor(radar_bp, transform, attach_to=attached)
             # radar.listen(self.save_radar_image)
-            radar.listen(self.save_radar_data)
+            radar.listen(self.radar_computer_vision)
             return radar
 
         else:
@@ -156,9 +154,8 @@ class SensorManager:
         self.time_processing += (t_end - t_start)
         self.tics_processing += 1
 
-    def print_predict(self, image):
+    def camera_computer_vision(self, image):
         t_start = self.timer.time()
-        radar_points = self.last_radar
         image.convert(carla.ColorConverter.Raw)
         array = np.frombuffer(image.raw_data, dtype=np.dtype("uint8"))
         array = np.reshape(array, (image.height, image.width, 4))
@@ -168,24 +165,17 @@ class SensorManager:
         # Display camera data on screen.
         if self.display_man.render_enabled():
             self.surface = pygame.surfarray.make_surface(array.swapaxes(0, 1))
-        print("Predicting")
-        distance, speed = self.computer_vision.predict(image, radar_points)
-        print("Distance:", distance, "Speed:", speed)
-
-        # save camera data to disk.
-        now = datetime.datetime.now()
-        image.save_to_disk(f"RGBCameraData/{now}-{distance}-{speed}.png")
+        self.computer_vision.update_image(image)
 
         t_end = self.timer.time()
         self.time_processing += (t_end - t_start)
         self.tics_processing += 1
 
 
-    def save_radar_data(self, radar_points):
-        print("Saving radar data")
+    def radar_computer_vision(self, radar_points):
         points = np.frombuffer(radar_points.raw_data, dtype=np.dtype('f4'))
         points = np.reshape(points, (len(radar_points), 4))
-        self.last_radar = points.copy()
+        self.computer_vision.update_radar(points.copy())
 
     def save_radar_image(self, radar_data):
         t_start = self.timer.time()
@@ -289,16 +279,19 @@ def run_simulation(args, client):
         # It can easily configure the grid and the total window size
         display_manager = DisplayManager(grid_size=[1, 1], window_size=[args.width, args.height])
 
+        # Create the ComputerVision object
+        computer_vision = ComputerVision()
+
         # Then, SensorManager is used to spawn RGBCamera and Radar and assign each of them to a grid position.
         SensorManager(world, display_manager, 'RGBCamera',
                       carla.Transform(carla.Location(x=0, z=2.4), carla.Rotation(yaw=+00)),
-                      vehicle, {}, display_pos=[0, 0])
+                      vehicle, {}, display_pos=[0, 0], computer_vision=computer_vision)
 
         SensorManager(world, display_manager, 'Radar',
                       carla.Transform(carla.Location(x=0, z=2.4)),
                       vehicle,
                       {'horizontal_fov': '90', 'points_per_second': '5000', 'range': '100',
-                       'sensor_tick': '1.0', 'vertical_fov': '60'}, display_pos=[0, 0])
+                       'sensor_tick': '1.0', 'vertical_fov': '60'}, display_pos=[0, 0], computer_vision=computer_vision)
 
         # But the city now is probably quite empty, let's add a few more vehicles.
         transform.location += carla.Location(x=40, y=-3.2)
