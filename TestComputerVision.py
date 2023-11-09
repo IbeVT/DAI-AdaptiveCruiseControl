@@ -191,6 +191,7 @@ class SensorManager:
         points = np.reshape(points, (len(radar_points), 4))
         self.last_radar = points.copy()
         self.radar_updated = True
+        print(f"radar_updated = {self.radar_updated}")
 
     def save_radar_image(self, radar_data):
         t_start = self.timer.time()
