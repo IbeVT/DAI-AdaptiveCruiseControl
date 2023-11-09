@@ -168,7 +168,7 @@ class SensorManager:
         # Display camera data on screen.
         if self.display_man.render_enabled():
             self.surface = pygame.surfarray.make_surface(array.swapaxes(0, 1))
-
+        print(f"radar_updated = {self.radar_updated}")
         if self.radar_updated:
             print("Predicting")
             distance, speed = self.computer_vision.predict(image, radar_points)
