@@ -70,8 +70,10 @@ class ComputerVision:
                   round(np.median(object_point_speeds), 1))
 
             # Add bounding box to image
-            cv2.rectangle(image, (100, 0), (200, 100), (0, 255, 0), 3)
-            # cv2.rectangle(image, (x_lower, y_lower), (x_upper, y_upper), (0, 255, 0), 2)
+            print(image.shape)
+            print(type(image))
+            print("\n\n\n\n\n\n")
+            cv2.rectangle(image, (x_lower, y_lower), (x_upper, y_upper), (0, 255, 0), 2)
             # Add statistics to image
             text = f'Depth: ({np.median(object_point_depths)}, speed: {np.median(object_point_speeds)})'
             font = cv2.FONT_HERSHEY_SIMPLEX
