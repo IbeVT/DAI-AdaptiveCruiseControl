@@ -61,8 +61,8 @@ class ComputerVision:
             object_point_speeds = []
             for point in radar_points:
                 print(f"Point: {point}")
-                # [alt, azi, depth, delta_v] = point
-                [delta_v, alt, azi, depth] = point
+                [alt, azi, depth, delta_v] = point
+                # [delta_v, alt, azi, depth] = point
                 if alt_lower < alt < alt_upper and azi_left < azi < azi_right:
                     object_point_depths.append(depth)
                     object_point_speeds.append(delta_v)
@@ -77,7 +77,7 @@ class ComputerVision:
             draw.rectangle((x_lower, y_lower, x_upper, y_upper), outline="red", width=2)
             # cv2.rectangle(image, (x_lower, y_lower), (x_upper, y_upper), (0, 255, 0), 2)
             # Add statistics to image
-            text = f'Depth: ({np.median(object_point_depths)}, speed: {np.median(object_point_speeds)})'
+            text = f'Depth: {np.median(object_point_depths)}, speed: {np.median(object_point_speeds)}'
             font_color = (255, 255, 255)
             text_position = (
                 (x_lower + x_upper) / 2,
