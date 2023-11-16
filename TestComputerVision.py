@@ -173,8 +173,12 @@ class SensorManager:
 
 
     def radar_computer_vision(self, radar_points):
+        print(f"Points: {radar_points}")
+        print(f"Points shape: {radar_points.shape}")
         points = np.frombuffer(radar_points.raw_data, dtype=np.dtype('f4'))
         points = np.reshape(points, (len(radar_points), 4))
+        print(f"Radar points: {points}")
+        print(f"Radar points shape: {points.shape}")
         self.computer_vision.update_radar(points.copy())
 
     def save_radar_image(self, radar_data):
