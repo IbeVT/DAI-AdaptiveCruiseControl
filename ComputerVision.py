@@ -60,6 +60,7 @@ class ComputerVision:
             object_point_depths = []
             object_point_speeds = []
             for point in radar_points:
+                print(f"Point: {point}")
                 # [alt, azi, depth, delta_v] = point
                 [delta_v, alt, azi, depth] = point
                 if alt_lower < alt < alt_upper and azi_left < azi < azi_right:
