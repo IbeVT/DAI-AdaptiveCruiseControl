@@ -1,6 +1,6 @@
 from datetime import datetime
 
-# import cv2
+import cv2
 from ultralytics import YOLO
 import numpy as np
 from PIL import Image
@@ -85,7 +85,7 @@ class ComputerVision:
             # cv2.putText(image, text, (text_x, text_y), font, font_scale, font_color, font_thickness)
             # Save image
             now = datetime.now()
-            # cv2.imwrite(f"Predictions/{now}.jpg", image)
+            cv2.imwrite(f"Predictions/{now}.jpg", image)
 
             return np.median(object_point_depths), np.median(object_point_speeds)
         else:
