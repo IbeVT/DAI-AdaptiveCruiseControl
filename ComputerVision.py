@@ -11,8 +11,8 @@ class ComputerVision:
         self.model = YOLO('best.pt')
         self.vehicle_classes = ['bus', 'bike', 'car', 'motorcycle', 'vehicle']
         self.camera_h_fov = 90 * (2 * 3.14159 / 360)
-        self.camera_x_pixels = 810
-        self.camera_y_pixels = 1080
+        self.camera_x_pixels = 720
+        self.camera_y_pixels = 1280
         self.n_points = 50
         self.radar_h_fov = 30 * (2 * 3.14159 / 360)
         self.radar_v_fov = 30 * (2 * 3.14159 / 360)
@@ -72,6 +72,7 @@ class ComputerVision:
             print(image.shape)
             print("\n\n\n\n\n\n\n\n\n\n\n\n\n")
             # Add bounding box to image
+            print(f"x_lower: {x_lower}, y_lower: {y_lower}, x_upper: {x_upper}, y_upper: {y_upper}")
             cv2.rectangle(image, (x_lower, y_lower), (x_upper, y_upper), (0, 255, 0), 2)
             # Add statistics to image
             text = f'Depth: ({np.median(object_point_depths)}, speed: {np.median(object_point_speeds)})'

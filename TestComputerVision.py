@@ -126,7 +126,6 @@ class SensorManager:
             # radar.listen(self.save_radar_image)
             radar.listen(self.radar_computer_vision)
             return radar
-
         else:
             return None
 
