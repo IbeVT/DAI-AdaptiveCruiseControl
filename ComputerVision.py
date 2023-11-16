@@ -83,12 +83,12 @@ class ComputerVision:
             # text_x = x_center - text_size[0] // 2
             # text_y = y_center + text_size[1] // 2
             # cv2.putText(image, text, (text_x, text_y), font, font_scale, font_color, font_thickness)
+            cv2.imshow("image", image)
             # Save image
             now = datetime.now()
             filename = f"./predictions/{now}.jpg"
             cv2.imwrite(filename, image)
             print(f"Saved image to {filename}")
-
             return np.median(object_point_depths), np.median(object_point_speeds)
         else:
             return self.max_depth, 0
