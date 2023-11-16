@@ -73,7 +73,7 @@ class ComputerVision:
             pil_im = Image.fromarray(image)
             print(f"x_lower: {x_lower}, y_lower: {y_lower}, x_upper: {x_upper}, y_upper: {y_upper}")
             draw = ImageDraw.Draw(pil_im)
-            draw.rectangle((x_lower, y_lower, x_upper, y_upper), outline="red", widht=2)
+            draw.rectangle((x_lower, y_lower, x_upper, y_upper), outline="red", width=2)
             # cv2.rectangle(image, (x_lower, y_lower), (x_upper, y_upper), (0, 255, 0), 2)
             # Add statistics to image
             text = f'Depth: ({np.median(object_point_depths)}, speed: {np.median(object_point_speeds)})'
