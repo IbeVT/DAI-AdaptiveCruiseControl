@@ -26,6 +26,7 @@ class ComputerVision:
 
     def predict(self, image, radar_points):
         results = self.model.predict(source=image, save=True)
+        cv2.imshow("image", image)
         # Check which car is in front, if any
         result = results[0]
         following_vehicle_cords = None
