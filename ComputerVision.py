@@ -3,7 +3,7 @@ from datetime import datetime
 import cv2
 from ultralytics import YOLO
 import numpy as np
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFont
 
 
 class ComputerVision:
@@ -77,19 +77,15 @@ class ComputerVision:
             # cv2.rectangle(image, (x_lower, y_lower), (x_upper, y_upper), (0, 255, 0), 2)
             # Add statistics to image
             text = f'Depth: ({np.median(object_point_depths)}, speed: {np.median(object_point_speeds)})'
-            # font = cv2.FONT_HERSHEY_SIMPLEX
-            font_scale = 0.5
             font_color = (255, 255, 255)
-            font_thickness = 1
-            # text_size, _ = cv2.getTextSize(text, font, font_scale, font_thickness)
-            # text_x = x_center - text_size[0] // 2
-            # text_y = y_center + text_size[1] // 2
-            # cv2.putText(image, text, (text_x, text_y), font, font_scale, font_color, font_thickness)
-            # cv2.imshow("image", image)
+            text_position = (
+                (x_lower + x_upper) / 2,
+                (y_lower + y_upper) / 2
+            )
+            draw.text(text_position, text, fill=font_color, font=ImageFont.load_default())
             # Save image
             now = datetime.now()
             filename = f"./predictions/{now}.jpg"
-            # cv2.imwrite(filename, image)
             pil_im.save(filename)
             print(f"Saved image to {filename}")
             return np.median(object_point_depths), np.median(object_point_speeds)
