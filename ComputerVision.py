@@ -85,7 +85,9 @@ class ComputerVision:
             # cv2.putText(image, text, (text_x, text_y), font, font_scale, font_color, font_thickness)
             # Save image
             now = datetime.now()
-            cv2.imwrite(f"./predictions/{now}.jpg", image)
+            filename = f"./predictions/{now}.jpg"
+            cv2.imwrite(filename, image)
+            print(f"Saved image to {filename}")
 
             return np.median(object_point_depths), np.median(object_point_speeds)
         else:
