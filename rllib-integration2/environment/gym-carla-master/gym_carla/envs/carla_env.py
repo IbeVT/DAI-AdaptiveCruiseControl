@@ -493,7 +493,18 @@ class CarlaEnv(gym.Env):
     point_cloud = []
     # Get point cloud data
     for location in self.lidar_data:
-      point_cloud.append([location.x, location.y, -location.z])
+      # Original code gave error: location has no attribute named 'x'
+      # point_cloud.append([location.x, location.y, -location.z])
+
+      # Solution, convert location to a string and filter the x, y, and z values
+      loc_str = str(location)
+
+      x = float(loc_str[loc_str.find('x')+2: loc_str.find(', y')])
+      y = float(loc_str[loc_str.find('y')+2: loc_str.find(', z')])
+      z = float(loc_str[loc_str.find('z')+2: loc_str.find(', intensity')])
+
+      point_cloud.append([x, y, -z])
+
     point_cloud = np.array(point_cloud)
     # Separate the 3D space to bins for point cloud, x and y is set according to self.lidar_bin,
     # and z is set to be two bins.
