@@ -72,17 +72,17 @@ class ComputerVision:
 
             # Add bounding box to image
             print(f"x_lower: {x_lower}, y_lower: {y_lower}, x_upper: {x_upper}, y_upper: {y_upper}")
-            # cv2.rectangle(image, (x_lower, y_lower), (x_upper, y_upper), (0, 255, 0), 2)
+            cv2.rectangle(image, (x_lower, y_lower), (x_upper, y_upper), (0, 255, 0), 2)
             # Add statistics to image
             text = f'Depth: ({np.median(object_point_depths)}, speed: {np.median(object_point_speeds)})'
-            # font = cv2.FONT_HERSHEY_SIMPLEX
+            font = cv2.FONT_HERSHEY_SIMPLEX
             font_scale = 0.5
             font_color = (255, 255, 255)
             font_thickness = 1
-            # text_size, _ = cv2.getTextSize(text, font, font_scale, font_thickness)
-            # text_x = x_center - text_size[0] // 2
-            # text_y = y_center + text_size[1] // 2
-            # cv2.putText(image, text, (text_x, text_y), font, font_scale, font_color, font_thickness)
+            text_size, _ = cv2.getTextSize(text, font, font_scale, font_thickness)
+            text_x = x_center - text_size[0] // 2
+            text_y = y_center + text_size[1] // 2
+            cv2.putText(image, text, (text_x, text_y), font, font_scale, font_color, font_thickness)
             cv2.imshow("image", image)
             # Save image
             now = datetime.now()
