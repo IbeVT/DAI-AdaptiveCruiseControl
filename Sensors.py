@@ -1,4 +1,9 @@
-import datetime
+"""
+This script will spawn a car with camera and radar sensors.
+The car will drive automatically through the town
+and collect camera and radar data every second and save it to the disk.
+"""
+
 import glob
 import os
 import sys
@@ -18,7 +23,6 @@ import math
 import random
 import numpy as np
 import csv
-import datetime
 
 try:
     import pygame
@@ -103,8 +107,6 @@ class SensorManager:
             disp_size = self.display_man.get_display_size()
             camera_bp.set_attribute('image_size_x', str(disp_size[0]))
             camera_bp.set_attribute('image_size_y', str(disp_size[1]))
-            camera_bp.set_attribute('sensor_tick', '1.0')
-
             for key in sensor_options:
                 camera_bp.set_attribute(key, sensor_options[key])
 
@@ -141,8 +143,7 @@ class SensorManager:
             self.surface = pygame.surfarray.make_surface(array.swapaxes(0, 1))
 
         # save camera data to disk.
-        now = datetime.datetime.now()
-        image.save_to_disk(f"RGBCameraData/{now}.png")
+        image.save_to_disk(f"RGBCameraData/{image.frame}.png")
 
         t_end = self.timer.time()
         self.time_processing += (t_end - t_start)
@@ -163,7 +164,6 @@ class SensorManager:
             with open('RadarData.csv', 'a') as file:
                 writer = csv.writer(file)
                 writer.writerow(data_points)
-                writer.writerow(str(datetime.datetime.now()))
         except Exception as e:
             print(f"Error writing row to CSV: {e}")
 
@@ -253,12 +253,12 @@ def run_simulation(args, client):
         # Then, SensorManager is used to spawn RGBCamera and Radar and assign each of them to a grid position.
         SensorManager(world, display_manager, 'RGBCamera',
                       carla.Transform(carla.Location(x=0, z=2.4), carla.Rotation(yaw=+00)),
-                      vehicle, {}, display_pos=[0, 0])
+                      vehicle, {'sensor_tick': '1.0'}, display_pos=[0, 0])
 
         SensorManager(world, display_manager, 'Radar',
                       carla.Transform(carla.Location(x=0, z=2.4)),
                       vehicle,
-                      {'horizontal_fov': '90', 'points_per_second': '5000', 'range': '100',
+                      {'horizontal_fov': '90', 'points_per_second': '1500', 'range': '75',
                        'sensor_tick': '1.0', 'vertical_fov': '60'}, display_pos=[0, 0])
 
         # But the city now is probably quite empty, let's add a few more vehicles.
@@ -322,7 +322,7 @@ def run_simulation(args, client):
 
 def main():
     argparser = argparse.ArgumentParser(
-        description='CARLA Sensor tutorial')
+        description='CARLA Sensors')
     argparser.add_argument(
         '--host',
         metavar='H',
