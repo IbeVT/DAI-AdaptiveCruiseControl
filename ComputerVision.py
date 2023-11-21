@@ -57,6 +57,8 @@ class ComputerVision:
             azi_left = ((x_lower - self.camera_x_pixels / 2) / self.camera_x_pixels) * self.camera_h_fov
             azi_right = ((x_upper - self.camera_x_pixels / 2) / self.camera_x_pixels) * self.camera_h_fov
 
+            print(f"alt_upper: {alt_upper}, alt_lower: {alt_lower}, azi_left: {azi_left}, azi_right: {azi_right}")
+
             object_point_depths = []
             object_point_speeds = []
             for point in radar_points:
@@ -67,6 +69,7 @@ class ComputerVision:
                     object_point_depths.append(depth)
                     object_point_speeds.append(delta_v)
 
+            print('Number of points:', len(object_point_depths))
             print('Median depth:', round(np.median(object_point_depths), 1), '  Median speed:',
                   round(np.median(object_point_speeds), 1))
 
