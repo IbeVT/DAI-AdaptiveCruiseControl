@@ -69,6 +69,7 @@ class ComputerVision:
                     object_point_speeds.append(delta_v)
 
             print('Number of points:', len(object_point_depths))
+            print('Depths:', object_point_depths)
             print('Median depth:', round(np.median(object_point_depths), 1), '  Median speed:',
                   round(np.median(object_point_speeds), 1))
 
