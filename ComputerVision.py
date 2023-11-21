@@ -62,7 +62,7 @@ class ComputerVision:
             object_point_depths = []
             object_point_speeds = []
             for point in radar_points:
-                [alt, azi, delta_v, depth] = point
+                [delta_v, alt, azi, depth] = point
                 print(f"alt: {alt}, azi: {azi}")
                 if alt_lower < alt < alt_upper and azi_left < azi < azi_right:
                     object_point_depths.append(depth)
