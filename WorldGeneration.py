@@ -100,6 +100,7 @@ def game_loop(args, client):
                                     ego_vehicle.get_transform().rotation)
         spectator.set_transform(transform)
 
+
         # But the city now is probably quite empty, let's add a few more vehicles.
         transform.location += carla.Location(x=40, y=-3.2)
         transform.rotation.yaw = -180.0
@@ -125,7 +126,6 @@ def game_loop(args, client):
                 traffic_manager.update_vehicle_lights(actor, True)
 
         # Simulation loop
-        clock = pygame.time.Clock()
         call_exit = False
         while True:
             # Carla Tick

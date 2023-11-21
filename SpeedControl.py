@@ -41,7 +41,7 @@ traffic_manager = client.get_trafficmanager()
 try:
     # Set up the Traffic Manager for the ego vehicle
     traffic_manager.set_synchronous_mode(True)
-    traffic_manager.set_auto_lane_change(ego_vehicle, False)
+    #traffic_manager.set_auto_lane_change(ego_vehicle, False)
     traffic_manager.vehicle_percentage_speed_difference(ego_vehicle, 0.0)
     traffic_manager.distance_to_leading_vehicle(ego_vehicle, 1.0)
 
