@@ -27,6 +27,10 @@ class ComputerVision:
         self.radar_updated = False
         self.following_vehicle_cords = None
 
+    def set_fov(self, h_fov_degrees, v_fov_degrees):
+        self.camera_h_fov = math.radians(h_fov_degrees)
+        self.camera_v_fov = math.radians(v_fov_degrees)
+
     def get_bounding_box(self, image):
         self.image = image
         print(f"Image shape: {image.shape}")
