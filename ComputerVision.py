@@ -72,7 +72,12 @@ class ComputerVision:
             object_point_speeds = []
             object_points = []
             for point in radar_points:
-                [delta_v, alt, azi, depth] = point
+                # [delta_v, alt, azi, depth] = point
+                azi = point.azimuth
+                alt = point.altitude
+                depth = point.depth
+                delta_v = point.velocity
+
                 if alt_lower < alt < alt_upper and azi_left < azi < azi_right:
                     object_point_depths.append(depth)
                     object_point_speeds.append(delta_v)
