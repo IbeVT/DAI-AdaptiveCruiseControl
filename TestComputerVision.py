@@ -114,7 +114,8 @@ class SensorManager:
 
             camera = self.world.spawn_actor(camera_bp, transform, attach_to=attached)
             # camera.listen(self.save_rgb_image)
-            camera.listen(self.camera_computer_vision)
+            # camera.listen(self.camera_computer_vision)
+            camera.listen(self.draw_bounding_box)
             return camera
 
         elif sensor_type == "Radar":
@@ -124,7 +125,8 @@ class SensorManager:
 
             radar = self.world.spawn_actor(radar_bp, transform, attach_to=attached)
             # radar.listen(self.save_radar_image)
-            radar.listen(self.radar_computer_vision)
+            # radar.listen(self.radar_computer_vision)
+            radar.listen(self.draw_distance_speed)
             return radar
         else:
             return None
@@ -171,6 +173,66 @@ class SensorManager:
         self.time_processing += (t_end - t_start)
         self.tics_processing += 1
 
+    def draw_bounding_box(self, image):
+        t_start = self.timer.time()
+        image.convert(carla.ColorConverter.Raw)
+        array = np.frombuffer(image.raw_data, dtype=np.dtype("uint8"))
+        array = np.reshape(array, (image.height, image.width, 4))
+        array = array[:, :, :3]
+        array = array[:, :, ::-1]
+
+        # Display camera data on screen.
+        if self.display_man.render_enabled():
+            self.surface = pygame.surfarray.make_surface(array.swapaxes(0, 1))
+
+        cords = self.computer_vision.get_bounding_box(array)
+        # Draw bounding box on screen.
+        if cords is not None:
+            [x_lower, y_lower, x_upper, y_upper] = cords
+            pygame.draw.rect(self.surface, (255, 0, 0), (x_lower, y_lower, x_upper, y_upper), 2)
+
+        t_end = self.timer.time()
+        self.time_processing += (t_end - t_start)
+        self.tics_processing += 1
+
+    def draw_distance_speed(self, radar_points):
+        points = np.frombuffer(radar_points.raw_data, dtype=np.dtype('f4'))
+        points = np.reshape(points, (len(radar_points), 4))
+        distance, speed, object_points = self.computer_vision.predict_distance(points.copy())
+        current_rot = radar_points.transform.rotation
+        # Draw the points on the screen.
+        for point in object_points:
+            [delta_v, alt, azi, depth] = point
+            azi = math.degrees(azi)
+            alt = math.degrees(alt)
+            # The 0.25 adjusts a bit the distance so the dots can
+            # be properly seen
+            fw_vec = carla.Vector3D(x=depth - 0.25)
+            carla.Transform(
+                carla.Location(),
+                carla.Rotation(
+                    pitch=current_rot.pitch + alt,
+                    yaw=current_rot.yaw + azi,
+                    roll=current_rot.roll)).transform(fw_vec)
+
+            # give color to radar data: white = neutral; red= move closer; blue=moving away.
+            def clamp(min_v, max_v, value):
+                return max(min_v, min(value, max_v))
+
+            velocity_range = 7.5  # m/s
+            norm_velocity = delta_v / velocity_range  # range [-1, 1]
+            r = int(clamp(0.0, 1.0, 1.0 - norm_velocity) * 255.0)
+            g = int(clamp(0.0, 1.0, 1.0 - abs(norm_velocity)) * 255.0)
+            b = int(abs(clamp(- 1.0, 0.0, - 1.0 - norm_velocity)) * 255.0)
+            # display radar data on screen.
+            if self.display_man.render_enabled():
+                self.world.debug.draw_point(
+                    radar_points.transform.location + fw_vec,
+                    size=0.075,
+                    life_time=0.06,
+                    persistent_lines=False,
+                    color=carla.Color(r, g, b)
+                )
 
     def radar_computer_vision(self, radar_points):
         points = np.frombuffer(radar_points.raw_data, dtype=np.dtype('f4'))
