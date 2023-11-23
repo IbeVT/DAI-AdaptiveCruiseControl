@@ -184,13 +184,13 @@ class SensorManager:
 
         current_rot = radar_points.transform.rotation
         # Draw the points on the screen.
-        for point in radar_points:
+        for point in object_points:
             print(point)
-            # [delta_v, alt, azi, depth] = point
-            azi = point.azimuth
-            alt = point.altitude
-            depth = point.depth
-            delta_v = point.velocity
+            [delta_v, alt, azi, depth] = point
+            # azi = point.azimuth
+            # alt = point.altitude
+            # depth = point.depth
+            # delta_v = point.velocity
 
             azi = math.degrees(azi)
             alt = math.degrees(alt)
