@@ -15,10 +15,10 @@ register(
     entry_point='environment.environment.gym_carla.envs:CarlaEnv',
 )
 
-setup(name='gym_carla',
+"""setup(name='gym_carla',
       version='0.0.1',
       install_requires=['gym', 'pygame']
-)
+)"""
 
 params = {
     'number_of_vehicles': 100,
