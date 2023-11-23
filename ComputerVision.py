@@ -27,6 +27,7 @@ class ComputerVision:
 
     def get_bounding_box(self, image):
         self.image = image
+        print(f"Image shape: {image.shape}")
         results = self.model.predict(source=image, save=True)
         # Check which car is in front, if any
         result = results[0]
@@ -51,6 +52,7 @@ class ComputerVision:
                     smallest_distance_to_center = distance_to_center
                     following_vehicle_cords = cords
         self.following_vehicle_cords = following_vehicle_cords
+        print(f"Following vehicle cords: {following_vehicle_cords}")
         return following_vehicle_cords
 
     def predict_distance(self, radar_points):
