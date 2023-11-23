@@ -181,7 +181,7 @@ class SensorManager:
 
         print(f"Distance: {distance}, Speed: {speed}")
 
-        current_rot = object_points.transform.rotation
+        current_rot = radar_points.transform.rotation
         # Draw the points on the screen.
         for point in object_points:
             print(point)
@@ -215,7 +215,7 @@ class SensorManager:
             # display radar data on screen.
             if self.display_man.render_enabled():
                 self.world.debug.draw_point(
-                    object_points.transform.location + fw_vec,
+                    radar_points.transform.location + fw_vec,
                     size=0.075,
                     life_time=1,
                     persistent_lines=False,
