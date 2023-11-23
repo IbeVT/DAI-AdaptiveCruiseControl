@@ -86,7 +86,8 @@ class DisplayManager:
 
 
 class SensorManager:
-    def __init__(self, world, display_man, sensor_type, transform, attached, sensor_options, display_pos, computer_vision):
+    def __init__(self, world, display_man, sensor_type, transform, attached, sensor_options, display_pos,
+                 computer_vision):
         self.computer_vision = computer_vision
         self.surface = None
         self.world = world
@@ -153,7 +154,6 @@ class SensorManager:
         self.time_processing += (t_end - t_start)
         self.tics_processing += 1
 
-
     def draw_bounding_box(self, image):
         t_start = self.timer.time()
         image.convert(carla.ColorConverter.Raw)
@@ -170,7 +170,7 @@ class SensorManager:
         # Draw bounding box on screen.
         if cords is not None:
             [x_lower, y_lower, x_upper, y_upper] = cords
-            pygame.draw.rect(self.surface, (255, 0, 0), (x_lower, y_lower, x_upper-x_lower, y_upper-y_lower), 2)
+            pygame.draw.rect(self.surface, (255, 0, 0), (x_lower, y_lower, x_upper - x_lower, y_upper - y_lower), 2)
 
         t_end = self.timer.time()
         self.time_processing += (t_end - t_start)
@@ -181,7 +181,7 @@ class SensorManager:
 
         print(f"Distance: {distance}, Speed: {speed}")
 
-        current_rot = radar_points.transform.rotation
+        current_rot = object_points.transform.rotation
         # Draw the points on the screen.
         for point in object_points:
             print(point)
@@ -215,7 +215,7 @@ class SensorManager:
             # display radar data on screen.
             if self.display_man.render_enabled():
                 self.world.debug.draw_point(
-                    radar_points.transform.location + fw_vec,
+                    object_points.transform.location + fw_vec,
                     size=0.075,
                     life_time=1,
                     persistent_lines=False,
