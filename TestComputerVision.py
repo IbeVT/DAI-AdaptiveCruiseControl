@@ -366,7 +366,7 @@ def run_simulation(args, client):
         transform.location += carla.Location(x=40, y=-3.2)
         transform.rotation.yaw = -180.0
         number_of_vehicles = 0
-        while number_of_vehicles < 200:
+        while number_of_vehicles < 2000:
             transform.location.x += 5.0
 
             bp = random.choice(world.get_blueprint_library().filter('vehicle'))
