@@ -177,6 +177,7 @@ class SensorManager:
         self.tics_processing += 1
 
     def draw_distance_speed(self, radar_points):
+        print("Length radar_points" + str(len(radar_points)))
         distance, speed, object_points = self.computer_vision.predict_distance(radar_points)
 
         print(f"Distance: {distance}, Speed: {speed}")
@@ -369,7 +370,7 @@ def run_simulation(args, client):
                       carla.Transform(carla.Location(x=0, z=2.4)),
                       vehicle,
                       {'horizontal_fov': '90', 'points_per_second': '5000', 'range': '100',
-                       'sensor_tick': '1.0', 'vertical_fov': '60'}, display_pos=[0, 0], computer_vision=computer_vision)
+                       'vertical_fov': '60'}, display_pos=[0, 0], computer_vision=computer_vision)
 
         # But the city now is probably quite empty, let's add a few more vehicles.
         transform.location += carla.Location(x=40, y=-3.2)
