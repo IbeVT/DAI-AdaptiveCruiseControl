@@ -189,7 +189,7 @@ class SensorManager:
         # Draw bounding box on screen.
         if cords is not None:
             [x_lower, y_lower, x_upper, y_upper] = cords
-            pygame.draw.rect(self.surface, (255, 0, 0), (x_lower, y_lower, x_upper, y_upper), 2)
+            pygame.draw.rect(self.surface, (255, 0, 0), (x_lower, y_lower, x_upper-x_lower, y_upper-y_lower), 2)
 
         t_end = self.timer.time()
         self.time_processing += (t_end - t_start)
