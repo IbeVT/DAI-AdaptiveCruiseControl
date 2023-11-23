@@ -184,19 +184,51 @@ class SensorManager:
 
         current_rot = radar_points.transform.rotation
         # Draw the points on the screen.
-        for point in object_points:
-            print(point)
-            [delta_v, alt, azi, depth] = point
-            # azi = point.azimuth
-            # alt = point.altitude
-            # depth = point.depth
-            # delta_v = point.velocity
-
-            azi = math.degrees(azi)
-            alt = math.degrees(alt)
+        # for point in object_points:
+        #     print(point)
+        #     # [delta_v, alt, azi, depth] = point
+        #     azi = point.azimuth
+        #     alt = point.altitude
+        #     depth = point.depth
+        #     delta_v = point.velocity
+        #
+        #     azi = math.degrees(azi)
+        #     alt = math.degrees(alt)
+        #     # The 0.25 adjusts a bit the distance so the dots can
+        #     # be properly seen
+        #     fw_vec = carla.Vector3D(x=depth - 0.25)
+        #     carla.Transform(
+        #         carla.Location(),
+        #         carla.Rotation(
+        #             pitch=current_rot.pitch + alt,
+        #             yaw=current_rot.yaw + azi,
+        #             roll=current_rot.roll)).transform(fw_vec)
+        #
+        #     # give color to radar data: white = neutral; red= move closer; blue=moving away.
+        #     def clamp(min_v, max_v, value):
+        #         return max(min_v, min(value, max_v))
+        #
+        #     velocity_range = 7.5  # m/s
+        #     norm_velocity = delta_v / velocity_range  # range [-1, 1]
+        #     r = int(clamp(0.0, 1.0, 1.0 - norm_velocity) * 255.0)
+        #     g = int(clamp(0.0, 1.0, 1.0 - abs(norm_velocity)) * 255.0)
+        #     b = int(abs(clamp(- 1.0, 0.0, - 1.0 - norm_velocity)) * 255.0)
+        #     # display radar data on screen.
+        #     if self.display_man.render_enabled():
+        #         self.world.debug.draw_point(
+        #             radar_points.transform.location + fw_vec,
+        #             size=0.075,
+        #             life_time=1,
+        #             persistent_lines=False,
+        #             color=carla.Color(r, g, b)
+        #         )
+        current_rot = radar_points.transform.rotation
+        for detect in radar_points:
+            azi = math.degrees(detect.azimuth)
+            alt = math.degrees(detect.altitude)
             # The 0.25 adjusts a bit the distance so the dots can
             # be properly seen
-            fw_vec = carla.Vector3D(x=depth - 0.25)
+            fw_vec = carla.Vector3D(x=detect.depth - 0.25)
             carla.Transform(
                 carla.Location(),
                 carla.Rotation(
@@ -209,7 +241,7 @@ class SensorManager:
                 return max(min_v, min(value, max_v))
 
             velocity_range = 7.5  # m/s
-            norm_velocity = delta_v / velocity_range  # range [-1, 1]
+            norm_velocity = detect.velocity / velocity_range  # range [-1, 1]
             r = int(clamp(0.0, 1.0, 1.0 - norm_velocity) * 255.0)
             g = int(clamp(0.0, 1.0, 1.0 - abs(norm_velocity)) * 255.0)
             b = int(abs(clamp(- 1.0, 0.0, - 1.0 - norm_velocity)) * 255.0)
@@ -218,7 +250,7 @@ class SensorManager:
                 self.world.debug.draw_point(
                     radar_points.transform.location + fw_vec,
                     size=0.075,
-                    life_time=1,
+                    life_time=0.06,
                     persistent_lines=False,
                     color=carla.Color(r, g, b)
                 )
