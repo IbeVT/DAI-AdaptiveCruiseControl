@@ -229,7 +229,7 @@ class SensorManager:
                 self.world.debug.draw_point(
                     radar_points.transform.location + fw_vec,
                     size=0.075,
-                    life_time=0.06,
+                    life_time=1,
                     persistent_lines=False,
                     color=carla.Color(r, g, b)
                 )
