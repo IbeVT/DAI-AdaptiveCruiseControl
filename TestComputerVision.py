@@ -186,7 +186,6 @@ class SensorManager:
         # Draw the points on the screen.
         # for point in object_points:
         #     print(point)
-        #     # [delta_v, alt, azi, depth] = point
         #     azi = point.azimuth
         #     alt = point.altitude
         #     depth = point.depth
@@ -222,6 +221,7 @@ class SensorManager:
         #             persistent_lines=False,
         #             color=carla.Color(r, g, b)
         #         )
+
         current_rot = radar_points.transform.rotation
         for detect in radar_points:
             azi = math.degrees(detect.azimuth)
