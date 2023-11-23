@@ -196,15 +196,13 @@ class SensorManager:
         self.tics_processing += 1
 
     def draw_distance_speed(self, radar_points):
-        points = np.frombuffer(radar_points.raw_data, dtype=np.dtype('f4'))
-        points = np.reshape(points, (len(radar_points), 4))
-        distance, speed, object_points = self.computer_vision.predict_distance(points.copy())
+        distance, speed, object_points = self.computer_vision.predict_distance(radar_points)
 
         print(f"Distance: {distance}, Speed: {speed}")
 
         current_rot = radar_points.transform.rotation
         # Draw the points on the screen.
-        for point in object_points:
+        for point in radar_points:
             # [delta_v, alt, azi, depth] = point
             azi = point.azimuth
             alt = point.altitude
