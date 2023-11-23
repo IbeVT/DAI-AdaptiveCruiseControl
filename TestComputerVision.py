@@ -180,11 +180,11 @@ class SensorManager:
         distance, speed, object_points = self.computer_vision.predict_distance(radar_points)
 
         print(f"Distance: {distance}, Speed: {speed}")
+        print(f"Object points: {object_points}")
 
         current_rot = radar_points.transform.rotation
         # Draw the points on the screen.
-        for point in object_points:
-            print(point)
+        for point in radar_points:
             # [delta_v, alt, azi, depth] = point
             azi = point.azimuth
             alt = point.altitude
