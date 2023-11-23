@@ -25,7 +25,7 @@ class ComputerVision:
         self.radar_updated = False
         self.following_vehicle_cords = None
 
-    def get_bounding_box(self, image, radar_points):
+    def get_bounding_box(self, image):
         self.image = image
         results = self.model.predict(source=image, save=True)
         # Check which car is in front, if any
