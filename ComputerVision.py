@@ -1,3 +1,4 @@
+import math
 from datetime import datetime
 
 import cv2
@@ -10,7 +11,8 @@ class ComputerVision:
     def __init__(self):
         self.model = YOLO('best.pt')
         self.vehicle_classes = ['bus', 'bike', 'car', 'motorcycle', 'vehicle']
-        self.camera_h_fov = 90 * (2 * 3.14159 / 360)
+        self.camera_h_fov = math.radians(90)
+        self.camera_v_fov = math.radians(60)
         self.camera_x_pixels = 720
         self.camera_y_pixels = 1280
         self.n_points = 50
@@ -60,8 +62,9 @@ class ComputerVision:
         # If there is a car in front
         if self.following_vehicle_cords:
             [x_lower, y_lower, x_upper, y_upper] = self.following_vehicle_cords
-            alt_upper = -((y_lower - self.camera_y_pixels / 2) / self.camera_x_pixels) * self.camera_h_fov
-            alt_lower = -((y_upper - self.camera_y_pixels / 2) / self.camera_x_pixels) * self.camera_h_fov
+            # Convert coordinates to angles
+            alt_upper = -((y_lower - self.camera_y_pixels / 2) / self.camera_y_pixels) * self.camera_v_fov
+            alt_lower = -((y_upper - self.camera_y_pixels / 2) / self.camera_y_pixels) * self.camera_v_fov
 
             azi_left = ((x_lower - self.camera_x_pixels / 2) / self.camera_x_pixels) * self.camera_h_fov
             azi_right = ((x_upper - self.camera_x_pixels / 2) / self.camera_x_pixels) * self.camera_h_fov
