@@ -202,7 +202,7 @@ class SensorManager:
 
         current_rot = radar_points.transform.rotation
         # Draw the points on the screen.
-        for point in radar_points:
+        for point in object_points:
             # [delta_v, alt, azi, depth] = point
             azi = point.azimuth
             alt = point.altitude
