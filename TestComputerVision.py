@@ -114,7 +114,6 @@ class SensorManager:
 
             camera = self.world.spawn_actor(camera_bp, transform, attach_to=attached)
             # camera.listen(self.save_rgb_image)
-            # camera.listen(self.camera_computer_vision)
             camera.listen(self.draw_bounding_box)
             return camera
 
@@ -125,7 +124,6 @@ class SensorManager:
 
             radar = self.world.spawn_actor(radar_bp, transform, attach_to=attached)
             # radar.listen(self.save_radar_image)
-            # radar.listen(self.radar_computer_vision)
             radar.listen(self.draw_distance_speed)
             return radar
         else:
@@ -155,23 +153,6 @@ class SensorManager:
         self.time_processing += (t_end - t_start)
         self.tics_processing += 1
 
-    def camera_computer_vision(self, image):
-        t_start = self.timer.time()
-        image.convert(carla.ColorConverter.Raw)
-        array = np.frombuffer(image.raw_data, dtype=np.dtype("uint8"))
-        array = np.reshape(array, (image.height, image.width, 4))
-        array = array[:, :, :3]
-        array = array[:, :, ::-1]
-
-        # Display camera data on screen.
-        if self.display_man.render_enabled():
-            self.surface = pygame.surfarray.make_surface(array.swapaxes(0, 1))
-
-        self.computer_vision.update_image(array)
-
-        t_end = self.timer.time()
-        self.time_processing += (t_end - t_start)
-        self.tics_processing += 1
 
     def draw_bounding_box(self, image):
         t_start = self.timer.time()
@@ -240,11 +221,6 @@ class SensorManager:
                     persistent_lines=False,
                     color=carla.Color(r, g, b)
                 )
-
-    def radar_computer_vision(self, radar_points):
-        points = np.frombuffer(radar_points.raw_data, dtype=np.dtype('f4'))
-        points = np.reshape(points, (len(radar_points), 4))
-        self.computer_vision.update_radar(points.copy())
 
     def save_radar_image(self, radar_data):
         t_start = self.timer.time()
