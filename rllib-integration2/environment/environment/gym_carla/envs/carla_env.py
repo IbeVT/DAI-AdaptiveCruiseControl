@@ -53,11 +53,10 @@ class CarlaEnv(gym.Env):
 
     # action and observation spaces
     self.discrete = params['discrete']
-    self.discrete_act = [params['discrete_acc'], params['discrete_steer']] # acc, steer
+    self.discrete_act = [params['discrete_acc']] # acc, steer
     self.n_acc = len(self.discrete_act[0])
-    self.n_steer = len(self.discrete_act[1])
     if self.discrete:
-      self.action_space = spaces.Discrete(self.n_acc*self.n_steer)
+      self.action_space = spaces.Discrete(self.n_acc)
     else:
       self.action_space = spaces.Box(np.array([params['continuous_accel_range'][0], 
       params['continuous_steer_range'][0]]), np.array([params['continuous_accel_range'][1],
@@ -76,6 +75,9 @@ class CarlaEnv(gym.Env):
     client.set_timeout(10.0)
     self.world = client.load_world(params['town'])
     print('Carla server connected!')
+
+    # Create a Traffic Manager
+    self.traffic_manager = client.get_trafficmanager()
 
     # Set weather
     self.world.set_weather(carla.WeatherParameters.ClearNoon)
@@ -215,6 +217,10 @@ class CarlaEnv(gym.Env):
     self.routeplanner = RoutePlanner(self.ego, self.max_waypt)
     self.waypoints, _, self.vehicle_front = self.routeplanner.run_step()
 
+    # Set the path for the autopilot
+    location_list = [carla.Location(x=loc[0], y=loc[1], z=loc[2]) for loc in self.waypoints]
+    self.traffic_manager.set_path(self.ego, location_list)
+
     # Set ego information for render
     self.birdeye_render.set_hero(self.ego, self.ego.id)
 
@@ -227,7 +233,7 @@ class CarlaEnv(gym.Env):
       steer = self.discrete_act[1][action%self.n_steer]
     else:
       acc = action[0]
-      steer = action[1]
+      steer = -self.ego.get_control().steer
 
     # Convert acceleration to throttle and brake
     if acc > 0:
@@ -384,6 +390,7 @@ class CarlaEnv(gym.Env):
 
     if not overlap:
       vehicle = self.world.try_spawn_actor(self.ego_bp, transform)
+      vehicle.set_autopilot()
 
     if vehicle is not None:
       self.ego=vehicle
@@ -473,22 +480,15 @@ class CarlaEnv(gym.Env):
     # reward for speed tracking
     v = self.ego.get_velocity()
     speed = np.sqrt(v.x**2 + v.y**2)
-    r_speed = -abs(speed - self.desired_speed)
     
     # reward for collision
     r_collision = 0
     if len(self.collision_hist) > 0:
       r_collision = -1
 
-    # reward for steering:
-    r_steer = -self.ego.get_control().steer**2
-
     # reward for out of lane
     ego_x, ego_y = get_pos(self.ego)
     dis, w = get_lane_dis(self.waypoints, ego_x, ego_y)
-    r_out = 0
-    if abs(dis) > self.out_lane_thres:
-      r_out = -1
 
     # longitudinal speed
     lspeed = np.array([v.x, v.y])
@@ -502,7 +502,7 @@ class CarlaEnv(gym.Env):
     # cost for lateral acceleration
     r_lat = - abs(self.ego.get_control().steer) * lspeed_lon**2
 
-    r = 200*r_collision + 1*lspeed_lon + 10*r_fast + 1*r_out + r_steer*5 + 0.2*r_lat - 0.1
+    r = 200*r_collision + 1*lspeed_lon + 10*r_fast + 0.2*r_lat - 0.1
 
     return r
 
