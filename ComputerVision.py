@@ -90,6 +90,7 @@ class ComputerVision:
             print('Depths:', object_point_depths)
             print('Median depth:', round(np.median(object_point_depths), 1), '  Median speed:',
                   round(np.median(object_point_speeds), 1))
+            object_points = carla.RadarMeasurement(object_points)
             return np.median(object_point_depths), np.median(object_point_speeds), object_points
         else:
             return self.max_depth, 0, []
