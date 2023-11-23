@@ -199,6 +199,9 @@ class SensorManager:
         points = np.frombuffer(radar_points.raw_data, dtype=np.dtype('f4'))
         points = np.reshape(points, (len(radar_points), 4))
         distance, speed, object_points = self.computer_vision.predict_distance(points.copy())
+
+        print(f"Distance: {distance}, Speed: {speed}")
+
         current_rot = radar_points.transform.rotation
         # Draw the points on the screen.
         for point in object_points:
