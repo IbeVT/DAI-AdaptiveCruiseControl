@@ -114,6 +114,16 @@ class SensorManager:
                 camera_bp.set_attribute(key, sensor_options[key])
 
             camera = self.world.spawn_actor(camera_bp, transform, attach_to=attached)
+
+            # Build camera matrix
+            world_2_camera = np.array(camera.get_transform().get_inverse_matrix())
+            self.computer_vision.set_inverse_camera_matrix(world_2_camera)
+            # Get the attributes from the camera
+            image_w = camera_bp.get_attribute("image_size_x").as_int()
+            image_h = camera_bp.get_attribute("image_size_y").as_int()
+            fov = camera_bp.get_attribute("fov").as_float()
+            self.computer_vision.build_projection_matrix(image_w, image_h, fov)
+
             # camera.listen(self.save_rgb_image)
             camera.listen(self.draw_bounding_box)
             return camera
@@ -181,21 +191,17 @@ class SensorManager:
                     yaw=current_rot.yaw + azi_deg,
                     roll=current_rot.roll)).transform(fw_vec)
 
-            # give color to radar data: white = neutral; red= move closer; blue=moving away.
-            # def clamp(min_v, max_v, value):
-            #     return max(min_v, min(value, max_v))
-            #
-            # velocity_range = 7.5  # m/s
-            # norm_velocity = delta_v / velocity_range  # range [-1, 1]
-            # r = int(clamp(0.0, 1.0, 1.0 - norm_velocity) * 255.0)
-            # g = int(clamp(0.0, 1.0, 1.0 - abs(norm_velocity)) * 255.0)
-            # b = int(abs(clamp(- 1.0, 0.0, - 1.0 - norm_velocity)) * 255.0)
-
             # As it does not work to check whether point is in object_points, we manually check the coordinates.
-            if alt_lower < alt < alt_upper and azi_left < azi < azi_right:
-                color = color_object
-            else:
-                color = color_no_object
+            color = color_no_object
+            for object_point in object_points:
+                if object_point.altitude == point.altitude and object_point.azimuth == point.azimuth:
+                    color = color_object
+                    break
+            # if alt_lower < alt < alt_upper and azi_left < azi < azi_right:
+            #     color = color_object
+            # else:
+            #     color = color_no_object
+
             # display radar data on screen.
             if self.display_man.render_enabled():
                 self.world.debug.draw_point(
@@ -267,11 +273,11 @@ def run_simulation(args, client):
                        'sensor_tick': '0', 'vertical_fov': '30'}, display_pos=[0, 0], computer_vision=computer_vision)
 
         # But the city now is probably quite empty, let's add a few more vehicles.
-        transform.location += carla.Location(x=40, y=-3.2)
+        transform.location += carla.Location(x=4, y=-3.2)
         transform.rotation.yaw = -180.0
         number_of_vehicles = 0
-        while number_of_vehicles < 100:
-            transform.location.x += 2.0
+        while number_of_vehicles < 200:
+            transform.location.x += 4.0
 
             bp = random.choice(world.get_blueprint_library().filter('vehicle'))
 

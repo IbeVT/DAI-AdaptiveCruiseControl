@@ -4,11 +4,12 @@ from datetime import datetime
 import cv2
 from ultralytics import YOLO
 import numpy as np
-from PIL import Image, ImageDraw, ImageFont
+import carla
 
 
 class ComputerVision:
     def __init__(self):
+        self.inverse_camera_matrix = None
         self.radar_points = None
         self.model = YOLO('best.pt')
         self.vehicle_classes = ['bus', 'bike', 'car', 'motorcycle', 'vehicle']
@@ -58,7 +59,7 @@ class ComputerVision:
                     smallest_distance_to_center = distance_to_center
                     following_vehicle_cords = cords
         self.following_vehicle_cords = following_vehicle_cords
-        print(f"Following vehicle cords: {following_vehicle_cords}")
+        # print(f"Following vehicle cords: {following_vehicle_cords}")
         return following_vehicle_cords
 
     def predict_distance(self, radar_points):
@@ -66,35 +67,63 @@ class ComputerVision:
         # If there is a car in front
         if self.following_vehicle_cords:
             [x_lower, y_lower, x_upper, y_upper] = self.following_vehicle_cords
-            # Convert coordinates to angles
-            alt_upper = -((y_lower - self.camera_y_pixels / 2) / self.camera_y_pixels) * self.camera_v_fov
-            alt_lower = -((y_upper - self.camera_y_pixels / 2) / self.camera_y_pixels) * self.camera_v_fov
-
-            azi_left = ((x_lower - self.camera_x_pixels / 2) / self.camera_x_pixels) * self.camera_h_fov
-            azi_right = ((x_upper - self.camera_x_pixels / 2) / self.camera_x_pixels) * self.camera_h_fov
-
-            print(f"alt_upper: {alt_upper}, alt_lower: {alt_lower}, azi_left: {azi_left}, azi_right: {azi_right}")
 
             object_point_depths = []
             object_point_speeds = []
             object_points = []
             for point in radar_points:
-                # [delta_v, alt, azi, depth] = point
-                azi = point.azimuth
-                alt = point.altitude
-                depth = point.depth
-                delta_v = point.velocity
-
-                if alt_lower < alt < alt_upper and azi_left < azi < azi_right:
-                    object_point_depths.append(depth)
-                    object_point_speeds.append(delta_v)
+                [x, y] = self.get_image_point(point)
+                if x_lower < x < x_upper and y_lower < y < y_upper:
+                    object_point_depths.append(point.depth)
+                    object_point_speeds.append(point.velocity)
                     object_points.append(point)
 
             print('Number of points:', len(object_point_depths))
-            print('Depths:', object_point_depths)
-            print('Median depth:', round(np.median(object_point_depths), 1), '  Median speed:',
-                  round(np.median(object_point_speeds), 1))
-            return np.median(object_point_depths), np.median(object_point_speeds), object_points, alt_lower, alt_upper, azi_left, azi_right
+            return np.median(object_point_depths), np.median(object_point_speeds), object_points, x_lower, x_upper, y_lower, y_upper
         else:
             return self.max_depth, 0, [], 0, 0, 0, 0
 
+    def build_projection_matrix(self, w, h, fov):
+        focal = w / (2.0 * np.tan(fov * np.pi / 360.0))
+        K = np.identity(3)
+        K[0, 0] = K[1, 1] = focal
+        K[0, 2] = w / 2.0
+        K[1, 2] = h / 2.0
+        self.projection_matrix = K
+        return K
+
+    def get_image_point(self, point):
+        # Based on https://carla.readthedocs.io/en/latest/tuto_G_bounding_boxes/
+        # Convert RadarDetection to carla 3D location
+        azi_deg = math.degrees(point.azimuth)
+        alt_deg = math.degrees(point.altitude)
+        loc = carla.Vector3D(x=point.depth)
+        carla.Transform(
+            carla.Location(x=0, y=0, z=0),
+            carla.Rotation(
+                pitch=alt_deg,
+                yaw=azi_deg,
+                roll=0)).transform(loc)
+
+        # Calculate 2D projection of 3D coordinate
+
+        # Format the input coordinate (loc is a carla.Position object)
+        point = np.array([loc.x, loc.y, loc.z, 1])
+        # transform to camera coordinates
+        point_camera = np.dot(self.inverse_camera_matrix, point)
+
+        # New we must change from UE4's coordinate system to an "standard"
+        # (x, y ,z) -> (y, -z, x)
+        # and we remove the fourth component also
+        point_camera = [point_camera[1], -point_camera[2], point_camera[0]]
+
+        # now project 3D->2D using the camera matrix
+        point_img = np.dot(self.projection_matrix, point_camera)
+        # normalize
+        point_img[0] /= point_img[2]
+        point_img[1] /= point_img[2]
+
+        return point_img[0:2]
+    
+    def set_inverse_camera_matrix(self, inverse_matrix):
+        self.inverse_camera_matrix = inverse_matrix
