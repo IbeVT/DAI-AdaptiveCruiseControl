@@ -51,7 +51,7 @@ params = {
 env = gym.make('CustomCarlaEnv', params=params)
 env.reset()
 
-print(gym.envs.registry.all())
+print(gym.envs.registry)
 
 if __name__ == "__main__":
 
