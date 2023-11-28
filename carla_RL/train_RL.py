@@ -17,7 +17,7 @@ import gym_carla
 import os
 print(os.getcwd())
 register(
-    id='CustomCarlaEnv',
+    id='carla-v0',
     entry_point='gym_carla.envs:CarlaEnv',
 )
 
@@ -50,7 +50,7 @@ params = {
 }
 
 # Set gym-carla environment
-env = gym.make('CustomCarlaEnv', params=params)
+env = gym.make('carla-v0', params=params)
 env.reset()
 
 if __name__ == "__main__":
@@ -61,7 +61,7 @@ if __name__ == "__main__":
             "framework": "torch",
             # "num_gpus": 0.5,
             "num_workers": 1,
-            "env": "CustomCarlaEnv",
+            "env": "carla-v0",
             "model":
                 {
                     "fcnet_hiddens": [64],
