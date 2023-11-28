@@ -17,7 +17,7 @@ import gym_carla
 
 
 def env_creator(config):
-    return gym_carla.CustomEnv(env_config=config)
+    return gym_carla.CarlaEnv(env_config=config)
 
 register_env("CustomCarlaEnv", env_creator)
 
