@@ -9,7 +9,7 @@ import gym
 from setuptools import setup
 
 from gym.envs.registration import register
-
+print(1)
 register(
     id='carla-v0',
     entry_point='environment.environment.gym_carla.envs:CarlaEnv',
@@ -19,7 +19,7 @@ register(
       version='0.0.1',
       install_requires=['gym', 'pygame']
 )"""
-
+print(2)
 params = {
     'number_of_vehicles': 100,
     'number_of_walkers': 0,
@@ -46,7 +46,7 @@ params = {
 # Set gym-carla environment
 env = gym.make('carla-v0', params=params)
 env.reset()
-
+print(3)
 if __name__ == "__main__":
     tuner = tune.Tuner(
         PPO,
