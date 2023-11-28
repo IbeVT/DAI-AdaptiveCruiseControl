@@ -14,10 +14,10 @@ import sys
 sys.path.append('carla_RL/environment/environment')
 sys.path.append('carla_RL/environment/environment/gym_carla')
 import gym_carla
-
+from gym_carla.envs.carla_env import CarlaEnv
 
 def env_creator(config):
-    return gym_carla.CarlaEnv(env_config=config)
+    return CarlaEnv(env_config=config)
 
 register_env("CustomCarlaEnv", env_creator)
 
