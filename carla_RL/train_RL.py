@@ -9,6 +9,8 @@ import gym
 from setuptools import setup
 
 from gym.envs.registration import register
+import sys
+sys.path.append('/environment/environment')
 import gym_carla
 
 import os
