@@ -10,17 +10,16 @@ from setuptools import setup
 
 from gym.envs.registration import register
 import sys
-sys.path.append('/environment/environment')
 sys.path.append('carla_RL/environment/environment')
 sys.path.append('carla_RL/environment/environment/gym_carla')
 import gym_carla
 
 import os
 print(os.getcwd())
-"""register(
+register(
     id='carla-v0',
-    entry_point='DAI-AdaptiveCruiseControl.rllib-integration2.environment.environment.gym_carla.envs:CarlaEnv',
-)"""
+    entry_point='gym_carla.envs:CarlaEnv',
+)
 
 """setup(name='gym_carla',
       version='0.0.1',
