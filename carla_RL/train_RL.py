@@ -11,6 +11,8 @@ from setuptools import setup
 from gym.envs.registration import register
 import sys
 sys.path.append('/environment/environment')
+sys.path.append('carla_RL/environment/environment')
+sys.path.append('carla_RL/environment/environment/gym_carla')
 import gym_carla
 
 import os
