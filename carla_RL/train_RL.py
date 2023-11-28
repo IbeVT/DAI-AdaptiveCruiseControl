@@ -46,7 +46,6 @@ config = {
 
 register_env("CustomCarlaEnv", env_creator)
 
-
 """register(
     id='CustomCarlaEnv',
     entry_point='gym_carla.envs:CarlaEnv',
@@ -67,7 +66,7 @@ env.reset()"""
 if __name__ == "__main__":
     tuner = tune.Tuner(
         PPO,
-        tune_config=tune.TuneConfig(max_concurrent_trials=2),
+        tune_config=tune.TuneConfig(max_concurrent_trials=1),
         param_space={
             "framework": "torch",
             # "num_gpus": 0.5,
