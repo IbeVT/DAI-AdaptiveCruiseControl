@@ -78,10 +78,9 @@ class ComputerVision:
                     object_point_speeds.append(point.velocity)
                     object_points.append(point)
 
-            print('Number of points:', len(object_point_depths))
-            return np.median(object_point_depths), np.median(object_point_speeds), object_points, x_lower, x_upper, y_lower, y_upper
+            return np.median(object_point_depths), np.median(object_point_speeds), object_points
         else:
-            return self.max_depth, 0, [], 0, 0, 0, 0
+            return self.max_depth, 0, []
 
     def build_projection_matrix(self, w, h, fov):
         focal = w / (2.0 * np.tan(fov * np.pi / 360.0))

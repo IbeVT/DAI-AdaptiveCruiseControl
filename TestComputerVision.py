@@ -166,7 +166,7 @@ class SensorManager:
         self.tics_processing += 1
 
     def draw_distance_speed(self, radar_points):
-        distance, speed, object_points, alt_lower, alt_upper, azi_left, azi_right = self.computer_vision.predict_distance(radar_points)
+        distance, speed, object_points = self.computer_vision.predict_distance(radar_points)
 
         current_rot = radar_points.transform.rotation
         # Colors for radar points.
@@ -197,10 +197,6 @@ class SensorManager:
                 if object_point.altitude == point.altitude and object_point.azimuth == point.azimuth:
                     color = color_object
                     break
-            # if alt_lower < alt < alt_upper and azi_left < azi < azi_right:
-            #     color = color_object
-            # else:
-            #     color = color_no_object
 
             # display radar data on screen.
             if self.display_man.render_enabled():
