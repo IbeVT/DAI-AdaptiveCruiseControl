@@ -47,15 +47,14 @@ params = {
     'display_route': True,  # whether to render the desired route
 }
 
-# Set gym-carla environment
+"""# Set gym-carla environment
 env = gym.make('CustomCarlaEnv', params=params)
-env.reset()
+env.reset()"""
 
-print(gym.envs.registry)
 
 if __name__ == "__main__":
-
     ray.init()
+
     tuner = tune.Tuner(
         PPO,
         tune_config=tune.TuneConfig(max_concurrent_trials=2),
@@ -63,13 +62,14 @@ if __name__ == "__main__":
             "framework": "torch",
             # "num_gpus": 0.5,
             "num_workers": 1,
-            "env": env,
+            "env": "CustomCarlaEnv",
             "model":
                 {
                     "fcnet_hiddens": [64],
                     "fcnet_activation": "linear",
                 },
             "lr": tune.grid_search([5e-3, 5e-4]),
+            "params": params
         },
         run_config=train.RunConfig(
             stop={"episode_reward_mean": 30},
