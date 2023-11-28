@@ -177,50 +177,55 @@ class SensorManager:
         self.tics_processing += 1
 
     def draw_distance_speed(self, radar_points):
-        print("Length radar_points" + str(len(radar_points)))
-        distance, speed, object_points = self.computer_vision.predict_distance(radar_points)
-
-        print(f"Distance: {distance}, Speed: {speed}")
-        print(f"Object points:")
+        distance, speed, object_points, alt_lower, alt_upper, azi_left, azi_right = self.computer_vision.predict_distance(radar_points)
 
         current_rot = radar_points.transform.rotation
+        # Colors for radar points.
+        color_object = carla.Color(255, 0, 0)
+        color_no_object = carla.Color(255, 255, 255)
         # Draw the points on the screen.
-        for point in object_points:
-            print(point)
+        for point in radar_points:
             azi = point.azimuth
             alt = point.altitude
             depth = point.depth
             delta_v = point.velocity
 
-            azi = math.degrees(azi)
-            alt = math.degrees(alt)
+            azi_deg = math.degrees(azi)
+            alt_deg = math.degrees(alt)
             # The 0.25 adjusts a bit the distance so the dots can
             # be properly seen
             fw_vec = carla.Vector3D(x=depth - 0.25)
             carla.Transform(
                 carla.Location(),
                 carla.Rotation(
-                    pitch=current_rot.pitch + alt,
-                    yaw=current_rot.yaw + azi,
+                    pitch=current_rot.pitch + alt_deg,
+                    yaw=current_rot.yaw + azi_deg,
                     roll=current_rot.roll)).transform(fw_vec)
 
             # give color to radar data: white = neutral; red= move closer; blue=moving away.
-            def clamp(min_v, max_v, value):
-                return max(min_v, min(value, max_v))
+            # def clamp(min_v, max_v, value):
+            #     return max(min_v, min(value, max_v))
+            #
+            # velocity_range = 7.5  # m/s
+            # norm_velocity = delta_v / velocity_range  # range [-1, 1]
+            # r = int(clamp(0.0, 1.0, 1.0 - norm_velocity) * 255.0)
+            # g = int(clamp(0.0, 1.0, 1.0 - abs(norm_velocity)) * 255.0)
+            # b = int(abs(clamp(- 1.0, 0.0, - 1.0 - norm_velocity)) * 255.0)
 
-            velocity_range = 7.5  # m/s
-            norm_velocity = delta_v / velocity_range  # range [-1, 1]
-            r = int(clamp(0.0, 1.0, 1.0 - norm_velocity) * 255.0)
-            g = int(clamp(0.0, 1.0, 1.0 - abs(norm_velocity)) * 255.0)
-            b = int(abs(clamp(- 1.0, 0.0, - 1.0 - norm_velocity)) * 255.0)
+            # As it does not work to check whether point is in object_points, we manually check the coordinates.
+            if -10 < alt < 10 and -10 < azi < 10:
+                color = color_object
+            else:
+                color = color_no_object
+
             # display radar data on screen.
             if self.display_man.render_enabled():
                 self.world.debug.draw_point(
                     radar_points.transform.location + fw_vec,
                     size=0.075,
-                    life_time=1,
+                    life_time=0.1,
                     persistent_lines=False,
-                    color=carla.Color(r, g, b)
+                    color=color
                 )
 
         # current_rot = radar_points.transform.rotation
@@ -369,8 +374,8 @@ def run_simulation(args, client):
         SensorManager(world, display_manager, 'Radar',
                       carla.Transform(carla.Location(x=0, z=2.4)),
                       vehicle,
-                      {'horizontal_fov': '90', 'points_per_second': '5000', 'range': '100',
-                       'sensor_tick': '0', 'vertical_fov': '60'}, display_pos=[0, 0], computer_vision=computer_vision)
+                      {'horizontal_fov': '30', 'points_per_second': '5000', 'range': '100',
+                       'sensor_tick': '0', 'vertical_fov': '30'}, display_pos=[0, 0], computer_vision=computer_vision)
 
         # But the city now is probably quite empty, let's add a few more vehicles.
         transform.location += carla.Location(x=40, y=-3.2)

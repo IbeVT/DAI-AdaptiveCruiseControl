@@ -9,6 +9,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 class ComputerVision:
     def __init__(self):
+        self.radar_points = None
         self.model = YOLO('best.pt')
         self.vehicle_classes = ['bus', 'bike', 'car', 'motorcycle', 'vehicle']
         self.camera_h_fov = math.radians(90)
@@ -93,7 +94,7 @@ class ComputerVision:
             print('Depths:', object_point_depths)
             print('Median depth:', round(np.median(object_point_depths), 1), '  Median speed:',
                   round(np.median(object_point_speeds), 1))
-            return np.median(object_point_depths), np.median(object_point_speeds), object_points
+            return np.median(object_point_depths), np.median(object_point_speeds), object_points, alt_lower, alt_upper, azi_left, azi_right
         else:
-            return self.max_depth, 0, []
+            return self.max_depth, 0, [], 0, 0, 0, 0
 
