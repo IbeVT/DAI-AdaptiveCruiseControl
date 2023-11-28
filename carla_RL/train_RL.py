@@ -14,12 +14,10 @@ sys.path.append('carla_RL/environment/environment')
 sys.path.append('carla_RL/environment/environment/gym_carla')
 import gym_carla
 
-import os
-print(os.getcwd())
-register(
+'''register(
     id='CustomCarlaEnv',
     entry_point='gym_carla.envs:CarlaEnv',
-)
+)'''
 
 """setup(name='gym_carla',
       version='0.0.1',
