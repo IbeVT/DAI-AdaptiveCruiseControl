@@ -18,8 +18,8 @@ from gym_carla.envs.carla_env import CarlaEnv
 from gymnasium.wrappers import EnvCompatibility
 
 
-def env_creator(env_config):
-    return EnvCompatibility(CarlaEnv(env_config))
+def env_creator():
+    return EnvCompatibility(CarlaEnv())
 
 config = {
     'number_of_vehicles': 100,
@@ -78,11 +78,10 @@ if __name__ == "__main__":
                     "fcnet_hiddens": [64],
                     "fcnet_activation": "linear",
                 },
-            "lr": 5e-3,   #tune.grid_search([5e-3, 5e-4])
-            "env_config": config
+            "lr": 5e-3   #tune.grid_search([5e-3, 5e-4])
         },
         run_config=train.RunConfig(
-            stop={"episode_reward_mean": 30},
+            #stop={"episode_reward_mean": 30},
             callbacks=[
                 WandbLoggerCallback(
                     project="SweepProject",
