@@ -54,6 +54,8 @@ env.reset()
 print(gym.envs.registry.all())
 
 if __name__ == "__main__":
+
+    ray.init()
     tuner = tune.Tuner(
         PPO,
         tune_config=tune.TuneConfig(max_concurrent_trials=2),
@@ -61,7 +63,7 @@ if __name__ == "__main__":
             "framework": "torch",
             # "num_gpus": 0.5,
             "num_workers": 1,
-            "env": "CustomCarlaEnv",
+            "env": env,
             "model":
                 {
                     "fcnet_hiddens": [64],
