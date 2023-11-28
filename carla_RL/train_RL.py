@@ -17,7 +17,7 @@ import gym_carla
 from gym_carla.envs.carla_env import CarlaEnv
 
 def env_creator(config):
-    return CarlaEnv(env_config=config)
+    return CarlaEnv(config)
 
 config = {
     'number_of_vehicles': 100,
@@ -42,7 +42,7 @@ config = {
     'display_route': True,  # whether to render the desired route
 }
 
-register_env("CustomCarlaEnv", lambda config: env_creator(config))
+register_env("CustomCarlaEnv", lambda conf: env_creator(conf))
 
 
 """register(
