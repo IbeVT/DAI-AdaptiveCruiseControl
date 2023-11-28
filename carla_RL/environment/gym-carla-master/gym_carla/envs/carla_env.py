@@ -27,7 +27,8 @@ from gym_carla.envs.misc import *
 class CarlaEnv(gym.Env):
   """An OpenAI gym wrapper for CARLA simulator."""
 
-  def __init__(self, params):
+  def __init__(self, env_config):
+    params = env_config
     # parameters
     self.display_size = params['display_size']  # rendering screen size
     self.max_past_step = params['max_past_step']

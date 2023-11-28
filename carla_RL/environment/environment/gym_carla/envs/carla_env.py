@@ -26,7 +26,6 @@ from gym_carla.envs.misc import *
 
 class CarlaEnv(gym.Env):
   """An OpenAI gym wrapper for CARLA simulator."""
-
   def __init__(self, env_config):
     # parameters
     self.display_size = env_config['display_size']  # rendering screen size
