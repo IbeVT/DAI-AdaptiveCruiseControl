@@ -18,8 +18,8 @@ from gym_carla.envs.carla_env import CarlaEnv
 from gymnasium.wrappers import EnvCompatibility
 
 
-def env_creator(config):
-    return CarlaEnv(config)
+def env_creator(env_config):
+    return EnvCompatibility(CarlaEnv(env_config))
 
 config = {
     'number_of_vehicles': 100,
@@ -44,7 +44,7 @@ config = {
     'display_route': True,  # whether to render the desired route
 }
 
-register_env("CustomCarlaEnv", lambda conf: EnvCompatibility(env_creator(conf)))
+register_env("CustomCarlaEnv", lambda env_config: env_creator(env_config=env_config))
 
 
 """register(
