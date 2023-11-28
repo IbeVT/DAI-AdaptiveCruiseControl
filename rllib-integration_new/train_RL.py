@@ -9,7 +9,7 @@ import gym
 from setuptools import setup
 
 from gym.envs.registration import register
-import rllib_integration2.environment.environment.gym_carla
+import rllib_integration_new.environment.environment.gym_carla
 
 import os
 print(os.getcwd())
