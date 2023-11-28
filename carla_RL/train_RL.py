@@ -24,7 +24,7 @@ register(
       install_requires=['gym', 'pygame']
 )"""
 
-params = {
+config = {
     'number_of_vehicles': 100,
     'number_of_walkers': 0,
     'display_size': 256,  # screen size of bird-eye render
@@ -48,7 +48,7 @@ params = {
 }
 
 """# Set gym-carla environment
-env = gym.make('CustomCarlaEnv', params=params)
+env = gym.make('CustomCarlaEnv', params=config)
 env.reset()"""
 
 
@@ -69,7 +69,7 @@ if __name__ == "__main__":
                     "fcnet_activation": "linear",
                 },
             "lr": tune.grid_search([5e-3, 5e-4]),
-            "params": params
+            "env_config": config
         },
         run_config=train.RunConfig(
             stop={"episode_reward_mean": 30},

@@ -27,40 +27,40 @@ from gym_carla.envs.misc import *
 class CarlaEnv(gym.Env):
   """An OpenAI gym wrapper for CARLA simulator."""
 
-  def __init__(self, params):
+  def __init__(self, env_config):
     # parameters
-    self.display_size = params['display_size']  # rendering screen size
-    self.max_past_step = params['max_past_step']
-    self.number_of_vehicles = params['number_of_vehicles']
-    self.number_of_walkers = params['number_of_walkers']
-    self.dt = params['dt']
-    self.task_mode = params['task_mode']
-    self.max_time_episode = params['max_time_episode']
-    self.max_waypt = params['max_waypt']
-    self.obs_range = params['obs_range']
-    self.d_behind = params['d_behind']
+    self.display_size = env_config['display_size']  # rendering screen size
+    self.max_past_step = env_config['max_past_step']
+    self.number_of_vehicles = env_config['number_of_vehicles']
+    self.number_of_walkers = env_config['number_of_walkers']
+    self.dt = env_config['dt']
+    self.task_mode = env_config['task_mode']
+    self.max_time_episode = env_config['max_time_episode']
+    self.max_waypt = env_config['max_waypt']
+    self.obs_range = env_config['obs_range']
+    self.d_behind = env_config['d_behind']
     self.obs_size = int(self.obs_range/0.125)
-    self.out_lane_thres = params['out_lane_thres']
-    self.desired_speed = params['desired_speed']
-    self.max_ego_spawn_times = params['max_ego_spawn_times']
-    self.display_route = params['display_route']
+    self.out_lane_thres = env_config['out_lane_thres']
+    self.desired_speed = env_config['desired_speed']
+    self.max_ego_spawn_times = env_config['max_ego_spawn_times']
+    self.display_route = env_config['display_route']
 
     # Destination
-    if params['task_mode'] == 'roundabout':
+    if env_config['task_mode'] == 'roundabout':
       self.dests = [[4.46, -61.46, 0], [-49.53, -2.89, 0], [-6.48, 55.47, 0], [35.96, 3.33, 0]]
     else:
       self.dests = None
 
     # action and observation spaces
-    self.discrete = params['discrete']
-    self.discrete_act = [params['discrete_acc']] # acc, steer
+    self.discrete = env_config['discrete']
+    self.discrete_act = [env_config['discrete_acc']] # acc, steer
     self.n_acc = len(self.discrete_act[0])
     if self.discrete:
       self.action_space = spaces.Discrete(self.n_acc)
     else:
-      self.action_space = spaces.Box(np.array([params['continuous_accel_range'][0], 
-      params['continuous_steer_range'][0]]), np.array([params['continuous_accel_range'][1],
-      params['continuous_steer_range'][1]]), dtype=np.float32)  # acc, steer
+      self.action_space = spaces.Box(np.array([env_config['continuous_accel_range'][0],
+      env_config['continuous_steer_range'][0]]), np.array([env_config['continuous_accel_range'][1],
+      env_config['continuous_steer_range'][1]]), dtype=np.float32)  # acc, steer
     observation_space_dict = {
       'camera': spaces.Box(low=0, high=255, shape=(self.obs_size, self.obs_size, 3), dtype=np.uint8),
       'birdeye': spaces.Box(low=0, high=255, shape=(self.obs_size, self.obs_size, 3), dtype=np.uint8),
@@ -71,9 +71,9 @@ class CarlaEnv(gym.Env):
 
     # Connect to carla server and get world object
     print('connecting to Carla server...')
-    client = carla.Client('localhost', params['port'])
+    client = carla.Client('localhost', env_config['port'])
     client.set_timeout(10.0)
-    self.world = client.load_world(params['town'])
+    self.world = client.load_world(env_config['town'])
     print('Carla server connected!')
 
     # Create a Traffic Manager
@@ -93,7 +93,7 @@ class CarlaEnv(gym.Env):
         self.walker_spawn_points.append(spawn_point)
 
     # Create the ego vehicle blueprint
-    self.ego_bp = self._create_vehicle_bluepprint(params['ego_vehicle_filter'], color='49,8,8')
+    self.ego_bp = self._create_vehicle_bluepprint(env_config['ego_vehicle_filter'], color='49,8,8')
 
     # Collision sensor
     self.collision_hist = [] # The collision history
