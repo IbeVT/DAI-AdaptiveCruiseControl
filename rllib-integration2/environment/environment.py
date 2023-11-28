@@ -1,4 +1,4 @@
-import os
+"""import os
 import gym
 import time
 import enum
@@ -1449,3 +1449,4 @@ class CARLABenchmark(CARLAWrapper):
 
     def close(self):
         self.env.close()
+"""
