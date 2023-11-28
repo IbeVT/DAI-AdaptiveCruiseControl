@@ -44,7 +44,7 @@ config = {
     'display_route': True,  # whether to render the desired route
 }
 
-register_env("CustomCarlaEnv", lambda conf: env_creator(conf))
+register_env("CustomCarlaEnv", lambda conf: EnvCompatibility(env_creator(conf)))
 
 
 """register(
