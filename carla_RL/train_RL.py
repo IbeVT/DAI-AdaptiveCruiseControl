@@ -4,11 +4,11 @@ from ray.air.integrations.wandb import WandbLoggerCallback
 from ray.rllib.models import ModelCatalog
 from ray.tune.search import grid_search
 from ray.rllib.algorithms.ppo import PPO
-import gym
+import gymnasium as gym
 
 from setuptools import setup
 
-from gym.envs.registration import register
+from gymnasium.envs.registration import register
 from ray.tune.registry import register_env
 import sys
 sys.path.append('carla_RL/environment/environment')

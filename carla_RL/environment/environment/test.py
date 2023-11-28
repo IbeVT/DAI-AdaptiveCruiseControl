@@ -5,7 +5,7 @@
 # This work is licensed under the terms of the MIT license.
 # For a copy, see <https://opensource.org/licenses/MIT>.
 
-import gym
+import gymnasium as gym
 import gym_carla
 import carla
 
