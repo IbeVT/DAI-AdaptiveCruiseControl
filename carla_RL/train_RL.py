@@ -19,19 +19,6 @@ from gym_carla.envs.carla_env import CarlaEnv
 def env_creator(config):
     return CarlaEnv(env_config=config)
 
-register_env("CustomCarlaEnv", env_creator)
-
-
-register(
-    id='CustomCarlaEnv',
-    entry_point='gym_carla.envs:CarlaEnv',
-)
-
-"""setup(name='gym_carla',
-      version='0.0.1',
-      install_requires=['gym', 'pygame']
-)"""
-
 config = {
     'number_of_vehicles': 100,
     'number_of_walkers': 0,
@@ -54,6 +41,21 @@ config = {
     'max_ego_spawn_times': 200,  # maximum times to spawn ego vehicle
     'display_route': True,  # whether to render the desired route
 }
+
+register_env("CustomCarlaEnv", env_creator(config))
+
+
+"""register(
+    id='CustomCarlaEnv',
+    entry_point='gym_carla.envs:CarlaEnv',
+)"""
+
+"""setup(name='gym_carla',
+      version='0.0.1',
+      install_requires=['gym', 'pygame']
+)"""
+
+
 
 """# Set gym-carla environment
 env = gym.make('CustomCarlaEnv', params=config)
