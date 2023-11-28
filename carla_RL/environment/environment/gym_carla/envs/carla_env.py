@@ -53,14 +53,13 @@ class CarlaEnv(gym.Env):
 
     # action and observation spaces
     self.discrete = env_config['discrete']
-    self.discrete_act = [env_config['discrete_acc']] # acc, steer
+    self.discrete_act = [env_config['discrete_acc']] # acc
     self.n_acc = len(self.discrete_act[0])
     if self.discrete:
       self.action_space = spaces.Discrete(self.n_acc)
     else:
-      self.action_space = spaces.Box(np.array([env_config['continuous_accel_range'][0],
-      env_config['continuous_steer_range'][0]]), np.array([env_config['continuous_accel_range'][1],
-      env_config['continuous_steer_range'][1]]), dtype=np.float32)  # acc, steer
+      self.action_space = spaces.Box(np.array([env_config['continuous_accel_range'][0]]),
+                                     np.array([env_config['continuous_accel_range'][1]]), dtype=np.float32)  # acc
     observation_space_dict = {
       'camera': spaces.Box(low=0, high=255, shape=(self.obs_size, self.obs_size, 3), dtype=np.uint8),
       'birdeye': spaces.Box(low=0, high=255, shape=(self.obs_size, self.obs_size, 3), dtype=np.uint8),
@@ -230,7 +229,7 @@ class CarlaEnv(gym.Env):
     # Calculate acceleration and steering
     if self.discrete:
       acc = self.discrete_act[0][action//self.n_steer]
-      steer = self.discrete_act[1][action%self.n_steer]
+      steer = -self.ego.get_control().steer
     else:
       acc = action[0]
       steer = -self.ego.get_control().steer
