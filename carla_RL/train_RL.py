@@ -9,10 +9,18 @@ import gym
 from setuptools import setup
 
 from gym.envs.registration import register
+from ray.tune.registry import register_env
 import sys
 sys.path.append('carla_RL/environment/environment')
 sys.path.append('carla_RL/environment/environment/gym_carla')
 import gym_carla
+
+
+def env_creator(config):
+    return gym_carla.CustomEnv(env_config=config)
+
+register_env("CustomCarlaEnv", env_creator)
+
 
 register(
     id='CustomCarlaEnv',
@@ -53,8 +61,6 @@ env.reset()"""
 
 
 if __name__ == "__main__":
-    ray.init()
-
     tuner = tune.Tuner(
         PPO,
         tune_config=tune.TuneConfig(max_concurrent_trials=2),
