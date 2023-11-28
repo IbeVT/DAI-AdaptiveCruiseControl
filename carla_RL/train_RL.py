@@ -78,7 +78,7 @@ if __name__ == "__main__":
                     "fcnet_hiddens": [64],
                     "fcnet_activation": "linear",
                 },
-            "lr": 5e-3, 5e-4,   #tune.grid_search([5e-3, 5e-4])
+            "lr": 5e-3,   #tune.grid_search([5e-3, 5e-4])
             "env_config": config
         },
         run_config=train.RunConfig(
