@@ -15,9 +15,11 @@ sys.path.append('carla_RL/environment/environment')
 sys.path.append('carla_RL/environment/environment/gym_carla')
 import gym_carla
 from gym_carla.envs.carla_env import CarlaEnv
+from gymnasium.wrappers import EnvCompatibility
+
 
 def env_creator(config):
-    return CarlaEnv(config)
+    return EnvCompatibility(CarlaEnv(config))
 
 config = {
     'number_of_vehicles': 100,
@@ -76,7 +78,7 @@ if __name__ == "__main__":
                     "fcnet_hiddens": [64],
                     "fcnet_activation": "linear",
                 },
-            "lr": tune.grid_search([5e-3, 5e-4]),
+            "lr": 5e-3, 5e-4,   #tune.grid_search([5e-3, 5e-4])
             "env_config": config
         },
         run_config=train.RunConfig(
