@@ -14,7 +14,7 @@ import os
 print(os.getcwd())
 register(
     id='carla-v0',
-    entry_point='rllib-integration2.environment.environment.gym_carla.envs:CarlaEnv',
+    entry_point='DAI-AdaptiveCruiseControl.rllib-integration2.environment.environment.gym_carla.envs:CarlaEnv',
 )
 
 """setup(name='gym_carla',
