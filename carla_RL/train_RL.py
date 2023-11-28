@@ -17,7 +17,7 @@ import gym_carla
 import os
 print(os.getcwd())
 register(
-    id='carla-v0',
+    id='CustomCarlaEnv',
     entry_point='gym_carla.envs:CarlaEnv',
 )
 
@@ -50,7 +50,7 @@ params = {
 }
 
 # Set gym-carla environment
-env = gym.make('carla-v0', params=params)
+env = gym.make('CustomCarlaEnv', params=params)
 env.reset()
 
 if __name__ == "__main__":
