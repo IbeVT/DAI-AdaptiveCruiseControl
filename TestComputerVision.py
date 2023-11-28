@@ -133,27 +133,6 @@ class SensorManager:
     def get_sensor(self):
         return self.sensor
 
-    def save_rgb_image(self, image):
-        t_start = self.timer.time()
-
-        image.convert(carla.ColorConverter.Raw)
-        array = np.frombuffer(image.raw_data, dtype=np.dtype("uint8"))
-        array = np.reshape(array, (image.height, image.width, 4))
-        array = array[:, :, :3]
-        array = array[:, :, ::-1]
-
-        # Display camera data on screen.
-        if self.display_man.render_enabled():
-            self.surface = pygame.surfarray.make_surface(array.swapaxes(0, 1))
-
-        # save camera data to disk.
-        now = datetime.datetime.now()
-        image.save_to_disk(f"RGBCameraData/{now}.png")
-
-        t_end = self.timer.time()
-        self.time_processing += (t_end - t_start)
-        self.tics_processing += 1
-
     def draw_bounding_box(self, image):
         t_start = self.timer.time()
         image.convert(carla.ColorConverter.Raw)
@@ -226,95 +205,6 @@ class SensorManager:
                     persistent_lines=False,
                     color=color
                 )
-
-        # current_rot = radar_points.transform.rotation
-        # for detect in radar_points:
-        #     azi = math.degrees(detect.azimuth)
-        #     alt = math.degrees(detect.altitude)
-        #     # The 0.25 adjusts a bit the distance so the dots can
-        #     # be properly seen
-        #     fw_vec = carla.Vector3D(x=detect.depth - 0.25)
-        #     carla.Transform(
-        #         carla.Location(),
-        #         carla.Rotation(
-        #             pitch=current_rot.pitch + alt,
-        #             yaw=current_rot.yaw + azi,
-        #             roll=current_rot.roll)).transform(fw_vec)
-        #
-        #     # give color to radar data: white = neutral; red= move closer; blue=moving away.
-        #     def clamp(min_v, max_v, value):
-        #         return max(min_v, min(value, max_v))
-        #
-        #     velocity_range = 7.5  # m/s
-        #     norm_velocity = detect.velocity / velocity_range  # range [-1, 1]
-        #     r = int(clamp(0.0, 1.0, 1.0 - norm_velocity) * 255.0)
-        #     g = int(clamp(0.0, 1.0, 1.0 - abs(norm_velocity)) * 255.0)
-        #     b = int(abs(clamp(- 1.0, 0.0, - 1.0 - norm_velocity)) * 255.0)
-        #     # display radar data on screen.
-        #     if self.display_man.render_enabled():
-        #         self.world.debug.draw_point(
-        #             radar_points.transform.location + fw_vec,
-        #             size=0.075,
-        #             life_time=0.06,
-        #             persistent_lines=False,
-        #             color=carla.Color(r, g, b)
-        #         )
-
-    def save_radar_image(self, radar_data):
-        t_start = self.timer.time()
-        points = np.frombuffer(radar_data.raw_data, dtype=np.dtype('f4'))
-        points = np.reshape(points, (len(radar_data), 4))
-        data_points = points.copy()
-
-        # sava radar data to disk
-        data_points[:, 1] = np.degrees(data_points[:, 1])  # change Altitude from rad to degrees.
-        data_points[:, 2] = np.degrees(data_points[:, 2])  # change Azimuth from rad to degrees.
-        data_points[:, 0] = np.round(data_points[:, 0], 0)  # round Velocity.
-        data_points[:, 3] = np.round(data_points[:, 3], 0)  # round Depth.
-        try:
-            with open('RadarData.csv', 'a') as file:
-                writer = csv.writer(file)
-                writer.writerow(data_points)
-                writer.writerow(str(datetime.datetime.now()))
-        except Exception as e:
-            print(f"Error writing row to CSV: {e}")
-
-        current_rot = radar_data.transform.rotation
-        for detect in radar_data:
-            azi = math.degrees(detect.azimuth)
-            alt = math.degrees(detect.altitude)
-            # The 0.25 adjusts a bit the distance so the dots can
-            # be properly seen
-            fw_vec = carla.Vector3D(x=detect.depth - 0.25)
-            carla.Transform(
-                carla.Location(),
-                carla.Rotation(
-                    pitch=current_rot.pitch + alt,
-                    yaw=current_rot.yaw + azi,
-                    roll=current_rot.roll)).transform(fw_vec)
-
-            # give color to radar data: white = neutral; red= move closer; blue=moving away.
-            def clamp(min_v, max_v, value):
-                return max(min_v, min(value, max_v))
-
-            velocity_range = 7.5  # m/s
-            norm_velocity = detect.velocity / velocity_range  # range [-1, 1]
-            r = int(clamp(0.0, 1.0, 1.0 - norm_velocity) * 255.0)
-            g = int(clamp(0.0, 1.0, 1.0 - abs(norm_velocity)) * 255.0)
-            b = int(abs(clamp(- 1.0, 0.0, - 1.0 - norm_velocity)) * 255.0)
-            # display radar data on screen.
-            if self.display_man.render_enabled():
-                self.world.debug.draw_point(
-                    radar_data.transform.location + fw_vec,
-                    size=0.075,
-                    life_time=0.06,
-                    persistent_lines=False,
-                    color=carla.Color(r, g, b)
-                )
-
-        t_end = self.timer.time()
-        self.time_processing += (t_end - t_start)
-        self.tics_processing += 1
 
     def render(self):
         if self.surface is not None:
