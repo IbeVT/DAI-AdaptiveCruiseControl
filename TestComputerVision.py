@@ -213,11 +213,10 @@ class SensorManager:
             # b = int(abs(clamp(- 1.0, 0.0, - 1.0 - norm_velocity)) * 255.0)
 
             # As it does not work to check whether point is in object_points, we manually check the coordinates.
-            if -10 < alt < 10 and -10 < azi < 10:
+            if alt_lower < alt < alt_upper and azi_left < azi < azi_right:
                 color = color_object
             else:
                 color = color_no_object
-
             # display radar data on screen.
             if self.display_man.render_enabled():
                 self.world.debug.draw_point(
