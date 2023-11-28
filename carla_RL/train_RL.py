@@ -19,7 +19,7 @@ from gymnasium.wrappers import EnvCompatibility
 
 
 def env_creator(config):
-    return EnvCompatibility(CarlaEnv(config))
+    return CarlaEnv(config)
 
 config = {
     'number_of_vehicles': 100,
