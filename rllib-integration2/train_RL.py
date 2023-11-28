@@ -9,13 +9,14 @@ import gym
 from setuptools import setup
 
 from gym.envs.registration import register
+import rllib_integration2.environment.environment.gym_carla
 
 import os
 print(os.getcwd())
-register(
+"""register(
     id='carla-v0',
     entry_point='DAI-AdaptiveCruiseControl.rllib-integration2.environment.environment.gym_carla.envs:CarlaEnv',
-)
+)"""
 
 """setup(name='gym_carla',
       version='0.0.1',
