@@ -9,6 +9,7 @@ import gym
 from setuptools import setup
 
 from gym.envs.registration import register
+import environment.environment.gym_carla
 import carla_RL.environment.environment.gym_carla
 
 import os
