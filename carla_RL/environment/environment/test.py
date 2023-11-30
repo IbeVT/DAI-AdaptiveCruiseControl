@@ -35,7 +35,7 @@ def main():
   }
 
   # Set gym-carla environment
-  env = gym.make('CustomCarlaEnv', params=params)
+  env = gym.make('CustomCarlaEnv')
   env.reset()
 
   while True:
