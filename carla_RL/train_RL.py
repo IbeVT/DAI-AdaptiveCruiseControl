@@ -75,9 +75,9 @@ if __name__ == "__main__":
             "num_workers": 1,
             #"env": "CustomCarlaEnv",
             "env": "CartPole-v1",
-            "env_config": {
-                "disable_env_checking": True,
-            },
+            #"env_config": {
+            #    "disable_env_checking": True,
+            #},
             "model":
                 {
                     "fcnet_hiddens": [64],
