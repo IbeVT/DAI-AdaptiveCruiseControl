@@ -88,6 +88,18 @@ class CarlaEnv(gym.Env):
       'state': spaces.Box(np.array([-2, -1, -5, 0]), np.array([2, 1, 30, 1]), dtype=np.float32)
       }
 
+    observation_space_dict = {
+      'camera': spaces.Box(low=0, high=255, shape=(5,), dtype=np.float32),
+      'birdeye': spaces.Box(low=0, high=255, shape=(2,), dtype=np.float32),
+      'state': spaces.Box(shape=(3,), dtype=np.float32)
+    }
+
+    obs = {
+      'camera': np.zeros(shape=(5,), dtype=np.float32),
+      'birdeye': np.zeros(shape=(2,), dtype=np.float32),
+      'state': np.zeros(shape=(3,), dtype=np.float32),
+    }
+
     self.observation_space = spaces.Dict(observation_space_dict)
 
     # Connect to carla server and get world object
