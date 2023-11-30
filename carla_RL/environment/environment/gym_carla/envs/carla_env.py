@@ -91,10 +91,9 @@ class CarlaEnv(gym.Env):
     observation_space_dict = {'camera': spaces.Box(low=0, high=255, shape=(5,), dtype=np.float32)}
 
     self.observation_space = spaces.Dict(observation_space_dict)
-    self.observation_space = spaces.Box(low=0, high=255, shape=(10,), dtype=np.float32)
+    self.observation_space = spaces.Box(low=float('-inf'), high=float('inf'), shape=(10,), dtype=np.float32)
 
 
-    obs = np.zeros(shape=(10,), dtype=np.float32)
 
     # Connect to carla server and get world object
     print('connecting to Carla server...')
