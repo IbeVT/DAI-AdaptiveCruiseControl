@@ -141,7 +141,7 @@ class CarlaEnv(gym.Env):
     # Record the time of total steps and resetting steps
     self.reset_step = 0
     self.total_step = 0
-    
+    print(6)
     # Initialize the renderer
     self._init_renderer()
     print('init end')
@@ -168,6 +168,7 @@ class CarlaEnv(gym.Env):
           count -= 1
         if count <= 0:
           break
+    print(113)
     while count > 0:
       if self._try_spawn_random_vehicle_at(random.choice(self.vehicle_spawn_points), number_of_wheels=[4]):
         count -= 1
@@ -336,7 +337,7 @@ class CarlaEnv(gym.Env):
     """
     pygame.init()
     self.display = pygame.display.set_mode(
-    (self.display_size * 3, self.display_size),
+    (2*self.display_size * 3, 2*self.display_size),
     pygame.HWSURFACE | pygame.DOUBLEBUF)
 
     pixels_per_meter = self.display_size / self.obs_range
@@ -346,7 +347,7 @@ class CarlaEnv(gym.Env):
       'pixels_per_meter': pixels_per_meter,
       'pixels_ahead_vehicle': pixels_ahead_vehicle
     }
-    self.birdeye_render = BirdeyeRender(self.world, birdeye_params)
+    #self.birdeye_render = BirdeyeRender(self.world, birdeye_params)
 
   def _set_synchronous_mode(self, synchronous = True):
     """Set whether to use the synchronous mode.
