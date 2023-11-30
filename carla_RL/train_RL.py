@@ -66,7 +66,7 @@ env.reset()"""
 
 
 if __name__ == "__main__":
-    ray.init(local_mode=True)
+    #ray.init(local_mode=True)
     tuner = tune.Tuner(
         PPO,
         tune_config=tune.TuneConfig(max_concurrent_trials=1),
