@@ -88,19 +88,19 @@ class CarlaEnv(gym.Env):
       'state': spaces.Box(np.array([-2, -1, -5, 0]), np.array([2, 1, 30, 1]), dtype=np.float32)
       }
 
+    """observation_space_dict = {
+      'camera': spaces.Box(low=0, high=255, shape=(5,), dtype=np.float32),
+      'birdeye': spaces.Box(low=0, high=255, shape=(2,), dtype=np.float32),
+      'state': spaces.Box(low=0, high=255, shape=(3,), dtype=np.float32)
+    }"""
+
     self.observation_space = spaces.Dict(observation_space_dict)
 
     # Connect to carla server and get world object
     print('connecting to Carla server...')
     client = carla.Client('localhost', env_config['port'])
-    if client:
-      client.disconnect()
-    client.connect()
     client.set_timeout(10.0)
-    try:
-      self.world = client.load_world(env_config['town'])
-    except Exception as e:
-      print(e)
+    self.world = client.load_world(env_config['town'])
     print('Carla server connected!')
 
     # Create a Traffic Manager
@@ -145,13 +145,13 @@ class CarlaEnv(gym.Env):
     # Record the time of total steps and resetting steps
     self.reset_step = 0
     self.total_step = 0
-
+    
     # Initialize the renderer
     self._init_renderer()
 
   def reset(self):
     print('-------------------------------------RESET--------------------------------------\n\n\n')
-    # Clear sensor objects
+    # Clear sensor objects  
     self.collision_sensor = None
     self.camera_sensor = None
 
@@ -255,6 +255,7 @@ class CarlaEnv(gym.Env):
     return self._get_obs()
   
   def step(self, action):
+    print('------------------------------------STEP--------------------------------------\n\n\n')
     # Calculate acceleration and steering
     if self.discrete:
       acc = self.discrete_act[0][action//self.n_steer]
@@ -456,6 +457,13 @@ class CarlaEnv(gym.Env):
     return actor_poly_dict
 
   def _get_obs(self):
+    """obs = {
+      'camera': np.zeros(shape=(5,), dtype=np.float32),
+      'birdeye': np.zeros(shape=(2,), dtype=np.float32),
+      'state': np.zeros(shape=(3,), dtype=np.float32),
+    }
+    return obs"""
+
     """Get the observations."""
     ## Birdeye rendering
     self.birdeye_render.vehicle_polygons = self.vehicle_polygons
@@ -508,7 +516,7 @@ class CarlaEnv(gym.Env):
     # reward for speed tracking
     v = self.ego.get_velocity()
     speed = np.sqrt(v.x**2 + v.y**2)
-
+    
     # reward for collision
     r_collision = 0
     if len(self.collision_hist) > 0:
@@ -535,25 +543,25 @@ class CarlaEnv(gym.Env):
     return r
 
   def _terminal(self):
-    print('--------------------------------TERMINAL-----------------------------------------\n\n\n')
     """Calculate whether to terminate the current episode."""
+    print('--------------------------------TERMINAL-----------------------------------------\n\n\n')
     # Get ego state
     ego_x, ego_y = get_pos(self.ego)
 
     # If collides
-    if len(self.collision_hist)>0:
+    if len(self.collision_hist) > 0:
       print('collision')
       return True
 
     # If reach maximum timestep
-    if self.time_step>self.max_time_episode:
+    if self.time_step > self.max_time_episode:
       print('max timestep reached')
       return True
 
     # If at destination
-    if self.dests is not None: # If at destination
+    if self.dests is not None:  # If at destination
       for dest in self.dests:
-        if np.sqrt((ego_x-dest[0])**2+(ego_y-dest[1])**2)<4:
+        if np.sqrt((ego_x - dest[0]) ** 2 + (ego_y - dest[1]) ** 2) < 4:
           print('at destination')
           return True
 
