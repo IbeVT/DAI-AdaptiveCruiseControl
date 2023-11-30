@@ -106,10 +106,7 @@ class CarlaEnv(gym.Env):
     print('connecting to Carla server...')
     client = carla.Client('localhost', env_config['port'])
     client.set_timeout(10.0)
-    try:
-      self.world = client.load_world(env_config['town'])
-    except Exception as e:
-      print(e)
+    self.world = client.load_world(env_config['town'])
     print('Carla server connected!')
 
     # Create a Traffic Manager
