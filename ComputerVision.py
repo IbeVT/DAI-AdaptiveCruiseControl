@@ -8,39 +8,55 @@ import carla
 
 
 class ComputerVision:
-    def __init__(self):
+    def __init__(self, vehicle):
+        self.delta_v = None
+        self.result_boxes = []
+        self.image = None
+        self.object_points = None
+        self.vehicle = vehicle
         self.inverse_camera_matrix = None
         self.radar_points = None
         self.model = YOLO('best.pt')
         self.vehicle_classes = ['bus', 'bike', 'car', 'motorcycle', 'vehicle']
-        self.camera_h_fov = math.radians(90)
-        self.camera_v_fov = math.radians(60)
         self.camera_x_pixels = 720
         self.camera_y_pixels = 1280
         self.n_points = 50
-        self.radar_h_fov = 30 * (2 * 3.14159 / 360)
-        self.radar_v_fov = 30 * (2 * 3.14159 / 360)
         self.max_depth = 100
         self.max_speed = 120 / 3.6
-        self.n_points_median = 11
-        self.image = None
-        self.radar = None
-        self.image_updated = False
-        self.radar_updated = False
+        self.max_distance_following_vehicle = 500
         self.following_vehicle_cords = None
-        self.last_distance = None
+        self.distance = None
+        self.steer_vector_endpoint = None
 
-    def set_fov(self, h_fov_degrees, v_fov_degrees):
-        self.camera_h_fov = math.radians(h_fov_degrees)
-        self.camera_v_fov = math.radians(v_fov_degrees)
+    def set_resolution(self, x, y):
+        self.camera_x_pixels = x
+        self.camera_y_pixels = y
 
-    def get_bounding_boxes(self, image):
-        self.image = image
-        results = self.model.predict(source=image, save=False)
-        # Check which car is in front, if any
+    def process_data(self):
+        # Start by detecting objects in the image
+        if self.image is None or self.radar_points is None:
+            return
+        results = self.model.predict(source=self.image, save=False)
         result = results[0]
-        following_vehicle_cords = None
-        smallest_distance_to_center = float('inf')
+
+        # Check which car is in front, if any
+        # To find the vehicle in front, we will use the steer angle and the azimuth angle We do it as follows:
+        # 1. Get all boxes that are vehicles
+        # 2. Group all points that belong to the same box
+        # 3. For each box, calculate the median distance and speed
+        # 4. Calculate where the vector with length=median_distance, azimuth=steer_angle and
+        # altitude=mean_altitude_points would end on the camera
+        # 5. Calculate the distance from the vector to the center of the bounding box of the vehicle
+        # Reset the values
+        self.following_vehicle_cords = None
+        self.distance = self.max_depth
+        self.delta_v = self.max_speed
+
+        smallest_distance_to_box = self.max_distance_following_vehicle      # The distance from the vector to the
+        # center of the bounding box of the vehicle
+        wheel_locations = carla.VehicleWheelLocation()
+        steer_angle = self.vehicle.get_wheel_steer_angle(wheel_locations.FL_Wheel)
+        vehicle_boxes = []
         for box in result.boxes:
             class_id = result.names[box.cls[0].item()]
             cords = box.xyxy[0].tolist()
@@ -51,47 +67,62 @@ class ComputerVision:
             print("Probability:", conf)
             print("---")
             if str(class_id) in self.vehicle_classes:
-                [x_lower, y_lower, x_upper, y_upper] = cords
-                x_center = (x_lower + x_upper) / 2
-                y_center = (y_lower + y_upper) / 2
-                distance_to_center = np.sqrt(
-                    (x_center - (self.camera_x_pixels / 2)) ** 2 + (y_center - (self.camera_y_pixels / 2)) ** 2)
-                if distance_to_center < smallest_distance_to_center:
-                    smallest_distance_to_center = distance_to_center
-                    following_vehicle_cords = cords
-        self.following_vehicle_cords = following_vehicle_cords
-        return following_vehicle_cords, result.boxes
+                vehicle_boxes.append(cords)
+
+        # 2. Group all points that belong to the same box
+        distances = []  # The distances of all points that belong to the i-th box
+        velocities = []  # The speeds of all points that belong to the i-th box
+        altitudes = []  # The altitudes of all points that belong to the i-th box
+        for point in self.radar_points:
+            [x, y] = self.get_image_coordinates_from_radar_point(point.azimuth, point.altitude, point.depth)
+            for i, box in enumerate(vehicle_boxes):
+                # If there is not yet a list for the i-th box, create it
+                if len(distances) <= i:
+                    distances.append([])
+                    velocities.append([])
+                    altitudes.append([])
+                [x_lower, y_lower, x_upper, y_upper] = box
+                if x_lower < x < x_upper and y_lower < y < y_upper:
+                    distances[i].append(point.depth)
+                    velocities[i].append(point.velocity)
+                    altitudes[i].append(point.altitude)
+                    break
+        # 3. For each box, calculate the median distance and speed
+        distances = [np.median(i) for i in distances]
+        velocities = [np.median(i) for i in velocities]
+        altitudes = [np.mean(i) for i in altitudes]
+        # Now we have the median distance and speed for each box
+
+        # 4. Calculate where the vector with length=median_distance and angle=steer_angle would end on the camera
+        # 5. Calculate the distance from the vector to the center of the bounding box of the vehicle
+        for i, box in enumerate(vehicle_boxes):
+            cords = self.get_image_coordinates_from_radar_point(steer_angle, altitudes[i], distances[i])
+            distance_to_box = math.sqrt((cords[0] - np.mean([box[0], box[2]])) ** 2 +
+                                        (cords[1] - np.mean([box[1], box[3]])) ** 2)
+            print("Cords:", cords)
+            print("Box:", box)
+            print("Distance to box:", distance_to_box)
+            if distance_to_box < smallest_distance_to_box:
+                self.following_vehicle_cords = box
+                self.distance = distances[i]
+                self.delta_v = velocities[i]
+                self.steer_vector_endpoint = cords
+        self.result_boxes = result.boxes
+
+    def get_boxes(self):
+        return self.result_boxes
 
     def get_current_bounding_box(self):
         return self.following_vehicle_cords
 
-    def predict_distance(self, radar_points):
-        self.radar_points = radar_points
-        # If there is a car in front
-        object_points = []
-        if self.following_vehicle_cords:
-            [x_lower, y_lower, x_upper, y_upper] = self.following_vehicle_cords
+    def get_distance(self):
+        return self.distance
 
-            object_point_depths = []
-            object_point_speeds = []
-            for point in radar_points:
-                [x, y] = self.get_image_point(point)
-                if x_lower < x < x_upper and y_lower < y < y_upper:
-                    object_point_depths.append(point.depth)
-                    object_point_speeds.append(point.velocity)
-                    object_points.append(point)
-            self.last_distance = np.median(object_point_depths)
-            self.last_speed = np.median(object_point_speeds)
-        else:
-            self.last_distance = self.max_depth
-            self.last_speed = 0
-        return self.last_distance, self.last_speed, object_points
+    def get_delta_v(self):
+        return self.delta_v
 
-    def get_last_distance(self):
-        return self.last_distance
-
-    def get_last_speed(self):
-        return self.last_speed
+    def get_object_points(self):
+        return self.object_points
 
     def build_projection_matrix(self, w, h, fov):
         focal = w / (2.0 * np.tan(fov * np.pi / 360.0))
@@ -102,12 +133,12 @@ class ComputerVision:
         self.projection_matrix = K
         return K
 
-    def get_image_point(self, point):
+    def get_image_coordinates_from_radar_point(self, azimuth, altitude, depth):  # in radians
         # Based on https://carla.readthedocs.io/en/latest/tuto_G_bounding_boxes/
         # Convert RadarDetection to carla 3D location
-        azi_deg = math.degrees(point.azimuth)
-        alt_deg = math.degrees(point.altitude)
-        loc = carla.Vector3D(x=point.depth)
+        azi_deg = math.degrees(azimuth)
+        alt_deg = math.degrees(altitude)
+        loc = carla.Vector3D(x=depth)
         carla.Transform(
             carla.Location(x=0, y=0, z=0),
             carla.Rotation(
@@ -134,6 +165,6 @@ class ComputerVision:
         point_img[1] /= point_img[2]
 
         return point_img[0:2]
-    
+
     def set_inverse_camera_matrix(self, inverse_matrix):
         self.inverse_camera_matrix = inverse_matrix

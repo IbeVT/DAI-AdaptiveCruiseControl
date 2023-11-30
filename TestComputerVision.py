@@ -121,15 +121,17 @@ class CameraManager(SensorManager):
         SensorManager.__init__(self, world, display_man, transform, attached, sensor_options, display_pos,
                                computer_vision)
         self.camera_array = None
-        self.following_bb_cords = None
-        self.all_boxes = None
 
     def init_sensor(self, transform, attached, sensor_options):
         camera_bp = self.world.get_blueprint_library().find('sensor.camera.rgb')
         disp_size = self.display_man.get_display_size()
-        camera_bp.set_attribute('image_size_x', str(disp_size[0]))
-        camera_bp.set_attribute('image_size_y', str(disp_size[1]))
+        x_res = disp_size[0]
+        y_res = disp_size[1]
+        camera_bp.set_attribute('image_size_x', str(x_res))
+        camera_bp.set_attribute('image_size_y', str(y_res))
         camera_bp.set_attribute('sensor_tick', '1.0')
+
+        self.computer_vision.set_resolution(x_res, y_res)
 
         for key in sensor_options:
             camera_bp.set_attribute(key, sensor_options[key])
@@ -144,34 +146,34 @@ class CameraManager(SensorManager):
         image_h = camera_bp.get_attribute("image_size_y").as_int()
         fov = camera_bp.get_attribute("fov").as_float()
         self.computer_vision.build_projection_matrix(image_w, image_h, fov)
-        camera.listen(self.process_camera)
+        camera.listen(self.update_camera)
         return camera
 
-    def process_camera(self, image):
+    def update_camera(self, image):
         image.convert(carla.ColorConverter.Raw)
         array = np.frombuffer(image.raw_data, dtype=np.dtype("uint8"))
         array = np.reshape(array, (image.height, image.width, 4))
         array = array[:, :, :3]
         array = array[:, :, ::-1]
         self.camera_array = array
-        # Get bounding box from image array.
-        self.following_bb_cords, self.all_boxes = self.computer_vision.get_bounding_boxes(array)
-        self.tics_processing += 1
+        self.computer_vision.image = array
 
     def draw_camera(self):
+        all_boxes = self.computer_vision.get_boxes()
+        following_bb_cords = self.computer_vision.get_current_bounding_box()
         # Create surface from image array.
-        if self.display_man.render_enabled():
+        if self.display_man.render_enabled() and self.camera_array is not None:
             self.surface = pygame.surfarray.make_surface(self.camera_array.swapaxes(0, 1))
             # Draw bounding boxes on screen.
             # Draw the bounding box of the followed vehicle.
-            if (self.following_bb_cords is not None) and (self.surface is not None):
-                [x_lower, y_lower, x_upper, y_upper] = self.following_bb_cords
+            if (following_bb_cords is not None) and (self.surface is not None):
+                [x_lower, y_lower, x_upper, y_upper] = following_bb_cords
                 pygame.draw.rect(self.surface, (255, 0, 0), (x_lower, y_lower, x_upper - x_lower, y_upper - y_lower), 2)
 
                 # Display the last distance and speed on screen.
                 font = pygame.freetype.SysFont('Arial', 30)
                 # Display distance and speed on screen.
-                distance = self.computer_vision.get_last_distance()
+                distance = self.computer_vision.get_distance()
                 x = x_lower
                 y = y_lower - 5
                 # Catch NaN error.
@@ -182,7 +184,7 @@ class CameraManager(SensorManager):
                     self.surface.blit(text, (x, y))
                 except:
                     pass
-                speed = self.computer_vision.get_last_speed()
+                speed = self.computer_vision.get_delta_v()
                 try:
                     speed = round(speed)
                     text, rect = font.render(f'Speed: {speed}', (255, 0, 0))
@@ -192,14 +194,18 @@ class CameraManager(SensorManager):
                     pass
 
             # Draw all other bounding boxes on screen.
-            if self.all_boxes is not None:
-                for box in self.all_boxes:
+            if all_boxes is not None:
+                for box in all_boxes:
                     cords = box.xyxy[0].tolist()
                     cords = [round(x) for x in cords]
-                    if cords != self.following_bb_cords:
+                    if cords != following_bb_cords:
                         [x_lower, y_lower, x_upper, y_upper] = cords
                         pygame.draw.rect(self.surface, (0, 255, 0),
                                          (x_lower, y_lower, x_upper - x_lower, y_upper - y_lower), 2)
+
+            # For debug purposes: draw the steer vector endpoint
+            if self.computer_vision.steer_vector_endpoint is not None:
+                pygame.draw.circle(self.surface, (0, 0, 255), self.computer_vision.steer_vector_endpoint, 5)
 
 
 class RadarManager(SensorManager):
@@ -207,31 +213,28 @@ class RadarManager(SensorManager):
                  computer_vision):
         SensorManager.__init__(self, world, display_man, transform, attached, sensor_options, display_pos,
                                computer_vision)
-        self.object_points = None
-        self.speed = None
-        self.distance = None
-        self.radar_points = None
 
     def init_sensor(self, transform, attached, sensor_options):
         radar_bp = self.world.get_blueprint_library().find('sensor.other.radar')
         for key in sensor_options:
             radar_bp.set_attribute(key, sensor_options[key])
         radar = self.world.spawn_actor(radar_bp, transform, attach_to=attached)
-        radar.listen(self.process_radar)
+        radar.listen(self.update_radar)
         return radar
 
-    def process_radar(self, radar_points):
-        self.radar_points = radar_points
-        self.distance, self.speed, self.object_points = self.computer_vision.predict_distance(radar_points)
+    def update_radar(self, radar_points):
+        self.computer_vision.radar_points = radar_points
 
     # Draws the radar points on the screen. It should be executed AFTER the camera has been drawn.
     def draw_radar(self):
-        current_rot = self.radar_points.transform.rotation
+        radar_points = self.computer_vision.radar_points
+        object_points = self.computer_vision.get_object_points()
+        current_rot = radar_points.transform.rotation
         # Colors for radar points.
         color_object = carla.Color(255, 0, 0)
         color_no_object = carla.Color(255, 255, 255)
         # Draw the points on the screen.
-        for point in self.radar_points:
+        for point in radar_points:
             azi = point.azimuth
             alt = point.altitude
             depth = point.depth
@@ -251,15 +254,16 @@ class RadarManager(SensorManager):
 
             # As it does not work to check whether point is in object_points, we manually check the coordinates.
             color = color_no_object
-            for object_point in self.object_points:
-                if object_point.altitude == point.altitude and object_point.azimuth == point.azimuth:
-                    color = color_object
-                    break
+            if object_points is not None:
+                for object_point in object_points:
+                    if object_point.altitude == point.altitude and object_point.azimuth == point.azimuth:
+                        color = color_object
+                        break
 
             # display radar data on screen.
             if self.display_man.render_enabled():
                 self.world.debug.draw_point(
-                    self.radar_points.transform.location + fw_vec,
+                    radar_points.transform.location + fw_vec,
                     size=0.075,
                     life_time=0.1,
                     persistent_lines=False,
@@ -305,7 +309,10 @@ def run_simulation(args, client):
         display_manager = DisplayManager(grid_size=[1, 1], window_size=[args.width, args.height])
 
         # Create the ComputerVision object
-        computer_vision = ComputerVision()
+        computer_vision = ComputerVision(vehicle)
+
+        camera_h_fov = 40
+        camera_v_fov = 40
 
         # Then, SensorManager is used to spawn RGBCamera and Radar and assign each of them to a grid position.
         camera_manager = CameraManager(world, display_manager,
@@ -314,8 +321,9 @@ def run_simulation(args, client):
                                        computer_vision=computer_vision)
         radar_manager = RadarManager(world, display_manager,
                                      carla.Transform(carla.Location(x=0, z=2.4)),
-                                     vehicle, {'horizontal_fov': '40', 'points_per_second': '5000', 'range': '100',
-                                               'sensor_tick': '0.1', 'vertical_fov': '40'}, display_pos=[0, 0],
+                                     vehicle,
+                                     {'horizontal_fov': f'{camera_h_fov}', 'points_per_second': '5000', 'range': '100',
+                                      'sensor_tick': '0.1', 'vertical_fov': f'{camera_v_fov}'}, display_pos=[0, 0],
                                      computer_vision=computer_vision)
 
         # But the city now is probably quite empty, let's add a few more vehicles.
@@ -346,17 +354,14 @@ def run_simulation(args, client):
             else:
                 world.wait_for_tick()
 
+            computer_vision.process_data()
+
             # First draw camera on the screen, then the radar
-            if camera_manager.camera_array is not None:
-                camera_manager.draw_camera()
-            if radar_manager.radar_points is not None:
-                radar_manager.draw_radar()
+            camera_manager.draw_camera()
+            radar_manager.draw_radar()
 
             # Render received data
             display_manager.render()
-
-            camera_manager.finished = False
-            radar_manager.finished = False
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
