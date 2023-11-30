@@ -95,11 +95,58 @@ class CarlaEnv(gym.Env):
 
 
 
+    # Connect to carla server and get world object
+    print('connecting to Carla server...')
+    client = carla.Client('localhost', env_config['port'])
+    client.set_timeout(10.0)
+    self.world = client.load_world(env_config['town'])
+    print('Carla server connected!')
+
+    # Create a Traffic Manager
+    self.traffic_manager = client.get_trafficmanager()
+
+    # Set weather
+    self.world.set_weather(carla.WeatherParameters.ClearNoon)
+    print(1)
+    # Get spawn points
+    self.vehicle_spawn_points = list(self.world.get_map().get_spawn_points())
+    self.walker_spawn_points = []
+    for i in range(self.number_of_walkers):
+      spawn_point = carla.Transform()
+      loc = self.world.get_random_location_from_navigation()
+      if (loc != None):
+        spawn_point.location = loc
+        self.walker_spawn_points.append(spawn_point)
+    print(2)
+    # Create the ego vehicle blueprint
+    self.ego_bp = self._create_vehicle_bluepprint(env_config['ego_vehicle_filter'], color='49,8,8')
+
+    # Collision sensor
+    self.collision_hist = [] # The collision history
+    self.collision_hist_l = 1 # collision history length
+    self.collision_bp = self.world.get_blueprint_library().find('sensor.other.collision')
+    print(3)
+    # Camera sensor
+    self.camera_img = np.zeros((self.obs_size, self.obs_size, 3), dtype=np.uint8)
+    self.camera_trans = carla.Transform(carla.Location(x=0.8, z=1.7))
+    self.camera_bp = self.world.get_blueprint_library().find('sensor.camera.rgb')
+    # Modify the attributes of the blueprint to set image resolution and field of view.
+    self.camera_bp.set_attribute('image_size_x', str(self.obs_size))
+    self.camera_bp.set_attribute('image_size_y', str(self.obs_size))
+    self.camera_bp.set_attribute('fov', '110')
+    # Set the time in seconds between sensor captures
+    self.camera_bp.set_attribute('sensor_tick', '0.02')
+    print(4)
+    # Set fixed simulation step for synchronous mode
+    self.settings = self.world.get_settings()
+    self.settings.fixed_delta_seconds = self.dt
+    print(5)
     # Record the time of total steps and resetting steps
     self.reset_step = 0
     self.total_step = 0
     print(6)
     # Initialize the renderer
+    self._init_renderer()
     print('init end')
 
   def reset(self):
