@@ -91,9 +91,6 @@ class CarlaEnv(gym.Env):
     observation_space_dict = {'camera': spaces.Box(low=0, high=255, shape=(5,), dtype=np.float32)}
 
     self.observation_space = spaces.Dict(observation_space_dict)
-    self.observation_space = spaces.Box(low=0, high=255, shape=(10,), dtype=np.float32)
-
-    
 
     # Connect to carla server and get world object
     print('connecting to Carla server...')
@@ -464,7 +461,7 @@ class CarlaEnv(gym.Env):
     return actor_poly_dict
 
   def _get_obs(self):
-    obs = np.zeros(shape=(10,), dtype=np.float32)
+    obs = {'camera': np.zeros(shape=(5,), dtype=np.float32)}
     return obs
 
     """Get the observations."""
