@@ -512,6 +512,7 @@ class CarlaEnv(gym.Env):
 
   def _get_reward(self):
     """Calculate the step reward."""
+    return 1
     # reward for speed tracking
     v = self.ego.get_velocity()
     speed = np.sqrt(v.x**2 + v.y**2)
