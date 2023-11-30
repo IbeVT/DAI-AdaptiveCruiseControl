@@ -88,11 +88,7 @@ class CarlaEnv(gym.Env):
       'state': spaces.Box(np.array([-2, -1, -5, 0]), np.array([2, 1, 30, 1]), dtype=np.float32)
       }
 
-    """observation_space_dict = {
-      'camera': spaces.Box(low=0, high=255, shape=(5,), dtype=np.float32),
-      'birdeye': spaces.Box(low=0, high=255, shape=(2,), dtype=np.float32),
-      'state': spaces.Box(low=0, high=255, shape=(3,), dtype=np.float32)
-    }"""
+    observation_space_dict = spaces.Box(low=0, high=255, shape=(5,), dtype=np.float32)
 
     self.observation_space = spaces.Dict(observation_space_dict)
 
@@ -148,6 +144,7 @@ class CarlaEnv(gym.Env):
     
     # Initialize the renderer
     self._init_renderer()
+    print('init end')
 
   def reset(self):
     print('-------------------------------------RESET--------------------------------------\n\n\n')
@@ -253,6 +250,7 @@ class CarlaEnv(gym.Env):
     # Set ego information for render
     self.birdeye_render.set_hero(self.ego, self.ego.id)
 
+    print('reset end')
     return self._get_obs()
   
   def step(self, action):
@@ -302,6 +300,7 @@ class CarlaEnv(gym.Env):
     self.time_step += 1
     self.total_step += 1
 
+    print('step end')
     return (self._get_obs(), self._get_reward(), self._terminal(), copy.deepcopy(info))
 
   def seed(self, seed=None):
@@ -458,12 +457,8 @@ class CarlaEnv(gym.Env):
     return actor_poly_dict
 
   def _get_obs(self):
-    """obs = {
-      'camera': np.zeros(shape=(5,), dtype=np.float32),
-      'birdeye': np.zeros(shape=(2,), dtype=np.float32),
-      'state': np.zeros(shape=(3,), dtype=np.float32),
-    }
-    return obs"""
+    obs = np.zeros(shape=(5,), dtype=np.float32)
+    return obs
 
     """Get the observations."""
     ## Birdeye rendering
