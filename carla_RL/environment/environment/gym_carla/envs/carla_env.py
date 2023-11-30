@@ -91,7 +91,7 @@ class CarlaEnv(gym.Env):
     observation_space_dict = {
       'camera': spaces.Box(low=0, high=255, shape=(5,), dtype=np.float32),
       'birdeye': spaces.Box(low=0, high=255, shape=(2,), dtype=np.float32),
-      'state': spaces.Box(shape=(3,), dtype=np.float32)
+      'state': spaces.Box(low=0, high=255, shape=(3,), dtype=np.float32)
     }
 
     obs = {
