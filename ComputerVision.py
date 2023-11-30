@@ -28,6 +28,7 @@ class ComputerVision:
         self.image_updated = False
         self.radar_updated = False
         self.following_vehicle_cords = None
+        self.last_distance = None
 
     def set_fov(self, h_fov_degrees, v_fov_degrees):
         self.camera_h_fov = math.radians(h_fov_degrees)
@@ -62,25 +63,36 @@ class ComputerVision:
         # print(f"Following vehicle cords: {following_vehicle_cords}")
         return following_vehicle_cords
 
+    def get_current_bounding_box(self):
+        return self.following_vehicle_cords
+
     def predict_distance(self, radar_points):
         self.radar_points = radar_points
         # If there is a car in front
+        object_points = []
         if self.following_vehicle_cords:
             [x_lower, y_lower, x_upper, y_upper] = self.following_vehicle_cords
 
             object_point_depths = []
             object_point_speeds = []
-            object_points = []
             for point in radar_points:
                 [x, y] = self.get_image_point(point)
                 if x_lower < x < x_upper and y_lower < y < y_upper:
                     object_point_depths.append(point.depth)
                     object_point_speeds.append(point.velocity)
                     object_points.append(point)
-
-            return np.median(object_point_depths), np.median(object_point_speeds), object_points
+            self.last_distance = np.median(object_point_depths)
+            self.last_speed = np.median(object_point_speeds)
         else:
-            return self.max_depth, 0, []
+            self.last_distance = self.max_depth
+            self.last_speed = 0
+        return self.last_distance, self.last_speed, object_points
+
+    def get_last_distance(self):
+        return self.last_distance
+
+    def get_last_speed(self):
+        return self.last_speed
 
     def build_projection_matrix(self, w, h, fov):
         focal = w / (2.0 * np.tan(fov * np.pi / 360.0))

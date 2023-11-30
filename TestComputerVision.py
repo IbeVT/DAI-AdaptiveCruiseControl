@@ -26,6 +26,7 @@ try:
     import pygame
     from pygame.locals import K_ESCAPE
     from pygame.locals import K_q
+    import pygame.freetype
 except ImportError:
     raise RuntimeError('cannot import pygame, make sure pygame package is installed')
 
@@ -45,6 +46,7 @@ class CustomTimer:
 class DisplayManager:
     def __init__(self, grid_size, window_size):
         pygame.init()
+        pygame.display.set_caption("Sensor Data")
         pygame.font.init()
         self.display = pygame.display.set_mode(window_size, pygame.HWSURFACE | pygame.DOUBLEBUF)
 
@@ -159,8 +161,18 @@ class SensorManager:
         # Draw bounding box on screen.
         if cords is not None:
             [x_lower, y_lower, x_upper, y_upper] = cords
-            pygame.draw.rect(self.surface, (255, 0, 0), (x_lower, y_lower, x_upper - x_lower, y_upper - y_lower), 2)
-
+            if self.display_man.render_enabled():
+                pygame.draw.rect(self.surface, (255, 0, 0), (x_lower, y_lower, x_upper - x_lower, y_upper - y_lower), 2)
+            # Display the last distance and speed on screen.
+            font = pygame.freetype.SysFont('Arial', 30)
+            if self.display_man.render_enabled() and self.surface is not None:
+                # Display distance and speed on screen.
+                font = pygame.freetype.SysFont('Arial', 25)
+                text, rect = font.render(f'Distance: {self.computer_vision.get_last_distance()}', (255, 0, 0))
+                x = x_lower
+                y = y_lower - rect.height - 5
+                self.surface.blit(text, (x, y))
+                # font.render_to(self.surface, (x, y), f'Distance: {self.computer_vision.get_last_distance()}', (255, 0, 0))
         t_end = self.timer.time()
         self.time_processing += (t_end - t_start)
         self.tics_processing += 1
@@ -260,13 +272,13 @@ def run_simulation(args, client):
         # Then, SensorManager is used to spawn RGBCamera and Radar and assign each of them to a grid position.
         SensorManager(world, display_manager, 'RGBCamera',
                       carla.Transform(carla.Location(x=0, z=2.4), carla.Rotation(yaw=+00)),
-                      vehicle, {'sensor_tick': '0.5'}, display_pos=[0, 0], computer_vision=computer_vision)
+                      vehicle, {'sensor_tick': '0.1'}, display_pos=[0, 0], computer_vision=computer_vision)
 
         SensorManager(world, display_manager, 'Radar',
                       carla.Transform(carla.Location(x=0, z=2.4)),
                       vehicle,
-                      {'horizontal_fov': '30', 'points_per_second': '5000', 'range': '100',
-                       'sensor_tick': '0', 'vertical_fov': '30'}, display_pos=[0, 0], computer_vision=computer_vision)
+                      {'horizontal_fov': '40', 'points_per_second': '5000', 'range': '100',
+                       'sensor_tick': '0.1', 'vertical_fov': '40'}, display_pos=[0, 0], computer_vision=computer_vision)
 
         # But the city now is probably quite empty, let's add a few more vehicles.
         transform.location += carla.Location(x=4, y=-3.2)
