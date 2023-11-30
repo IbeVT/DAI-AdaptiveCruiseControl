@@ -164,7 +164,8 @@ class CarlaEnv(gym.Env):
     print(112)
     if count > 0:
       for spawn_point in self.vehicle_spawn_points:
-        if self._try_spawn_random_vehicle_at(spawn_point, number_of_wheels=[4]):
+        #if self._try_spawn_random_vehicle_at(spawn_point, number_of_wheels=[4]):
+        if True:
           count -= 1
         if count <= 0:
           break
@@ -347,7 +348,7 @@ class CarlaEnv(gym.Env):
       'pixels_per_meter': pixels_per_meter,
       'pixels_ahead_vehicle': pixels_ahead_vehicle
     }
-    #self.birdeye_render = BirdeyeRender(self.world, birdeye_params)
+    self.birdeye_render = BirdeyeRender(self.world, birdeye_params)
 
   def _set_synchronous_mode(self, synchronous = True):
     """Set whether to use the synchronous mode.
