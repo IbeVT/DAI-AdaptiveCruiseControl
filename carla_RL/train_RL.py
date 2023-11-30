@@ -67,7 +67,7 @@ env.reset()"""
 
 if __name__ == "__main__":
     tuner = tune.Tuner(
-        DQN,
+        PPO,
         tune_config=tune.TuneConfig(max_concurrent_trials=1),
         param_space={
             "framework": "torch",
