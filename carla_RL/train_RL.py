@@ -73,6 +73,9 @@ if __name__ == "__main__":
             # "num_gpus": 0.5,
             "num_workers": 1,
             "env": "CustomCarlaEnv",
+            "env_config": {
+                "disable_env_checking": True,
+            },
             "model":
                 {
                     "fcnet_hiddens": [64],
