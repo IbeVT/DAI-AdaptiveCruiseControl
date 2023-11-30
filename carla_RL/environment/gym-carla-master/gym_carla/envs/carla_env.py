@@ -28,6 +28,7 @@ class CarlaEnv(gym.Env):
   """An OpenAI gym wrapper for CARLA simulator."""
 
   def __init__(self, env_config):
+    print('-----------------------------------WRONG ENV---------------------------------\n\n\n')
     params = env_config
     # parameters
     self.display_size = params['display_size']  # rendering screen size
