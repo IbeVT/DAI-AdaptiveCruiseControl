@@ -88,38 +88,212 @@ class CarlaEnv(gym.Env):
       'state': spaces.Box(np.array([-2, -1, -5, 0]), np.array([2, 1, 30, 1]), dtype=np.float32)
       }
 
-    observation_space_dict = {
-      'camera': spaces.Box(low=0, high=255, shape=(5,), dtype=np.float32),
-      'birdeye': spaces.Box(low=0, high=255, shape=(2,), dtype=np.float32),
-      'state': spaces.Box(low=0, high=255, shape=(3,), dtype=np.float32)
-    }
-
     self.observation_space = spaces.Dict(observation_space_dict)
+
+    # Connect to carla server and get world object
+    print('connecting to Carla server...')
+    client = carla.Client('localhost', env_config['port'])
+    if client:
+      client.disconnect()
+    client.connect()
+    client.set_timeout(10.0)
+    try:
+      self.world = client.load_world(env_config['town'])
+    except Exception as e:
+      print(e)
+    print('Carla server connected!')
+
+    # Create a Traffic Manager
+    self.traffic_manager = client.get_trafficmanager()
+
+    # Set weather
+    self.world.set_weather(carla.WeatherParameters.ClearNoon)
+
+    # Get spawn points
+    self.vehicle_spawn_points = list(self.world.get_map().get_spawn_points())
+    self.walker_spawn_points = []
+    for i in range(self.number_of_walkers):
+      spawn_point = carla.Transform()
+      loc = self.world.get_random_location_from_navigation()
+      if (loc != None):
+        spawn_point.location = loc
+        self.walker_spawn_points.append(spawn_point)
+
+    # Create the ego vehicle blueprint
+    self.ego_bp = self._create_vehicle_bluepprint(env_config['ego_vehicle_filter'], color='49,8,8')
+
+    # Collision sensor
+    self.collision_hist = [] # The collision history
+    self.collision_hist_l = 1 # collision history length
+    self.collision_bp = self.world.get_blueprint_library().find('sensor.other.collision')
+
+    # Camera sensor
+    self.camera_img = np.zeros((self.obs_size, self.obs_size, 3), dtype=np.uint8)
+    self.camera_trans = carla.Transform(carla.Location(x=0.8, z=1.7))
+    self.camera_bp = self.world.get_blueprint_library().find('sensor.camera.rgb')
+    # Modify the attributes of the blueprint to set image resolution and field of view.
+    self.camera_bp.set_attribute('image_size_x', str(self.obs_size))
+    self.camera_bp.set_attribute('image_size_y', str(self.obs_size))
+    self.camera_bp.set_attribute('fov', '110')
+    # Set the time in seconds between sensor captures
+    self.camera_bp.set_attribute('sensor_tick', '0.02')
+
+    # Set fixed simulation step for synchronous mode
+    self.settings = self.world.get_settings()
+    self.settings.fixed_delta_seconds = self.dt
 
     # Record the time of total steps and resetting steps
     self.reset_step = 0
     self.total_step = 0
 
+    # Initialize the renderer
+    self._init_renderer()
 
   def reset(self):
     print('-------------------------------------RESET--------------------------------------\n\n\n')
+    # Clear sensor objects
+    self.collision_sensor = None
+    self.camera_sensor = None
 
+    # Delete sensors, vehicles and walkers
+    self._clear_all_actors(['sensor.other.collision', 'sensor.lidar.ray_cast', 'sensor.camera.rgb', 'vehicle.*', 'controller.ai.walker', 'walker.*'])
+
+    # Disable sync mode
+    self._set_synchronous_mode(False)
+
+    # Spawn surrounding vehicles
+    random.shuffle(self.vehicle_spawn_points)
+    count = self.number_of_vehicles
+    if count > 0:
+      for spawn_point in self.vehicle_spawn_points:
+        if self._try_spawn_random_vehicle_at(spawn_point, number_of_wheels=[4]):
+          count -= 1
+        if count <= 0:
+          break
+    while count > 0:
+      if self._try_spawn_random_vehicle_at(random.choice(self.vehicle_spawn_points), number_of_wheels=[4]):
+        count -= 1
+
+    # Spawn pedestrians
+    random.shuffle(self.walker_spawn_points)
+    count = self.number_of_walkers
+    if count > 0:
+      for spawn_point in self.walker_spawn_points:
+        if self._try_spawn_random_walker_at(spawn_point):
+          count -= 1
+        if count <= 0:
+          break
+    while count > 0:
+      if self._try_spawn_random_walker_at(random.choice(self.walker_spawn_points)):
+        count -= 1
+
+    # Get actors polygon list
+    self.vehicle_polygons = []
+    vehicle_poly_dict = self._get_actor_polygons('vehicle.*')
+    self.vehicle_polygons.append(vehicle_poly_dict)
+    self.walker_polygons = []
+    walker_poly_dict = self._get_actor_polygons('walker.*')
+    self.walker_polygons.append(walker_poly_dict)
+
+    # Spawn the ego vehicle
+    ego_spawn_times = 0
+    while True:
+      if ego_spawn_times > self.max_ego_spawn_times:
+        self.reset()
+
+      if self.task_mode == 'random':
+        transform = random.choice(self.vehicle_spawn_points)
+      if self.task_mode == 'roundabout':
+        self.start=[52.1+np.random.uniform(-5,5),-4.2, 178.66] # random
+        # self.start=[52.1,-4.2, 178.66] # static
+        transform = set_carla_transform(self.start)
+      if self._try_spawn_ego_vehicle_at(transform):
+        break
+      else:
+        ego_spawn_times += 1
+        time.sleep(0.1)
+
+    # Add collision sensor
+    self.collision_sensor = self.world.spawn_actor(self.collision_bp, carla.Transform(), attach_to=self.ego)
+    self.collision_sensor.listen(lambda event: get_collision_hist(event))
+    def get_collision_hist(event):
+      impulse = event.normal_impulse
+      intensity = np.sqrt(impulse.x**2 + impulse.y**2 + impulse.z**2)
+      self.collision_hist.append(intensity)
+      if len(self.collision_hist)>self.collision_hist_l:
+        self.collision_hist.pop(0)
+    self.collision_hist = []
+
+    # Add camera sensor
+    self.camera_sensor = self.world.spawn_actor(self.camera_bp, self.camera_trans, attach_to=self.ego)
+    self.camera_sensor.listen(lambda data: get_camera_img(data))
+    def get_camera_img(data):
+      array = np.frombuffer(data.raw_data, dtype = np.dtype("uint8"))
+      array = np.reshape(array, (data.height, data.width, 4))
+      array = array[:, :, :3]
+      array = array[:, :, ::-1]
+      self.camera_img = array
 
     # Update timesteps
     self.time_step=0
     self.reset_step+=1
 
     # Enable sync mode
+    self.settings.synchronous_mode = True
+    self.world.apply_settings(self.settings)
+
+    self.routeplanner = RoutePlanner(self.ego, self.max_waypt)
+    self.waypoints, _, self.vehicle_front = self.routeplanner.run_step()
+
+    # Set the path for the autopilot
+    location_list = [carla.Location(x=loc[0], y=loc[1], z=loc[2]) for loc in self.waypoints]
+    self.traffic_manager.set_path(self.ego, location_list)
+
+    # Set ego information for render
+    self.birdeye_render.set_hero(self.ego, self.ego.id)
 
     return self._get_obs()
   
   def step(self, action):
-    print('------------------------------------STEP--------------------------------------\n\n\n')
+    # Calculate acceleration and steering
+    if self.discrete:
+      acc = self.discrete_act[0][action//self.n_steer]
+      steer = -self.ego.get_control().steer
+    else:
+      acc = action[0]
+      steer = -self.ego.get_control().steer
+
+    # Convert acceleration to throttle and brake
+    if acc > 0:
+      throttle = np.clip(acc/3,0,1)
+      brake = 0
+    else:
+      throttle = 0
+      brake = np.clip(-acc/8,0,1)
+
+    # Apply control
+    act = carla.VehicleControl(throttle=float(throttle), steer=float(-steer), brake=float(brake))
+    self.ego.apply_control(act)
+
+    self.world.tick()
+
+    # Append actors polygon list
+    vehicle_poly_dict = self._get_actor_polygons('vehicle.*')
+    self.vehicle_polygons.append(vehicle_poly_dict)
+    while len(self.vehicle_polygons) > self.max_past_step:
+      self.vehicle_polygons.pop(0)
+    walker_poly_dict = self._get_actor_polygons('walker.*')
+    self.walker_polygons.append(walker_poly_dict)
+    while len(self.walker_polygons) > self.max_past_step:
+      self.walker_polygons.pop(0)
+
+    # route planner
+    self.waypoints, _, self.vehicle_front = self.routeplanner.run_step()
 
     # state information
     info = {
-      'waypoints': 1,
-      'vehicle_front': 1
+      'waypoints': self.waypoints,
+      'vehicle_front': self.vehicle_front
     }
     
     # Update timesteps
@@ -282,13 +456,6 @@ class CarlaEnv(gym.Env):
     return actor_poly_dict
 
   def _get_obs(self):
-    obs = {
-      'camera': np.zeros(shape=(5,), dtype=np.float32),
-      'birdeye': np.zeros(shape=(2,), dtype=np.float32),
-      'state': np.zeros(shape=(3,), dtype=np.float32),
-    }
-    return obs
-
     """Get the observations."""
     ## Birdeye rendering
     self.birdeye_render.vehicle_polygons = self.vehicle_polygons
@@ -339,21 +506,67 @@ class CarlaEnv(gym.Env):
   def _get_reward(self):
     """Calculate the step reward."""
     # reward for speed tracking
+    v = self.ego.get_velocity()
+    speed = np.sqrt(v.x**2 + v.y**2)
 
-    return 50
+    # reward for collision
+    r_collision = 0
+    if len(self.collision_hist) > 0:
+      r_collision = -1
+
+    # reward for out of lane
+    ego_x, ego_y = get_pos(self.ego)
+    dis, w = get_lane_dis(self.waypoints, ego_x, ego_y)
+
+    # longitudinal speed
+    lspeed = np.array([v.x, v.y])
+    lspeed_lon = np.dot(lspeed, w)
+
+    # cost for too fast
+    r_fast = 0
+    if lspeed_lon > self.desired_speed:
+      r_fast = -1
+
+    # cost for lateral acceleration
+    r_lat = - abs(self.ego.get_control().steer) * lspeed_lon**2
+
+    r = 200*r_collision + 1*lspeed_lon + 10*r_fast + 0.2*r_lat - 0.1
+
+    return r
 
   def _terminal(self):
+    print('--------------------------------TERMINAL-----------------------------------------\n\n\n')
     """Calculate whether to terminate the current episode."""
+    # Get ego state
+    ego_x, ego_y = get_pos(self.ego)
+
+    # If collides
+    if len(self.collision_hist)>0:
+      print('collision')
+      return True
 
     # If reach maximum timestep
     if self.time_step>self.max_time_episode:
+      print('max timestep reached')
       return True
 
+    # If at destination
+    if self.dests is not None: # If at destination
+      for dest in self.dests:
+        if np.sqrt((ego_x-dest[0])**2+(ego_y-dest[1])**2)<4:
+          print('at destination')
+          return True
+
+    # If out of lane
+    dis, _ = get_lane_dis(self.waypoints, ego_x, ego_y)
+    if abs(dis) > self.out_lane_thres:
+      print('out of lane')
+      return True
+    print('No termination')
     return False
 
   def _clear_all_actors(self, actor_filters):
     """Clear specific actors."""
-    return
     for actor_filter in actor_filters:
       for actor in self.world.get_actors().filter(actor_filter):
         if actor.is_alive:
