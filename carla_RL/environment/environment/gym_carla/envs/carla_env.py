@@ -454,6 +454,12 @@ class CarlaEnv(gym.Env):
     return actor_poly_dict
 
   def _get_obs(self):
+    obs = {
+      'camera': np.zeros(shape=(5,), dtype=np.float32),
+      'birdeye': np.zeros(shape=(2,), dtype=np.float32),
+      'state': np.zeros(shape=(3,), dtype=np.float32),
+    }
+    return obs
     """Get the observations."""
     ## Birdeye rendering
     self.birdeye_render.vehicle_polygons = self.vehicle_polygons
