@@ -199,6 +199,7 @@ class CarlaEnv(gym.Env):
     ego_spawn_times = 0
     while True:
       if ego_spawn_times > self.max_ego_spawn_times:
+        print('-----------------------------RESET IN RESET-------------------------\n\n\n')
         self.reset()
 
       if self.task_mode == 'random':
