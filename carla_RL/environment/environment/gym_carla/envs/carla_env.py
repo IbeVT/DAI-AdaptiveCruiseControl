@@ -94,7 +94,7 @@ class CarlaEnv(gym.Env):
     print('connecting to Carla server...')
     client = carla.Client('localhost', env_config['port'])
     if client:
-      client.disconnect()
+      client.stop()
     client.connect()
     client.set_timeout(10.0)
     try:
