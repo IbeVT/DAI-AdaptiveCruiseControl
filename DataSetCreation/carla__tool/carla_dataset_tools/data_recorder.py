@@ -113,6 +113,7 @@ class DataRecorder:
                        save_s = time.time()
                        self.actor_tree.tick_data_saving(frame_id, timestamp)
                        print("Raw data saved, cost {:.3f}s".format(time.time()-save_s))
+                       count=0
                     else:
                         count=count+1
                 global sig_interrupt
