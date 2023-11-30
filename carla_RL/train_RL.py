@@ -76,6 +76,8 @@ if __name__ == "__main__":
             "env": "CustomCarlaEnv",
             #"env": "CartPole-v1",
             "env_config": {
+
+                "ignore_workers_failure": False,
                 "disable_env_checking": True,
             },
             "model":
@@ -86,6 +88,7 @@ if __name__ == "__main__":
             "lr": 5e-3   #tune.grid_search([5e-3, 5e-4])
         },
         run_config=train.RunConfig(
+            #ignore_workers_failures=False,
             #disable_env_checking=True,
             #stop={"episode_reward_mean": 30},
             callbacks=[
