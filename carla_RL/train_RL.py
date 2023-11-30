@@ -18,7 +18,8 @@ from gym_carla.envs.carla_env import CarlaEnv
 from gymnasium.wrappers import EnvCompatibility
 
 
-def env_creator(env_config):
+def env_creator(env_config=None):
+    print('-----------------------ENV_CREATOR-------------------------\n\n\n')
     return EnvCompatibility(CarlaEnv())
 
 config = {

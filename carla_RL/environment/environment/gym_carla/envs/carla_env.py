@@ -27,6 +27,7 @@ from gym_carla.envs.misc import *
 class CarlaEnv(gym.Env):
   """An OpenAI gym wrapper for CARLA simulator."""
   def __init__(self):
+    print('------------------------------------INIT------------------------------------------\n\n\n')
     env_config = {
       'number_of_vehicles': 100,
       'number_of_walkers': 0,
@@ -143,6 +144,7 @@ class CarlaEnv(gym.Env):
     self._init_renderer()
 
   def reset(self):
+    print('-------------------------------------RESET--------------------------------------\n\n\n')
     # Clear sensor objects  
     self.collision_sensor = None
     self.camera_sensor = None
