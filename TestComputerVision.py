@@ -88,64 +88,63 @@ class DisplayManager:
 
 
 class SensorManager:
-    def __init__(self, world, display_man, sensor_type, transform, attached, sensor_options, display_pos,
+    def __init__(self, world, display_man, transform, attached, sensor_options, display_pos,
                  computer_vision):
-        self.object_points = None
-        self.speed = None
-        self.distance = None
-        self.radar_points = None
-        self.camera_array = None
-        self.bb_cords = None
         self.computer_vision = computer_vision
-        self.surface = None
         self.world = world
         self.display_man = display_man
         self.display_pos = display_pos
-        self.sensor = self.init_sensor(sensor_type, transform, attached, sensor_options)
+        self.sensor = self.init_sensor(transform, attached, sensor_options)
         self.sensor_options = sensor_options
-        self.timer = CustomTimer()
-
-        self.time_processing = 0.0
         self.tics_processing = 0
-
         self.display_man.add_sensor(self)
+        self.surface = None
 
-    def init_sensor(self, sensor_type, transform, attached, sensor_options):
-        if sensor_type == 'RGBCamera':
-            camera_bp = self.world.get_blueprint_library().find('sensor.camera.rgb')
-            disp_size = self.display_man.get_display_size()
-            camera_bp.set_attribute('image_size_x', str(disp_size[0]))
-            camera_bp.set_attribute('image_size_y', str(disp_size[1]))
-            camera_bp.set_attribute('sensor_tick', '1.0')
-
-            for key in sensor_options:
-                camera_bp.set_attribute(key, sensor_options[key])
-
-            camera = self.world.spawn_actor(camera_bp, transform, attach_to=attached)
-
-            # Build camera matrix
-            world_2_camera = np.array(camera.get_transform().get_inverse_matrix())
-            self.computer_vision.set_inverse_camera_matrix(world_2_camera)
-            # Get the attributes from the camera
-            image_w = camera_bp.get_attribute("image_size_x").as_int()
-            image_h = camera_bp.get_attribute("image_size_y").as_int()
-            fov = camera_bp.get_attribute("fov").as_float()
-            self.computer_vision.build_projection_matrix(image_w, image_h, fov)
-            camera.listen(self.process_camera)
-            return camera
-
-        elif sensor_type == "Radar":
-            radar_bp = self.world.get_blueprint_library().find('sensor.other.radar')
-            for key in sensor_options:
-                radar_bp.set_attribute(key, sensor_options[key])
-            radar = self.world.spawn_actor(radar_bp, transform, attach_to=attached)
-            radar.listen(self.process_radar)
-            return radar
-        else:
-            return None
+    def init_sensor(self, transform, attached, sensor_options):
+        pass
 
     def get_sensor(self):
         return self.sensor
+
+    def render(self):
+        if self.surface is not None:
+            offset = self.display_man.get_display_offset(self.display_pos)
+            self.display_man.display.blit(self.surface, offset)
+
+    def destroy(self):
+        self.sensor.destroy()
+
+
+class CameraManager(SensorManager):
+    def __init__(self, world, display_man, transform, attached, sensor_options, display_pos,
+                 computer_vision):
+        SensorManager.__init__(self, world, display_man, transform, attached, sensor_options, display_pos,
+                               computer_vision)
+        self.camera_array = None
+        self.bb_cords = None
+
+    def init_sensor(self, transform, attached, sensor_options):
+        camera_bp = self.world.get_blueprint_library().find('sensor.camera.rgb')
+        disp_size = self.display_man.get_display_size()
+        camera_bp.set_attribute('image_size_x', str(disp_size[0]))
+        camera_bp.set_attribute('image_size_y', str(disp_size[1]))
+        camera_bp.set_attribute('sensor_tick', '1.0')
+
+        for key in sensor_options:
+            camera_bp.set_attribute(key, sensor_options[key])
+
+        camera = self.world.spawn_actor(camera_bp, transform, attach_to=attached)
+
+        # Build camera matrix
+        world_2_camera = np.array(camera.get_transform().get_inverse_matrix())
+        self.computer_vision.set_inverse_camera_matrix(world_2_camera)
+        # Get the attributes from the camera
+        image_w = camera_bp.get_attribute("image_size_x").as_int()
+        image_h = camera_bp.get_attribute("image_size_y").as_int()
+        fov = camera_bp.get_attribute("fov").as_float()
+        self.computer_vision.build_projection_matrix(image_w, image_h, fov)
+        camera.listen(self.process_camera)
+        return camera
 
     def process_camera(self, image):
         print("Processing camera data")
@@ -180,6 +179,25 @@ class SensorManager:
                 self.surface.blit(text, (x, y))
                 text, rect = font.render(f'Speed: {self.computer_vision.get_last_speed()}', (255, 0, 0))
                 y -= rect.height - 10
+
+
+class RadarManager(SensorManager):
+    def __init__(self, world, display_man, transform, attached, sensor_options, display_pos,
+                 computer_vision):
+        SensorManager.__init__(self, world, display_man, transform, attached, sensor_options, display_pos,
+                               computer_vision)
+        self.object_points = None
+        self.speed = None
+        self.distance = None
+        self.radar_points = None
+
+    def init_sensor(self, transform, attached, sensor_options):
+        radar_bp = self.world.get_blueprint_library().find('sensor.other.radar')
+        for key in sensor_options:
+            radar_bp.set_attribute(key, sensor_options[key])
+        radar = self.world.spawn_actor(radar_bp, transform, attach_to=attached)
+        radar.listen(self.process_radar)
+        return radar
 
     def process_radar(self, radar_points):
         print("Processing radar data")
@@ -229,14 +247,6 @@ class SensorManager:
                     color=color
                 )
 
-    def render(self):
-        if self.surface is not None:
-            offset = self.display_man.get_display_offset(self.display_pos)
-            self.display_man.display.blit(self.surface, offset)
-
-    def destroy(self):
-        self.sensor.destroy()
-
 
 def run_simulation(args, client):
     """This function performed one test run using the args parameters
@@ -279,16 +289,15 @@ def run_simulation(args, client):
         computer_vision = ComputerVision()
 
         # Then, SensorManager is used to spawn RGBCamera and Radar and assign each of them to a grid position.
-        camera_manager = SensorManager(world, display_manager, 'RGBCamera',
+        camera_manager = CameraManager(world, display_manager,
                                        carla.Transform(carla.Location(x=0, z=2.4), carla.Rotation(yaw=+00)),
                                        vehicle, {'sensor_tick': '0.1'}, display_pos=[0, 0],
                                        computer_vision=computer_vision)
-        radar_manager = SensorManager(world, display_manager, 'Radar',
-                                      carla.Transform(carla.Location(x=0, z=2.4)),
-                                      vehicle,
-                                      {'horizontal_fov': '40', 'points_per_second': '5000', 'range': '100',
-                                       'sensor_tick': '0.1', 'vertical_fov': '40'}, display_pos=[0, 0],
-                                      computer_vision=computer_vision)
+        radar_manager = RadarManager(world, display_manager,
+                                     carla.Transform(carla.Location(x=0, z=2.4)),
+                                     vehicle, {'horizontal_fov': '40', 'points_per_second': '5000', 'range': '100',
+                                               'sensor_tick': '0.1', 'vertical_fov': '40'}, display_pos=[0, 0],
+                                     computer_vision=computer_vision)
 
         # But the city now is probably quite empty, let's add a few more vehicles.
         transform.location += carla.Location(x=4, y=-3.2)
