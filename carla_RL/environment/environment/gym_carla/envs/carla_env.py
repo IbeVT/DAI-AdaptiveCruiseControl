@@ -151,8 +151,7 @@ class CarlaEnv(gym.Env):
 
   def reset(self):
     print('-------------------------------------RESET--------------------------------------\n\n\n')
-
-    return self._get_obs()
+    
     # Clear sensor objects  
     self.collision_sensor = None
     self.camera_sensor = None
