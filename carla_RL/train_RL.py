@@ -73,11 +73,11 @@ if __name__ == "__main__":
             "framework": "torch",
             # "num_gpus": 0.5,
             "num_workers": 1,
-            #"env": "CustomCarlaEnv",
-            "env": "CartPole-v1",
-            #"env_config": {
-            #    "disable_env_checking": True,
-            #},
+            "env": "CustomCarlaEnv",
+            #"env": "CartPole-v1",
+            "env_config": {
+                "disable_env_checking": True,
+            },
             "model":
                 {
                     "fcnet_hiddens": [64],
