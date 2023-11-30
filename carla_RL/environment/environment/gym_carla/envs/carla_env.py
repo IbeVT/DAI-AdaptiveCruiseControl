@@ -104,15 +104,12 @@ class CarlaEnv(gym.Env):
   def reset(self):
     print('-------------------------------------RESET--------------------------------------\n\n\n')
 
-    # Disable sync mode
-    self._set_synchronous_mode(False)
 
     # Update timesteps
     self.time_step=0
     self.reset_step+=1
 
     # Enable sync mode
-    self.settings.synchronous_mode = True
 
     return self._get_obs()
   
