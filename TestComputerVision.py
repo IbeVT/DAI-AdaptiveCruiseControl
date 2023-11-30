@@ -121,7 +121,8 @@ class CameraManager(SensorManager):
         SensorManager.__init__(self, world, display_man, transform, attached, sensor_options, display_pos,
                                computer_vision)
         self.camera_array = None
-        self.bb_cords = None
+        self.following_bb_cords = None
+        self.all_boxes = None
 
     def init_sensor(self, transform, attached, sensor_options):
         camera_bp = self.world.get_blueprint_library().find('sensor.camera.rgb')
@@ -147,7 +148,6 @@ class CameraManager(SensorManager):
         return camera
 
     def process_camera(self, image):
-        print("Processing camera data")
         image.convert(carla.ColorConverter.Raw)
         array = np.frombuffer(image.raw_data, dtype=np.dtype("uint8"))
         array = np.reshape(array, (image.height, image.width, 4))
@@ -155,30 +155,51 @@ class CameraManager(SensorManager):
         array = array[:, :, ::-1]
         self.camera_array = array
         # Get bounding box from image array.
-        self.bb_cords = self.computer_vision.get_bounding_box(array)
+        self.following_bb_cords, self.all_boxes = self.computer_vision.get_bounding_boxes(array)
         self.tics_processing += 1
-        print("Finished processing camera data")
 
     def draw_camera(self):
         # Create surface from image array.
         if self.display_man.render_enabled():
             self.surface = pygame.surfarray.make_surface(self.camera_array.swapaxes(0, 1))
-        # Draw bounding box on screen.
-        if self.bb_cords is not None:
-            [x_lower, y_lower, x_upper, y_upper] = self.bb_cords
-            if self.display_man.render_enabled():
+            # Draw bounding boxes on screen.
+            # Draw the bounding box of the followed vehicle.
+            if (self.following_bb_cords is not None) and (self.surface is not None):
+                [x_lower, y_lower, x_upper, y_upper] = self.following_bb_cords
                 pygame.draw.rect(self.surface, (255, 0, 0), (x_lower, y_lower, x_upper - x_lower, y_upper - y_lower), 2)
 
-            # Display the last distance and speed on screen.
-            font = pygame.freetype.SysFont('Arial', 30)
-            if self.display_man.render_enabled() and self.surface is not None:
+                # Display the last distance and speed on screen.
+                font = pygame.freetype.SysFont('Arial', 30)
                 # Display distance and speed on screen.
-                text, rect = font.render(f'Distance: {self.computer_vision.get_last_distance()}', (255, 0, 0))
+                distance = self.computer_vision.get_last_distance()
                 x = x_lower
-                y = y_lower - rect.height - 5
-                self.surface.blit(text, (x, y))
-                text, rect = font.render(f'Speed: {self.computer_vision.get_last_speed()}', (255, 0, 0))
-                y -= rect.height - 10
+                y = y_lower - 5
+                # Catch NaN error.
+                try:
+                    distance = round(distance)
+                    text, rect = font.render(f'Distance: {distance}', (255, 0, 0))
+                    y -= rect.height
+                    self.surface.blit(text, (x, y))
+                except:
+                    pass
+                speed = self.computer_vision.get_last_speed()
+                try:
+                    speed = round(speed)
+                    text, rect = font.render(f'Speed: {speed}', (255, 0, 0))
+                    y -= rect.height - 10
+                    self.surface.blit(text, (x, y))
+                except:
+                    pass
+
+            # Draw all other bounding boxes on screen.
+            if self.all_boxes is not None:
+                for box in self.all_boxes:
+                    cords = box.xyxy[0].tolist()
+                    cords = [round(x) for x in cords]
+                    if cords != self.following_bb_cords:
+                        [x_lower, y_lower, x_upper, y_upper] = cords
+                        pygame.draw.rect(self.surface, (0, 255, 0),
+                                         (x_lower, y_lower, x_upper - x_lower, y_upper - y_lower), 2)
 
 
 class RadarManager(SensorManager):
@@ -200,10 +221,8 @@ class RadarManager(SensorManager):
         return radar
 
     def process_radar(self, radar_points):
-        print("Processing radar data")
         self.radar_points = radar_points
         self.distance, self.speed, self.object_points = self.computer_vision.predict_distance(radar_points)
-        print("Finished processing radar data")
 
     # Draws the radar points on the screen. It should be executed AFTER the camera has been drawn.
     def draw_radar(self):
@@ -335,8 +354,6 @@ def run_simulation(args, client):
 
             # Render received data
             display_manager.render()
-
-            print("Rendered")
 
             camera_manager.finished = False
             radar_manager.finished = False
