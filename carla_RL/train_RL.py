@@ -4,6 +4,7 @@ from ray.air.integrations.wandb import WandbLoggerCallback
 from ray.rllib.models import ModelCatalog
 from ray.tune.search import grid_search
 from ray.rllib.algorithms.ppo import PPO
+from ray.rllib.algorithms.dqn import DQN
 import gymnasium as gym
 
 from setuptools import setup
@@ -66,13 +67,14 @@ env.reset()"""
 
 if __name__ == "__main__":
     tuner = tune.Tuner(
-        PPO,
+        DQN,
         tune_config=tune.TuneConfig(max_concurrent_trials=1),
         param_space={
             "framework": "torch",
             # "num_gpus": 0.5,
             "num_workers": 1,
-            "env": "CustomCarlaEnv",
+            #"env": "CustomCarlaEnv",
+            "env": "CartPole-v1",
             "env_config": {
                 "disable_env_checking": True,
             },
