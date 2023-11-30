@@ -88,7 +88,7 @@ class CarlaEnv(gym.Env):
       'state': spaces.Box(np.array([-2, -1, -5, 0]), np.array([2, 1, 30, 1]), dtype=np.float32)
       }
 
-    observation_space_dict = spaces.Box(low=0, high=255, shape=(5,), dtype=np.float32)
+    observation_space_dict = {'camera': spaces.Box(low=0, high=255, shape=(5,), dtype=np.float32)}
 
     self.observation_space = spaces.Dict(observation_space_dict)
 
@@ -457,7 +457,7 @@ class CarlaEnv(gym.Env):
     return actor_poly_dict
 
   def _get_obs(self):
-    obs = np.zeros(shape=(5,), dtype=np.float32)
+    obs = {'camera': np.zeros(shape=(5,), dtype=np.float32)}
     return obs
 
     """Get the observations."""
