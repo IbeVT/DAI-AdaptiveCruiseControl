@@ -104,7 +104,7 @@ class CarlaEnv(gym.Env):
 
     # Set weather
     self.world.set_weather(carla.WeatherParameters.ClearNoon)
-
+    print(1)
     # Get spawn points
     self.vehicle_spawn_points = list(self.world.get_map().get_spawn_points())
     self.walker_spawn_points = []
@@ -114,7 +114,7 @@ class CarlaEnv(gym.Env):
       if (loc != None):
         spawn_point.location = loc
         self.walker_spawn_points.append(spawn_point)
-
+    print(2)
     # Create the ego vehicle blueprint
     self.ego_bp = self._create_vehicle_bluepprint(env_config['ego_vehicle_filter'], color='49,8,8')
 
@@ -122,7 +122,7 @@ class CarlaEnv(gym.Env):
     self.collision_hist = [] # The collision history
     self.collision_hist_l = 1 # collision history length
     self.collision_bp = self.world.get_blueprint_library().find('sensor.other.collision')
-
+    print(3)
     # Camera sensor
     self.camera_img = np.zeros((self.obs_size, self.obs_size, 3), dtype=np.uint8)
     self.camera_trans = carla.Transform(carla.Location(x=0.8, z=1.7))
@@ -133,11 +133,11 @@ class CarlaEnv(gym.Env):
     self.camera_bp.set_attribute('fov', '110')
     # Set the time in seconds between sensor captures
     self.camera_bp.set_attribute('sensor_tick', '0.02')
-
+    print(4)
     # Set fixed simulation step for synchronous mode
     self.settings = self.world.get_settings()
     self.settings.fixed_delta_seconds = self.dt
-
+    print(5)
     # Record the time of total steps and resetting steps
     self.reset_step = 0
     self.total_step = 0
@@ -154,7 +154,7 @@ class CarlaEnv(gym.Env):
 
     # Delete sensors, vehicles and walkers
     self._clear_all_actors(['sensor.other.collision', 'sensor.lidar.ray_cast', 'sensor.camera.rgb', 'vehicle.*', 'controller.ai.walker', 'walker.*'])
-
+    print(11)
     # Disable sync mode
     self._set_synchronous_mode(False)
 
@@ -170,7 +170,7 @@ class CarlaEnv(gym.Env):
     while count > 0:
       if self._try_spawn_random_vehicle_at(random.choice(self.vehicle_spawn_points), number_of_wheels=[4]):
         count -= 1
-
+    print(12)
     # Spawn pedestrians
     random.shuffle(self.walker_spawn_points)
     count = self.number_of_walkers
@@ -183,7 +183,7 @@ class CarlaEnv(gym.Env):
     while count > 0:
       if self._try_spawn_random_walker_at(random.choice(self.walker_spawn_points)):
         count -= 1
-
+    print(13)
     # Get actors polygon list
     self.vehicle_polygons = []
     vehicle_poly_dict = self._get_actor_polygons('vehicle.*')
@@ -191,7 +191,7 @@ class CarlaEnv(gym.Env):
     self.walker_polygons = []
     walker_poly_dict = self._get_actor_polygons('walker.*')
     self.walker_polygons.append(walker_poly_dict)
-
+    print(14)
     # Spawn the ego vehicle
     ego_spawn_times = 0
     while True:
@@ -210,7 +210,7 @@ class CarlaEnv(gym.Env):
       else:
         ego_spawn_times += 1
         time.sleep(0.1)
-
+    print(15)
     # Add collision sensor
     self.collision_sensor = self.world.spawn_actor(self.collision_bp, carla.Transform(), attach_to=self.ego)
     self.collision_sensor.listen(lambda event: get_collision_hist(event))
@@ -221,7 +221,7 @@ class CarlaEnv(gym.Env):
       if len(self.collision_hist)>self.collision_hist_l:
         self.collision_hist.pop(0)
     self.collision_hist = []
-
+    print(16)
     # Add camera sensor
     self.camera_sensor = self.world.spawn_actor(self.camera_bp, self.camera_trans, attach_to=self.ego)
     self.camera_sensor.listen(lambda data: get_camera_img(data))
@@ -231,7 +231,7 @@ class CarlaEnv(gym.Env):
       array = array[:, :, :3]
       array = array[:, :, ::-1]
       self.camera_img = array
-
+    print(17)
     # Update timesteps
     self.time_step=0
     self.reset_step+=1
@@ -242,11 +242,11 @@ class CarlaEnv(gym.Env):
 
     self.routeplanner = RoutePlanner(self.ego, self.max_waypt)
     self.waypoints, _, self.vehicle_front = self.routeplanner.run_step()
-
+    print(18)
     # Set the path for the autopilot
     location_list = [carla.Location(x=loc[0], y=loc[1], z=loc[2]) for loc in self.waypoints]
     self.traffic_manager.set_path(self.ego, location_list)
-
+    print(19)
     # Set ego information for render
     self.birdeye_render.set_hero(self.ego, self.ego.id)
 
