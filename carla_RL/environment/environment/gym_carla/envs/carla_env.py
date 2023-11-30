@@ -157,10 +157,11 @@ class CarlaEnv(gym.Env):
     print(11)
     # Disable sync mode
     self._set_synchronous_mode(False)
-
+    print(111)
     # Spawn surrounding vehicles
     random.shuffle(self.vehicle_spawn_points)
     count = self.number_of_vehicles
+    print(112)
     if count > 0:
       for spawn_point in self.vehicle_spawn_points:
         if self._try_spawn_random_vehicle_at(spawn_point, number_of_wheels=[4]):
