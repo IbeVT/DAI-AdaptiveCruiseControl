@@ -36,7 +36,7 @@ class ComputerVision:
 
     def get_bounding_boxes(self, image):
         self.image = image
-        results = self.model.predict(source=image, save=True)
+        results = self.model.predict(source=image, save=False)
         # Check which car is in front, if any
         result = results[0]
         following_vehicle_cords = None
