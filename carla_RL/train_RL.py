@@ -17,7 +17,7 @@ sys.path.append('carla_RL/environment/environment/gym_carla')
 import gym_carla
 from gym_carla.envs.carla_env import CarlaEnv
 from gymnasium.wrappers import EnvCompatibility
-
+import wandb
 
 def env_creator(env_config=None):
     print('-----------------------ENV_CREATOR-------------------------\n\n\n')
@@ -67,6 +67,7 @@ env.reset()"""
 
 if __name__ == "__main__":
     #ray.init(local_mode=True)
+    wandb.init(project="your_project_name", name="your_run_name")
     tuner = tune.Tuner(
         PPO,
         tune_config=tune.TuneConfig(max_concurrent_trials=1),

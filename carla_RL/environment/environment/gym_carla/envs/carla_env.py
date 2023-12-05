@@ -243,7 +243,6 @@ class CarlaEnv(gym.Env):
                 self.collision_hist.pop(0)
 
         self.collision_hist = []
-        print(16)
 
         # Add camera sensor
         self.camera_sensor = self.world.spawn_actor(self.camera_bp, self.camera_trans, attach_to=self.ego)
@@ -260,25 +259,20 @@ class CarlaEnv(gym.Env):
             array = array[:, :, ::-1]
             self.camera_img = array
 
-        print(17)
-
         # Update timesteps
         self.time_step = 0
         self.reset_step += 1
-        print(171)
+
         # Enable sync mode
         self.settings.synchronous_mode = True
-        print(172)
         self.world.apply_settings(self.settings)
 
         self.routeplanner = RoutePlanner(self.ego, self.max_waypt)
         self.waypoints, _, self.vehicle_front = self.routeplanner.run_step()
 
-        print(18)
         # Set the path for the autopilot
         location_list = [carla.Location(x=loc[0], y=loc[1], z=loc[2]) for loc in self.waypoints]
         self.traffic_manager.set_path(self.ego, location_list)
-        print(19)
 
         # Set ego information for render
         self.birdeye_render.set_hero(self.ego, self.ego.id)
@@ -337,6 +331,9 @@ class CarlaEnv(gym.Env):
         #print('step end')
         a = self._get_obs()
         b = self._get_reward()
+        import wandb
+        wandb.log({"step_reward": b})
+
         c = self._terminal()
         d = copy.deepcopy(info)
         return (a, b, c, d)
