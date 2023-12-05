@@ -71,18 +71,14 @@ if __name__ == "__main__":
         PPO,
         tune_config=tune.TuneConfig(max_concurrent_trials=1),
         param_space={
+            "disable_env_checking": True,
+            "ignore_workers_failure": False,
             "framework": "torch",
             # "num_gpus": 0.5,
             "num_workers": 1,
             "env": "CustomCarlaEnv",
             #"env": "CartPole-v1",
             "env_config": {
-                "ignore_workers_failure": False,
-                "disable_env_checking": True,
-            },
-            "eval_config": {
-                "ignore_workers_failure": False,
-                "disable_env_checking": True,
             },
             "model":
                 {
