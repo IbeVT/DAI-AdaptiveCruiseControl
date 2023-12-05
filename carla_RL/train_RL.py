@@ -19,9 +19,9 @@ from gym_carla.envs.carla_env import CarlaEnv
 from gymnasium.wrappers import EnvCompatibility
 
 
-def env_creator():
+def env_creator(env_config=None):
     print('-----------------------ENV_CREATOR-------------------------\n\n\n')
-    return EnvCompatibility(CarlaEnv)
+    return EnvCompatibility(CarlaEnv(env_config))
 
 config = {
     'number_of_vehicles': 100,
@@ -45,9 +45,8 @@ config = {
     'max_ego_spawn_times': 200,  # maximum times to spawn ego vehicle
     'display_route': True,  # whether to render the desired route
 }
-env = env_creator()
 
-register_env("CustomCarlaEnv", lambda: config, env(config))
+register_env("CustomCarlaEnv", env_creator)
 
 """register(
     id='CustomCarlaEnv',
@@ -70,7 +69,7 @@ if __name__ == "__main__":
     #ray.init(local_mode=True)
     tuner = tune.Tuner(
         PPO,
-        tune_config=tune.TuneConfig(max_concurrent_trials=1, disable_env_checking=True,),
+        tune_config=tune.TuneConfig(max_concurrent_trials=1, disable_env_checking=True),
         param_space={
             "disable_env_checking": True,
             "ignore_workers_failure": False,
@@ -80,6 +79,7 @@ if __name__ == "__main__":
             "env": "CustomCarlaEnv",
             #"env": "CartPole-v1",
             "env_config": {
+                "ignore_workers_failure": False,
             },
             "model":
                 {
