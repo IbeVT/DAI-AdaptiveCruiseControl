@@ -19,7 +19,8 @@ class YoloConfig:
 
 LABEL_DATAFRAME = pd.DataFrame(columns=['raw_value', 'color', 'coco_names_index'],
                                data=[
-                                     # [ 4, (220, 20, 60), 0],
+                                     [ 4, (220, 20, 60), 0],
+                                     [ 2,   (0,  0,   142),2],
                                      [18, (250, 170, 30), 9],
                                      [12, (220, 220,  0), 80],
                                ])
@@ -119,9 +120,9 @@ def write_image(output_path: str, frame_id: str, image_rgb: np.array):
 
 
 def write_label(output_path: str, frame_id: str, labels: list):
-    label_dir = f"{output_path}/yolo_dataset/labels/train"
-    os.makedirs(label_dir, exist_ok=True)
-    with open(f"{label_dir}/{frame_id}.txt", "w") as f:
+     label_dir = f"{output_path}/yolo_dataset/labels/train"
+     os.makedirs(label_dir, exist_ok=True)
+     with open(f"{label_dir}/{frame_id}.txt", "w") as f:
         for label in labels:
             f.write(label)
             f.write('\n')
