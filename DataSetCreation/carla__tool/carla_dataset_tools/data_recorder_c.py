@@ -19,8 +19,7 @@ from utils.transform import transform_to_carla_transform
 
 sig_interrupt = False
 
-duration=25 #seconds
-
+duration= os.environ['DUR'] #seconds
 weather= carla.WeatherParameters(
         cloudiness=20.0,
         precipitation=20.0,

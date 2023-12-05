@@ -14,7 +14,7 @@ from utils.transform import Transform, Location, Rotation
 from utils.transform import transform_to_carla_transform
 
 sig_interrupt = False
-duration=25 #seconds
+duration= os.environ['DUR'] #seconds
 
 
 weather= carla.WeatherParameters(
