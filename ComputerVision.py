@@ -12,7 +12,6 @@ from LowpassFilter import LowpassFilter
 class ComputerVision:
     def __init__(self, vehicle, radar_sample_rate=10):
         self.delta_v = None
-        self.result_boxes = []
         self.image = None
         self.object_points = None
         self.vehicle = vehicle
@@ -25,7 +24,7 @@ class ComputerVision:
         self.n_points = 50
         self.max_depth = 100
         self.max_speed = 120 / 3.6  # 120 km/h
-        self.max_distance_following_vehicle = 500  # The maximum distance between the endpoint of the steer vector and the center of the bounding box of the vehicle
+        self.max_distance_following_vehicle = 50  # The maximum distance between the endpoint of the steer vector and the center of the bounding box of the vehicle
         self.following_vehicle_box = None
         self.following_vehicle_type = None
         self.distance = None
@@ -70,7 +69,11 @@ class ComputerVision:
         list_len = len(self.wheel_angles)
         if list_len > n_points:
             filtered_wheel_angles = self.low_pass_filter.butter_lowpass_filter(self.wheel_angles[-n_points:])
-            steer_angle = filtered_wheel_angles[-1]
+            # Only use the filtered value if it is smaller than the original value.
+            if math.fabs(filtered_wheel_angles[-1]) < math.fabs(self.wheel_angles[-1]):
+                steer_angle = filtered_wheel_angles[-1]
+            else:
+                steer_angle = self.wheel_angles[-1]
         else:
             steer_angle = self.wheel_angles[-1]
         # Periodically reset the list to avoid taking up too much memory
@@ -78,8 +81,8 @@ class ComputerVision:
             self.wheel_angles = self.wheel_angles[-n_points:]
 
         vehicle_boxes = []
-        vehicle_types = []
         previous_results = self.boxes
+        previous_low_conf_results = self.low_conf_boxes
         self.boxes = []
         self.low_conf_boxes = []
         for box in result.boxes:
@@ -91,7 +94,15 @@ class ComputerVision:
             print("Coordinates:", cords)
             print("Probability:", conf)
             print("---")
+            # If the confidence is high enough, immediately save the box
+            if conf > 0.5:
+                print("New box detected")
+                self.boxes.append({"class_id": class_id, "cords": cords, "conf": conf})
+                if str(class_id) in self.vehicle_classes:
+                    vehicle_boxes.append({"class_id": class_id, "cords": cords, "conf": conf})
+                continue
             # Check if a similar box was detected in the previous frame
+            found = False
             for previous_box in previous_results:
                 class_id_previous = previous_box["class_id"]
                 cords_previous = previous_box["cords"]
@@ -101,18 +112,35 @@ class ComputerVision:
                     if do_boxes_overlap(cords, cords_previous):
                         # As approximately the same box was detected in the previous frame, we will suppose that it
                         # is indeed a true positive
+                        print("Same box detected in previous frame")
                         self.boxes.append({"class_id": class_id, "cords": cords, "conf": conf})
-                        continue
-                # If the box was not detected in the previous frame, we will only consider it a true positive if the
-                # confidence is high enough
-                if conf > 0.5:
-                    self.boxes.append({"class_id": class_id, "cords": cords, "conf": conf})
-                else:
-                    # Still save the box, for debugging purposes
-                    self.low_conf_boxes.append({"class_id": class_id, "cords": cords, "conf": conf})
+                        if str(class_id) in self.vehicle_classes:
+                            vehicle_boxes.append({"class_id": class_id, "cords": cords, "conf": conf})
+                        found = True
+                        break
 
-            if str(class_id) in self.vehicle_classes:
-                vehicle_boxes.append({"class_id": class_id, "cords": cords, "conf": conf})
+            if not found:
+                # Check if a similar box was detected with low confidence in the previous frame
+                for previous_box in previous_low_conf_results:
+                    class_id_previous = previous_box["class_id"]
+                    cords_previous = previous_box["cords"]
+                    # Check if the class is the same
+                    if class_id == class_id_previous:
+                        # Check whether the boxes overlap
+                        if do_boxes_overlap(cords, cords_previous):
+                            # As approximately the same box was detected in the previous frame, we will suppose that it
+                            # is indeed a true positive
+                            print("Same box detected in previous frame")
+                            if previous_box["conf"] + conf > 0.6:
+                                self.boxes.append({"class_id": class_id, "cords": cords, "conf": conf})
+                                if str(class_id) in self.vehicle_classes:
+                                    vehicle_boxes.append({"class_id": class_id, "cords": cords, "conf": conf})
+                                found = True
+                                break
+            if not found:
+                print("Low confidence box detected")
+                # Still save the box, for debugging purposes
+                self.low_conf_boxes.append({"class_id": class_id, "cords": cords, "conf": conf})
 
         # 2. Group all points that belong to the same box
         distances = []  # The distances of all points that belong to the i-th box
@@ -151,8 +179,7 @@ class ComputerVision:
                 continue
             cords = self.get_image_coordinates_from_radar_point(steer_angle, altitude, distances[i])
             distance_to_box = math.sqrt((cords[0] - np.mean([box["cords"][0], box["cords"][2]])) ** 2 +
-                                        (cords[1] - np.mean([box["cords"][1], box["cords"][3]])) ** 2)
-            print("Cords:", cords)
+                                        ((cords[1] - np.mean([box["cords"][1], box["cords"][3]]))/2) ** 2)  # Y is less important than X
             print("Box:", box)
             print("Distance to box:", distance_to_box)
             if distance_to_box < smallest_distance_to_box:
@@ -160,10 +187,6 @@ class ComputerVision:
                 self.distance = distances[i]
                 self.delta_v = velocities[i]
                 self.steer_vector_endpoint = cords
-        self.result_boxes = result.boxes
-
-    def get_boxes(self):
-        return self.result_boxes
 
     def get_current_bounding_box(self):
         return self.following_vehicle_box
@@ -176,6 +199,12 @@ class ComputerVision:
 
     def get_object_points(self):
         return self.object_points
+
+    def get_boxes(self):
+        return self.boxes
+
+    def get_low_conf_boxes(self):
+        return self.low_conf_boxes
 
     def build_projection_matrix(self, w, h, fov):
         focal = w / (2.0 * np.tan(fov * np.pi / 360.0))

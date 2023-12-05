@@ -17,7 +17,7 @@ if __name__ == "__main__":
     # Filter requirements.
     order = 5
     fs = 10.0   # sample rate, Hz
-    cutoff = 2  # desired cutoff frequency of the filter, Hz
+    cutoff = 1  # desired cutoff frequency of the filter, Hz
 
     filter = LowpassFilter(cutoff, fs, order)
 

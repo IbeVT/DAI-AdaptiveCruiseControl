@@ -159,7 +159,6 @@ class CameraManager(SensorManager):
         self.computer_vision.image = array
 
     def draw_camera(self):
-        all_boxes = self.computer_vision.get_boxes()
         following_bb = self.computer_vision.get_current_bounding_box()
         # Create surface from image array.
         if self.display_man.render_enabled() and self.camera_array is not None:
@@ -168,7 +167,7 @@ class CameraManager(SensorManager):
             # Draw the bounding box of the followed vehicle.
             if (following_bb is not None) and (self.surface is not None):
                 [x_lower, y_lower, x_upper, y_upper] = following_bb["cords"]
-                pygame.draw.rect(self.surface, (255, 0, 0), (x_lower, y_lower, x_upper - x_lower, y_upper - y_lower), 2)
+                pygame.draw.rect(self.surface, (0, 255, 0), (x_lower, y_lower, x_upper - x_lower, y_upper - y_lower), 2)
 
                 # Display the last distance and speed on screen.
                 font = pygame.freetype.SysFont('Arial', 30)
@@ -179,7 +178,7 @@ class CameraManager(SensorManager):
                 # Catch NaN error.
                 try:
                     distance = round(distance)
-                    text, rect = font.render(f'Distance: {distance}', (255, 0, 0))
+                    text, rect = font.render(f'Distance: {distance}', (0, 255, 0))
                     y -= rect.height
                     self.surface.blit(text, (x, y))
                 except:
@@ -187,25 +186,36 @@ class CameraManager(SensorManager):
                 speed = self.computer_vision.get_delta_v()
                 try:
                     speed = round(speed)
-                    text, rect = font.render(f'Speed: {speed}', (255, 0, 0))
+                    text, rect = font.render(f'Speed: {speed}', (0, 255, 0))
                     y -= rect.height - 10
                     self.surface.blit(text, (x, y))
                 except:
                     pass
 
             # Draw all other bounding boxes on screen.
-            if all_boxes is not None:
-                for box in all_boxes:
-                    cords = box.xyxy[0].tolist()
-                    cords = [round(x) for x in cords]
+            boxes = self.computer_vision.get_boxes()
+            if boxes is not None:
+                for box in boxes:
+                    print("Drawing box", box)
+                    cords = box["cords"]
                     if cords != following_bb:
                         [x_lower, y_lower, x_upper, y_upper] = cords
-                        pygame.draw.rect(self.surface, (0, 255, 0),
+                        pygame.draw.rect(self.surface, (0, 0, 255),
                                          (x_lower, y_lower, x_upper - x_lower, y_upper - y_lower), 2)
+            # Draw low confidence bounding boxes on screen.
+            low_confidence_boxes = self.computer_vision.get_low_conf_boxes()
+            if low_confidence_boxes is not None:
+                for box in low_confidence_boxes:
+                    cords = box["cords"]
+                    if cords != following_bb:
+                        [x_lower, y_lower, x_upper, y_upper] = cords
+                        pygame.draw.rect(self.surface, (255, 0, 0),
+                                         (x_lower, y_lower, x_upper - x_lower, y_upper - y_lower), 2)
+
 
             # For debug purposes: draw the steer vector endpoint
             if self.computer_vision.steer_vector_endpoint is not None:
-                pygame.draw.circle(self.surface, (0, 0, 255), self.computer_vision.steer_vector_endpoint, 20)
+                pygame.draw.circle(self.surface, (0, 0, 255), self.computer_vision.steer_vector_endpoint, 15)
 
 
 class RadarManager(SensorManager):
@@ -348,7 +358,6 @@ def run_simulation(args, client):
 
         # Simulation loop
         call_exit = False
-        time_init_sim = timer.time()
         while True:
             # Carla Tick
             if args.sync:
