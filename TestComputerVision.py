@@ -175,7 +175,7 @@ class CameraManager(SensorManager):
                 distance = self.computer_vision.get_distance()
                 x = x_lower
                 y = y_lower - 5
-                # Catch NaN error.
+                # Catch errors, mostly when a NaN occurs.
                 try:
                     distance = round(distance)
                     text, rect = font.render(f'Distance: {distance}', (0, 255, 0))
@@ -192,11 +192,15 @@ class CameraManager(SensorManager):
                 except:
                     pass
 
+                # Display the vehicle category on screen.
+                text, rect = font.render(following_bb["class_id"], (0, 255, 0))
+                y -= rect.height
+                self.surface.blit(text, (x, y))
+
             # Draw all other bounding boxes on screen.
             boxes = self.computer_vision.get_boxes()
             if boxes is not None:
                 for box in boxes:
-                    print("Drawing box", box)
                     cords = box["cords"]
                     if cords != following_bb:
                         [x_lower, y_lower, x_upper, y_upper] = cords
