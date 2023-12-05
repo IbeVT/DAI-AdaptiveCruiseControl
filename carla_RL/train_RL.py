@@ -80,6 +80,10 @@ if __name__ == "__main__":
                 "ignore_workers_failure": False,
                 "disable_env_checking": True,
             },
+            "eval_config": {
+                "ignore_workers_failure": False,
+                "disable_env_checking": True,
+            },
             "model":
                 {
                     "fcnet_hiddens": [1],
