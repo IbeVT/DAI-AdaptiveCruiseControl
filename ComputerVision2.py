@@ -27,8 +27,6 @@ class ComputerVision2:
         self.radar_points = None
         self.model = YOLO('sign_best.pt')
         self.signs_classes = ['Green Light', 'Red Light', 'Speed Limit 10', 'Speed Limit 100', 'Speed Limit 110', 'Speed Limit 120', 'Speed Limit 20', 'Speed Limit 30', 'Speed Limit 40', 'Speed Limit 50', 'Speed Limit 60', 'Speed Limit 70', 'Speed Limit 80', 'Speed Limit 90', 'Stop']
-
-
         self.camera_x_pixels = 720
         self.camera_y_pixels = 1280
         self.n_points = 50
@@ -44,15 +42,28 @@ class ComputerVision2:
             self.camera_x_pixels = x
             self.camera_y_pixels = y
 
-    #def process_data(self):
+                            
+    def process_data(self):
         # Start by detecting objects in the image
-        #if self.image is None or self.radar_points is None:
-            #return
-      results = self.model.predict(source=self.image, save=False)
-      result = results[0]
+        if self.image is None or self.radar_points is None:
+            return
+        results = self.model.predict(source=self.image, save=False, conf=0.1)
+        result = results[0]
 
-
-    for box in result.boxes:
+        # Check which car is in front, if any
+        # To find the vehicle in front, we will use the steer angle and the azimuth angle We do it as follows:
+        # 1. Get all boxes that are vehicles
+        # 2. Group all points that belong to the same box
+        # 3. For each box, calculate the median distance and speed
+        # 4. Calculate where the vector with length=median_distance, azimuth=steer_angle and
+        # altitude=mean_altitude_points would end on the camera
+        # 5. Calculate the distance from the vector to the center of the bounding box of the vehicle
+        vehicle_boxes = []
+        previous_results = self.boxes
+        previous_low_conf_results = self.low_conf_boxes
+        self.boxes = []
+        self.low_conf_boxes = []
+        for box in result.boxes:
             class_id = result.names[box.cls[0].item()]
             cords = box.xyxy[0].tolist()
             cords = [round(x) for x in cords]
@@ -61,5 +72,99 @@ class ComputerVision2:
             print("Coordinates:", cords)
             print("Probability:", conf)
             print("---")
-            if str(class_id) in self.vehicle_classes:
-                vehicle_boxes.append(cords)
+            # If the confidence is high enough, immediately save the box
+            if conf > 0.5:
+                print("New box detected")
+                self.boxes.append({"class_id": class_id, "cords": cords, "conf": conf})
+                if str(class_id) in self.vehicle_classes:
+                    vehicle_boxes.append({"class_id": class_id, "cords": cords, "conf": conf})
+                continue
+            # Check if a similar box was detected in the previous frame
+            found = False
+            for previous_box in previous_results:
+                class_id_previous = previous_box["class_id"]
+                cords_previous = previous_box["cords"]
+                # Check if the class is the same
+                if class_id == class_id_previous:
+                    # Check whether the boxes overlap
+                    if do_boxes_overlap(cords, cords_previous):
+                        # If approximately the same box was detected in the previous frame, we will suppose that it
+                        # is indeed a true positive
+                        self.boxes.append({"class_id": class_id, "cords": cords, "conf": conf})
+                        if str(class_id) in self.vehicle_classes:
+                            vehicle_boxes.append({"class_id": class_id, "cords": cords, "conf": conf})
+                        found = True
+                        break
+
+            if not found:
+                # Check if a similar box was detected with low confidence in the previous frame
+                for previous_box in previous_low_conf_results:
+                    class_id_previous = previous_box["class_id"]
+                    cords_previous = previous_box["cords"]
+                    # Check if the class is the same
+                    if class_id == class_id_previous:
+                        # Check whether the boxes overlap
+                        if do_boxes_overlap(cords, cords_previous):
+                            # If approximately the same box was detected in the previous frame, we will suppose that it
+                            # is indeed a true positive
+                            if previous_box["conf"] + conf > 0.6:
+                                self.boxes.append({"class_id": class_id, "cords": cords, "conf": conf})
+                                if str(class_id) in self.vehicle_classes:
+                                    vehicle_boxes.append({"class_id": class_id, "cords": cords, "conf": conf})
+                                found = True
+                                break
+            if not found:
+                # Still save the box, for debugging purposes
+                self.low_conf_boxes.append({"class_id": class_id, "cords": cords, "conf": conf})
+
+
+
+    def get_current_bounding_box(self):
+        return self.following_vehicle_box
+
+    def get_distance(self):
+        return self.distance
+
+    def get_delta_v(self):
+        return self.delta_v
+
+    def get_object_points(self):
+        return self.object_points
+
+    def get_boxes(self):
+        return self.boxes
+
+    def get_low_conf_boxes(self):
+        return self.low_conf_boxes
+
+    def build_projection_matrix(self, w, h, fov):
+        focal = w / (2.0 * np.tan(fov * np.pi / 360.0))
+        K = np.identity(3)
+        K[0, 0] = K[1, 1] = focal
+        K[0, 2] = w / 2.0
+        K[1, 2] = h / 2.0
+        self.projection_matrix = K
+        return K
+
+
+        # Calculate 2D projection of 3D coordinate
+
+        # Format the input coordinate (loc is a carla.Position object)
+        point = np.array([loc.x, loc.y, loc.z, 1])
+        # transform to camera coordinates
+        point_camera = np.dot(self.inverse_camera_matrix, point)
+
+        # New we must change from UE4's coordinate system to a "standard"
+        # (x, y ,z) -> (y, -z, x)
+        # and we remove the fourth component also
+        point_camera = [point_camera[1], -point_camera[2], point_camera[0]]
+
+        # now project 3D->2D using the camera matrix
+        point_img = np.dot(self.projection_matrix, point_camera)
+        # normalize
+        point_img[0] /= point_img[2]
+        point_img[1] /= point_img[2]
+        return point_img[0:2]
+
+    def set_inverse_camera_matrix(self, inverse_matrix):
+        self.inverse_camera_matrix = inverse_matrix
