@@ -29,8 +29,8 @@ TL_LIGHT_LABEL = {'DEFAULT': 9,
                   'GREEN': 81}
 
 LABEL_COLORS = np.array([
-    # (220, 20, 60),   # Pedestrian
-    # (0, 0, 142),     # Vehicle
+    (220, 20, 60),   # Pedestrian
+    (0, 0, 142),     # Vehicle
     (220, 220, 0),   # TrafficSign -> COCO INDEX
     (250, 170, 30),  # TrafficLight
 ])
