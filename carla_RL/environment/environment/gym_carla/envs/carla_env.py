@@ -70,6 +70,8 @@ class CarlaEnv(gym.Env):
         self.max_ego_spawn_times = env_config['max_ego_spawn_times']
         self.display_route = env_config['display_route']
 
+        self.episode_rewards = []
+
         # Destination
         if env_config['task_mode'] == 'roundabout':
             self.dests = [[4.46, -61.46, 0], [-49.53, -2.89, 0], [-6.48, 55.47, 0], [35.96, 3.33, 0]]
@@ -159,6 +161,10 @@ class CarlaEnv(gym.Env):
 
     def reset(self):
         print('-------------------------------------RESET--------------------------------------\n\n\n')
+
+        # Log total episode reward
+        wandb.log({"step_reward": sum(self.episode_rewards)})
+        self.episode_rewards = []
 
         # Clear sensor objects
         self.collision_sensor = None
@@ -330,16 +336,12 @@ class CarlaEnv(gym.Env):
         self.time_step += 1
         self.total_step += 1
 
-        #print('step end')
-        a = self._get_obs()
-        b = self._get_reward()
-        
-        wandb.log({"step_reward": b})
+        # Log single step reward
+        reward = self._get_reward()
+        wandb.log({"step_reward": reward})
 
-        c = self._terminal()
-        d = copy.deepcopy(info)
-        return (a, b, c, d)
-        return (self._get_obs(), self._get_reward(), self._terminal(), copy.deepcopy(info))
+        #print('step end')
+        return (self._get_obs(), reward, self._terminal(), copy.deepcopy(info))
 
     def seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)
