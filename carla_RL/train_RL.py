@@ -67,7 +67,6 @@ env.reset()"""
 
 if __name__ == "__main__":
     #ray.init(local_mode=True)
-    wandb.init(project="CARLA_RL")
 
     tuner = tune.Tuner(
         PPO,

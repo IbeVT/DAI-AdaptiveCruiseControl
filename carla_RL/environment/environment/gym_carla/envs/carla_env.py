@@ -22,7 +22,9 @@ import carla
 from gym_carla.envs.render import BirdeyeRender
 from gym_carla.envs.route_planner import RoutePlanner
 from gym_carla.envs.misc import *
+import wandb
 
+wandb.init(project="CARLA_RL")
 
 class CarlaEnv(gym.Env):
     """An OpenAI gym wrapper for CARLA simulator."""
@@ -331,7 +333,7 @@ class CarlaEnv(gym.Env):
         #print('step end')
         a = self._get_obs()
         b = self._get_reward()
-        import wandb
+        
         wandb.log({"step_reward": b})
 
         c = self._terminal()
