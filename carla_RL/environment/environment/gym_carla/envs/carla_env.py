@@ -235,11 +235,11 @@ class CarlaEnv(gym.Env):
 
         # Add collision sensor
         #self.collision_sensor = self.world.spawn_actor(self.collision_bp, carla.Transform(), attach_to=self.ego)
-        # return self._get_obs()
         #self.collision_sensor.listen(lambda event: get_collision_hist(event))
 
         while True:
             try:
+                # Add collision sensor
                 self.collision_sensor = self.world.spawn_actor(self.collision_bp, carla.Transform(), attach_to=self.ego)
                 self.collision_sensor.listen(lambda event: get_collision_hist(event))
                 break
@@ -256,11 +256,18 @@ class CarlaEnv(gym.Env):
 
         self.collision_hist = []
 
-        # Add camera sensor
-        self.camera_sensor = self.world.spawn_actor(self.camera_bp, self.camera_trans, attach_to=self.ego)
 
-        #return self._get_obs()
-        self.camera_sensor.listen(lambda data: get_camera_img(data))
+        while True:
+            try:
+                # Add camera sensor
+                self.camera_sensor = self.world.spawn_actor(self.camera_bp, self.camera_trans, attach_to=self.ego)
+
+                # return self._get_obs()
+                self.camera_sensor.listen(lambda data: get_camera_img(data))
+                break
+            except:
+                print('failed to add camera sensor')
+
 
         # return self._get_obs()
 
@@ -620,7 +627,7 @@ class CarlaEnv(gym.Env):
     def _clear_all_actors(self, actor_filters):
         """Clear specific actors."""
         for actor_filter in actor_filters:
-            for actor in self.world.get_actors():
+            for actor in self.world.get_actors().filter(actor_filter):
                 if actor.is_alive:
                     if actor.type_id == 'controller.ai.walker':
                         actor.stop()
