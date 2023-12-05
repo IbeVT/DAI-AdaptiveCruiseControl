@@ -100,7 +100,8 @@ class CarlaEnv(gym.Env):
         try:
             client.unload_world()
         except Exception as e:
-            print('Error unloading world', e)
+            pass
+            #print('Error unloading world', e)
 
         client.set_timeout(10.0)
         self.world = client.load_world(env_config['town'])
@@ -111,7 +112,7 @@ class CarlaEnv(gym.Env):
 
         # Set weather
         self.world.set_weather(carla.WeatherParameters.ClearNoon)
-        print(1)
+
         # Get spawn points
         self.vehicle_spawn_points = list(self.world.get_map().get_spawn_points())
         self.walker_spawn_points = []
@@ -121,7 +122,7 @@ class CarlaEnv(gym.Env):
             if (loc != None):
                 spawn_point.location = loc
                 self.walker_spawn_points.append(spawn_point)
-        print(2)
+
         # Create the ego vehicle blueprint
         self.ego_bp = self._create_vehicle_bluepprint(env_config['ego_vehicle_filter'], color='49,8,8')
 
@@ -129,7 +130,7 @@ class CarlaEnv(gym.Env):
         self.collision_hist = []  # The collision history
         self.collision_hist_l = 1  # collision history length
         self.collision_bp = self.world.get_blueprint_library().find('sensor.other.collision')
-        print(3)
+
         # Camera sensor
         self.camera_img = np.zeros((self.obs_size, self.obs_size, 3), dtype=np.uint8)
         self.camera_trans = carla.Transform(carla.Location(x=0.8, z=1.7))
@@ -140,15 +141,15 @@ class CarlaEnv(gym.Env):
         self.camera_bp.set_attribute('fov', '110')
         # Set the time in seconds between sensor captures
         self.camera_bp.set_attribute('sensor_tick', '0.02')
-        print(4)
+
         # Set fixed simulation step for synchronous mode
         self.settings = self.world.get_settings()
         self.settings.fixed_delta_seconds = self.dt
-        print(5)
+
         # Record the time of total steps and resetting steps
         self.reset_step = 0
         self.total_step = 0
-        print(6)
+
         # Initialize the renderer
         self._init_renderer()
         print('init end')
@@ -163,14 +164,14 @@ class CarlaEnv(gym.Env):
         # Delete sensors, vehicles and walkers
         self._clear_all_actors(['sensor.other.collision', 'sensor.lidar.ray_cast', 'sensor.camera.rgb', 'vehicle.*',
                                 'controller.ai.walker', 'walker.*'])
-        print(11)
+
         # Disable sync mode
         self._set_synchronous_mode(False)
-        print(111)
+
         # Spawn surrounding vehicles
         random.shuffle(self.vehicle_spawn_points)
         count = self.number_of_vehicles
-        print(112)
+
         if count > 0:
             for spawn_point in self.vehicle_spawn_points:
                 # if self._try_spawn_random_vehicle_at(spawn_point, number_of_wheels=[4]):
@@ -178,11 +179,11 @@ class CarlaEnv(gym.Env):
                     count -= 1
                 if count <= 0:
                     break
-        print(113)
+
         while count > 0:
             if self._try_spawn_random_vehicle_at(random.choice(self.vehicle_spawn_points), number_of_wheels=[4]):
                 count -= 1
-        print(12)
+
         # Spawn pedestrians
         random.shuffle(self.walker_spawn_points)
         count = self.number_of_walkers
@@ -332,7 +333,7 @@ class CarlaEnv(gym.Env):
         self.time_step += 1
         self.total_step += 1
 
-        print('step end')
+        #print('step end')
         return (self._get_obs(), self._get_reward(), self._terminal(), copy.deepcopy(info))
 
     def seed(self, seed=None):
