@@ -29,13 +29,10 @@ if testCase == 1 or testCase == 2 or testCase == 3:
     # specLocation = carla.Location(x=90, y=180, z=200)
 elif testCase == 4:
     client.load_world('Town03')
-    # specLocation = carla.Location(x=0, y=0, z=500)
 elif testCase == 5:
     client.load_world('Town04')
-    # specLocation = carla.Location(x=0, y=0, z=500)
 elif testCase == 6:
-    client.load_world('Town7')
-    # specLocation = carla.Location(x=150, y=150, z=300)
+    client.load_world('Town07')
 
 world = client.get_world()
 
@@ -61,8 +58,6 @@ vehicle_bp = random.choice(blueprint.filter('vehicle.*.*'))
 
 # We will also set up the spectator, so we can see what we do
 spectator = world.get_spectator()
-# transform = carla.Transform(specLocation, carla.Rotation(-90))
-# spectator.set_transform(transform)
 
 
 def update_traffic_manager(traffic_manager, actor, speed_diff, route):
@@ -155,6 +150,65 @@ if testCase == 2:
 
 
 if testCase == 3:
+    spawn_point_1 = spawn_points[19]
+    spawn_point_2 = spawn_points[25]
+    spawn_point_ego = spawn_points[60]
+    # Create route1:
+    route1 = []
+    for i in range(100):
+        route1.append('Straight')  # 'Left', 'Right', 'Straight'
+    # Create route2: for ego:
+    route2 = []
+    for i in range(50):
+        route2.append('Right')
+
+    max_vehicles = 50
+    spawn_delay = 20
+    counter = spawn_delay
+    alt = False
+    vehicle_list = []
+    n_vehicles = len(vehicle_list)
+
+    while n_vehicles < max_vehicles:
+        world.tick()
+
+        n_vehicles = len(vehicle_list)
+
+        # spawn vehicles only after a delay
+        if counter == spawn_delay:
+            vehicle_bp = random.choice(blueprint.filter('vehicle.*.*'))
+            # Alternate spawn points
+            if alt:
+                vehicle = world.try_spawn_actor(vehicle_bp, spawn_point_1)
+            else:
+                vehicle = world.try_spawn_actor(vehicle_bp, spawn_point_2)
+
+            if vehicle:  # IF vehicle is succesfully spawned
+                print('created vehicle: %s' % vehicle.type_id)
+                vehicle_list.append(vehicle)
+                print(len(vehicle_list))
+                vehicle.set_autopilot(True)  # Give TM control over vehicle
+                update_traffic_manager(traffic_manager, actor=vehicle, speed_diff=0, route=route1)
+
+                alt = not alt
+                vehicle = None
+
+            counter -= 1
+        elif counter > 0:
+            counter -= 1
+        elif counter == 0:
+            counter = spawn_delay
+
+    ego_vehicle = None
+    while ego_vehicle is None:
+        # spawn ego vehicle
+        ego_vehicle = world.try_spawn_actor(ego_bp, spawn_point_ego)
+        world.tick()
+    print('created ego: %s' % ego_vehicle.type_id)
+    ego_vehicle.set_autopilot(True)
+    update_traffic_manager(traffic_manager, actor=ego_vehicle, speed_diff=0, route=route2)
+
+if testCase == 6:
     spawn_point_1 = spawn_points[19]
     spawn_point_2 = spawn_points[25]
     spawn_point_ego = spawn_points[60]
