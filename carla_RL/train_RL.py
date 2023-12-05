@@ -70,16 +70,17 @@ if __name__ == "__main__":
     tuner = tune.Tuner(
         PPO,
         tune_config=tune.TuneConfig(max_concurrent_trials=1),
-        algorithm_config=ray.rllib.algorithms.algorithm_config.AlgorithmConfig.environment(disable_env_checking=True),
         param_space={
             "disable_env_checking": True,
             "ignore_workers_failure": False,
+            "max_concurrent_trials": 1,
             "framework": "torch",
             # "num_gpus": 0.5,
             "num_workers": 1,
             "env": "CustomCarlaEnv",
             #"env": "CartPole-v1",
             "env_config": {
+                "disable_env_checking": True,
                 "ignore_workers_failure": False,
             },
             "model":
