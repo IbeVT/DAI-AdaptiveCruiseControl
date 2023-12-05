@@ -21,6 +21,11 @@ LABEL_DATAFRAME = pd.DataFrame(columns=['raw_value', 'color', 'coco_names_index'
                                data=[
                                      [ 4, (220, 20, 60), 0],
                                      [ 2,   (0,  0,   142),2],
+                                     [ 20,   (0,  0,   70),7],
+                                     [ 21,   (0,  0,   230),3],
+                                     [ 22,   (119,  11,   32),1],
+                                     [ 23,   (0,  60,   100),5],
+                                     [ 24,   (0,  0,   90),70],
                                      [18, (250, 170, 30), 9],
                                      [12, (220, 220,  0), 80],
                                ])
@@ -31,7 +36,12 @@ TL_LIGHT_LABEL = {'DEFAULT': 9,
 
 LABEL_COLORS = np.array([
     (220, 20, 60),   # Pedestrian
-    (0, 0, 142),     # Vehicle
+    (0, 0, 142),     # car
+    (0, 0, 70),      # truck
+    (0, 0, 230),     # Motorcycle
+    (119, 11, 32),   # bicycle
+    (0, 60, 100),    # bus
+    (0, 0, 90),      # caravan
     (220, 220, 0),   # TrafficSign -> COCO INDEX
     (250, 170, 30),  # TrafficLight
 ])
