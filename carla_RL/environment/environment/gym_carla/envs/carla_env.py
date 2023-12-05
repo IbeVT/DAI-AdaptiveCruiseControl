@@ -44,7 +44,7 @@ class CarlaEnv(gym.Env):
             'port': 2000,  # connection port
             'town': 'Town03',  # which town to simulate
             'task_mode': 'random',  # mode of the task, [random, roundabout (only for Town03)]
-            'max_time_episode': 50,  # maximum timesteps per episode
+            'max_time_episode': 1,  # maximum timesteps per episode
             'max_waypt': 12,  # maximum number of waypoints
             'obs_range': 32,  # observation range (meter)
             'd_behind': 12,  # distance behind the ego vehicle (meter)
@@ -160,7 +160,7 @@ class CarlaEnv(gym.Env):
         print('init end')
 
     def reset(self):
-        print('-------------------------------------RESET--------------------------------------\n\n\n')
+        print('-------------------------------------RESET--------------------------------------')
 
         # Log total episode reward
         wandb.log({"episode_reward": sum(self.episode_rewards)})
@@ -205,7 +205,7 @@ class CarlaEnv(gym.Env):
         while count > 0:
             if self._try_spawn_random_walker_at(random.choice(self.walker_spawn_points)):
                 count -= 1
-        print(13)
+
         # Get actors polygon list
         self.vehicle_polygons = []
         vehicle_poly_dict = self._get_actor_polygons('vehicle.*')
@@ -213,7 +213,7 @@ class CarlaEnv(gym.Env):
         self.walker_polygons = []
         walker_poly_dict = self._get_actor_polygons('walker.*')
         self.walker_polygons.append(walker_poly_dict)
-        print(14)
+
         # Spawn the ego vehicle
         ego_spawn_times = 0
         while True:
@@ -232,7 +232,6 @@ class CarlaEnv(gym.Env):
             else:
                 ego_spawn_times += 1
                 time.sleep(0.1)
-        print(15)
 
         # Add collision sensor
         #self.collision_sensor = self.world.spawn_actor(self.collision_bp, carla.Transform(), attach_to=self.ego)
@@ -285,7 +284,7 @@ class CarlaEnv(gym.Env):
         # Set ego information for render
         self.birdeye_render.set_hero(self.ego, self.ego.id)
 
-        print('reset end')
+        #print('reset end')
         return self._get_obs()
 
     def step(self, action):
