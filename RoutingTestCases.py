@@ -19,7 +19,6 @@ argparser.add_argument(
 )
 args = argparser.parse_args()
 testCase = args.testcase
-print()
 
 # Connect to the client and retrieve the world object
 client = carla.Client('localhost', 2000)
