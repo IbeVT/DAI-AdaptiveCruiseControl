@@ -335,6 +335,11 @@ class CarlaEnv(gym.Env):
         self.total_step += 1
 
         #print('step end')
+        a = self._get_obs()
+        b = self._get_reward()
+        c = self._terminal()
+        d = copy.deepcopy(info)
+        return (a, b, c, d)
         return (self._get_obs(), self._get_reward(), self._terminal(), copy.deepcopy(info))
 
     def seed(self, seed=None):
