@@ -14,9 +14,9 @@ import random
 import time
 from skimage.transform import resize
 
-import gym
-from gym import spaces
-from gym.utils import seeding
+import gymnasium as gym
+from gymnasium import spaces
+from gymnasium.utils import seeding
 import carla
 
 from gym_carla.envs.render import BirdeyeRender
@@ -97,12 +97,9 @@ class CarlaEnv(gym.Env):
 
         # Connect to carla server and get world object
         print('connecting to Carla server...')
-        try:
-            client = carla.Client('localhost', env_config['port'])
-            client.set_timeout(10.0)
-            self.world = client.load_world(env_config['town'])
-        except Exception as e:
-            print('error', e)
+        client = carla.Client('localhost', env_config['port'])
+        client.set_timeout(10.0)
+        self.world = client.load_world(env_config['town'])
         print('Carla server connected!')
 
         # Create a Traffic Manager
@@ -227,11 +224,10 @@ class CarlaEnv(gym.Env):
         #self.collision_sensor = self.world.spawn_actor(self.collision_bp, carla.Transform(), attach_to=self.ego)
         # return self._get_obs()
         #self.collision_sensor.listen(lambda event: get_collision_hist(event))
-        try:
-            self.collision_sensor = self.world.spawn_actor(self.collision_bp, carla.Transform(), attach_to=self.ego)
-            self.collision_sensor.listen(lambda event: get_collision_hist(event))
-        except Exception as e:
-            print(f"Error: {e}")
+
+        self.collision_sensor = self.world.spawn_actor(self.collision_bp, carla.Transform(), attach_to=self.ego)
+        self.collision_sensor.listen(lambda event: get_collision_hist(event))
+
 
         def get_collision_hist(event):
             impulse = event.normal_impulse
@@ -245,6 +241,8 @@ class CarlaEnv(gym.Env):
 
         # Add camera sensor
         self.camera_sensor = self.world.spawn_actor(self.camera_bp, self.camera_trans, attach_to=self.ego)
+
+        return self._get_obs()
         self.camera_sensor.listen(lambda data: get_camera_img(data))
 
         # return self._get_obs()

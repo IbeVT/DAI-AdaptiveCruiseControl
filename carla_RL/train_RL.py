@@ -5,23 +5,23 @@ from ray.rllib.models import ModelCatalog
 from ray.tune.search import grid_search
 from ray.rllib.algorithms.ppo import PPO
 from ray.rllib.algorithms.dqn import DQN
-import gym
+import gymnasium as gym
 
 from setuptools import setup
 
-from gym.envs.registration import register
+from gymnasium.envs.registration import register
 from ray.tune.registry import register_env
 import sys
 sys.path.append('carla_RL/environment/environment')
 sys.path.append('carla_RL/environment/environment/gym_carla')
 import gym_carla
 from gym_carla.envs.carla_env import CarlaEnv
-from gym.wrappers import EnvCompatibility
+from gymnasium.wrappers import EnvCompatibility
 
 
 def env_creator(env_config=None):
     print('-----------------------ENV_CREATOR-------------------------\n\n\n')
-    return CarlaEnv(env_config)
+    return EnvCompatibility(CarlaEnv(env_config))
 
 config = {
     'number_of_vehicles': 100,
