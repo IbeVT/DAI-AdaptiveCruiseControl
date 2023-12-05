@@ -44,12 +44,12 @@ class ComputerVision2:
             self.camera_x_pixels = x
             self.camera_y_pixels = y
 
-    def process_data(self):
+    #def process_data(self):
         # Start by detecting objects in the image
         #if self.image is None or self.radar_points is None:
             #return
-        results = self.model.predict(source=self.image, save=False)
-        result = results[0]
+    results = self.model.predict(source=self.image, save=False)
+    result = results[0]
 
 
     for box in result.boxes:
