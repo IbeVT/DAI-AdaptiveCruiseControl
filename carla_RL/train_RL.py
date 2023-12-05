@@ -97,7 +97,7 @@ if __name__ == "__main__":
             callbacks=[
                 WandbLoggerCallback(
                     project="SweepProject",
-                    api_key="6370a2f36173950723d7d21b6bad47d74bb7e458",
+                    api_key="cee1795c4e0d51b4eb7fa2b4f7f180c85403aae1",
                 )
             ],
         ),
