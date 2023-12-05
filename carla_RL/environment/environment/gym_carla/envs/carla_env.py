@@ -86,7 +86,8 @@ class CarlaEnv(gym.Env):
         observation_space_dict = {
             'camera': spaces.Box(low=0, high=255, shape=(self.obs_size, self.obs_size, 3), dtype=np.uint8),
             'birdeye': spaces.Box(low=0, high=255, shape=(self.obs_size, self.obs_size, 3), dtype=np.uint8),
-            'state': spaces.Box(np.array([-2, -1, -5, 0]), np.array([2, 1, 30, 1]), dtype=np.float32)
+            #'state': spaces.Box(np.array([-2, -1, -5, 0]), np.array([2, 1, 30, 1]), dtype=np.float32)
+            'state': spaces.Box(np.array([-5, 0]), np.array([30, 1]), dtype=np.float32)
         }
 
         #observation_space_dict = {'camera': spaces.Box(low=0, high=255, shape=(5,), dtype=np.float32)}
@@ -369,7 +370,7 @@ class CarlaEnv(gym.Env):
     """
         pygame.init()
         self.display = pygame.display.set_mode(
-            (self.display_size * 3, 2 * self.display_size),
+            (self.display_size * 3, self.display_size),
             pygame.HWSURFACE | pygame.DOUBLEBUF)
 
         pixels_per_meter = self.display_size / self.obs_range
@@ -491,8 +492,7 @@ class CarlaEnv(gym.Env):
         return actor_poly_dict
 
     def _get_obs(self):
-        obs = np.zeros(shape=(10,), dtype=np.float32)
-        #return obs
+        #return np.zeros(shape=(10,), dtype=np.float32)
 
         """Get the observations."""
         ## Birdeye rendering
@@ -527,11 +527,11 @@ class CarlaEnv(gym.Env):
         ego_y = ego_trans.location.y
         ego_yaw = ego_trans.rotation.yaw / 180 * np.pi
         lateral_dis, w = get_preview_lane_dis(self.waypoints, ego_x, ego_y)
-        delta_yaw = np.arcsin(np.cross(w,
-                                       np.array(np.array([np.cos(ego_yaw), np.sin(ego_yaw)]))))
+        delta_yaw = np.arcsin(np.cross(w, np.array(np.array([np.cos(ego_yaw), np.sin(ego_yaw)]))))
         v = self.ego.get_velocity()
         speed = np.sqrt(v.x ** 2 + v.y ** 2)
-        state = np.array([lateral_dis, - delta_yaw, speed, self.vehicle_front])
+        #state = np.array([lateral_dis, - delta_yaw, speed, self.vehicle_front])
+        state = np.array([speed, self.vehicle_front])
 
         obs = {
             'camera': camera.astype(np.uint8),
