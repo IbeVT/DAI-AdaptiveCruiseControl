@@ -70,7 +70,7 @@ if __name__ == "__main__":
     tuner = tune.Tuner(
         PPO,
         tune_config=tune.TuneConfig(max_concurrent_trials=1),
-        elgorithm_config=tune.AlgorithmConfig(disable_env_checking=True),
+        algorithm_config=ray.rllib.algorithms.algorithm_config.AlgorithmConfig(disable_env_checking=True),
         param_space={
             "disable_env_checking": True,
             "ignore_workers_failure": False,
