@@ -342,6 +342,7 @@ class CarlaEnv(gym.Env):
 
         # Log single step reward
         reward = self._get_reward()
+        self.episode_rewards.append(reward)
         wandb.log({"step_reward": reward})
 
         #print('step end')
@@ -619,7 +620,7 @@ class CarlaEnv(gym.Env):
     def _clear_all_actors(self, actor_filters):
         """Clear specific actors."""
         for actor_filter in actor_filters:
-            for actor in self.world.get_actors().filter(actor_filter):
+            for actor in self.world.get_actors():
                 if actor.is_alive:
                     if actor.type_id == 'controller.ai.walker':
                         actor.stop()
