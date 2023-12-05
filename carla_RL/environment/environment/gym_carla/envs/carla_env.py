@@ -286,7 +286,7 @@ class CarlaEnv(gym.Env):
 
     def step(self, action):
         #print('------------------------------------STEP--------------------------------------\n\n\n')
-        return (self._get_obs(), 0, False, {'waypoints': 0, 'vehicle_front': 0})
+        #return (self._get_obs(), 0, False, {'waypoints': 0, 'vehicle_front': 0})
         # Calculate acceleration and steering
         if self.discrete:
             acc = self.discrete_act[0][action // self.n_steer]
