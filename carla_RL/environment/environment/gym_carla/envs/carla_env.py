@@ -575,33 +575,33 @@ class CarlaEnv(gym.Env):
 
     def _terminal(self):
         """Calculate whether to terminate the current episode."""
-        print('--------------------------------TERMINAL-----------------------------------------\n\n\n')
+        #print('--------------------------------TERMINAL-----------------------------------------\n\n\n')
         # Get ego state
         ego_x, ego_y = get_pos(self.ego)
 
         # If collides
         if len(self.collision_hist) > 0:
-            print('collision')
+            print('TERMINATION - collision')
             return True
 
         # If reach maximum timestep
         if self.time_step > self.max_time_episode:
-            print('max timestep reached')
+            print('TERMINATION - max timestep reached')
             return True
 
         # If at destination
         if self.dests is not None:  # If at destination
             for dest in self.dests:
                 if np.sqrt((ego_x - dest[0]) ** 2 + (ego_y - dest[1]) ** 2) < 4:
-                    print('at destination')
+                    print('TERMINATION - at destination')
                     return True
 
         # If out of lane
         dis, _ = get_lane_dis(self.waypoints, ego_x, ego_y)
         if abs(dis) > self.out_lane_thres:
-            print('out of lane')
+            print('TERMINATION - out of lane')
             return True
-        print('No termination')
+        #print('No termination')
         return False
 
     def _clear_all_actors(self, actor_filters):
