@@ -27,9 +27,8 @@ from gym_carla.envs.misc import *
 class CarlaEnv(gym.Env):
     """An OpenAI gym wrapper for CARLA simulator."""
 
-    def __init__(self, env_config):
+    def __init__(self):
         print('------------------------------------INIT------------------------------------------\n\n\n')
-        print(env_config)
         env_config = {
             'number_of_vehicles': 100,
             'number_of_walkers': 0,
