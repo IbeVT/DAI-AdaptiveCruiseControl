@@ -42,7 +42,7 @@ class CarlaEnv(gym.Env):
             'port': 2000,  # connection port
             'town': 'Town03',  # which town to simulate
             'task_mode': 'random',  # mode of the task, [random, roundabout (only for Town03)]
-            'max_time_episode': 1000,  # maximum timesteps per episode
+            'max_time_episode': 50,  # maximum timesteps per episode
             'max_waypt': 12,  # maximum number of waypoints
             'obs_range': 32,  # observation range (meter)
             'd_behind': 12,  # distance behind the ego vehicle (meter)
@@ -97,6 +97,11 @@ class CarlaEnv(gym.Env):
         # Connect to carla server and get world object
         print('connecting to Carla server...')
         client = carla.Client('localhost', env_config['port'])
+        try:
+            client.unload_world()
+        except Exception as e:
+            print('Error unloading world', e)
+
         client.set_timeout(10.0)
         self.world = client.load_world(env_config['town'])
         print('Carla server connected!')
@@ -241,7 +246,7 @@ class CarlaEnv(gym.Env):
         # Add camera sensor
         self.camera_sensor = self.world.spawn_actor(self.camera_bp, self.camera_trans, attach_to=self.ego)
 
-        return self._get_obs()
+        #return self._get_obs()
         self.camera_sensor.listen(lambda data: get_camera_img(data))
 
         # return self._get_obs()
@@ -281,7 +286,7 @@ class CarlaEnv(gym.Env):
 
     def step(self, action):
         print('------------------------------------STEP--------------------------------------\n\n\n')
-        #return (self._get_obs(), 0, False, {'waypoints': 0, 'vehicle_front': 0})
+        return (self._get_obs(), 0, False, {'waypoints': 0, 'vehicle_front': 0})
         # Calculate acceleration and steering
         if self.discrete:
             acc = self.discrete_act[0][action // self.n_steer]
@@ -363,7 +368,7 @@ class CarlaEnv(gym.Env):
     """
         pygame.init()
         self.display = pygame.display.set_mode(
-            (self.display_size * 3, self.display_size),
+            (self.display_size * 3, 2 * self.display_size),
             pygame.HWSURFACE | pygame.DOUBLEBUF)
 
         pixels_per_meter = self.display_size / self.obs_range
