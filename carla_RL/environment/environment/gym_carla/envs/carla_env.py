@@ -152,7 +152,6 @@ class CarlaEnv(gym.Env):
   def reset(self):
     print('-------------------------------------RESET--------------------------------------\n\n\n')
 
-    return self._get_obs()
     # Clear sensor objects  
     self.collision_sensor = None
     self.camera_sensor = None
@@ -219,6 +218,7 @@ class CarlaEnv(gym.Env):
         ego_spawn_times += 1
         time.sleep(0.1)
     print(15)
+
     # Add collision sensor
     self.collision_sensor = self.world.spawn_actor(self.collision_bp, carla.Transform(), attach_to=self.ego)
     self.collision_sensor.listen(lambda event: get_collision_hist(event))
@@ -230,9 +230,13 @@ class CarlaEnv(gym.Env):
         self.collision_hist.pop(0)
     self.collision_hist = []
     print(16)
+
     # Add camera sensor
     self.camera_sensor = self.world.spawn_actor(self.camera_bp, self.camera_trans, attach_to=self.ego)
     self.camera_sensor.listen(lambda data: get_camera_img(data))
+    return self._get_obs()
+
+
     def get_camera_img(data):
       array = np.frombuffer(data.raw_data, dtype = np.dtype("uint8"))
       array = np.reshape(array, (data.height, data.width, 4))
@@ -240,6 +244,7 @@ class CarlaEnv(gym.Env):
       array = array[:, :, ::-1]
       self.camera_img = array
     print(17)
+
     # Update timesteps
     self.time_step=0
     self.reset_step+=1
@@ -250,11 +255,13 @@ class CarlaEnv(gym.Env):
 
     self.routeplanner = RoutePlanner(self.ego, self.max_waypt)
     self.waypoints, _, self.vehicle_front = self.routeplanner.run_step()
+
     print(18)
     # Set the path for the autopilot
     location_list = [carla.Location(x=loc[0], y=loc[1], z=loc[2]) for loc in self.waypoints]
     self.traffic_manager.set_path(self.ego, location_list)
     print(19)
+
     # Set ego information for render
     self.birdeye_render.set_hero(self.ego, self.ego.id)
 

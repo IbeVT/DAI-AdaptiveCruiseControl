@@ -77,7 +77,6 @@ if __name__ == "__main__":
             "env": "CustomCarlaEnv",
             #"env": "CartPole-v1",
             "env_config": {
-
                 "ignore_workers_failure": False,
                 "disable_env_checking": True,
             },
