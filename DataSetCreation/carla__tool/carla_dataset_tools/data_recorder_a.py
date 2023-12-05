@@ -120,7 +120,7 @@ class DataRecorder:
                                                                                      time.time()-tick_s))
                 # Save data to disk
                 if total_frame_count % self.frame_step == 0:
-                    if (count==5):
+                    if (count==1):
                     
                        save_s = time.time()
                        self.actor_tree.tick_data_saving(frame_id, timestamp)
