@@ -221,6 +221,7 @@ class CarlaEnv(gym.Env):
 
         # Add collision sensor
         self.collision_sensor = self.world.spawn_actor(self.collision_bp, carla.Transform(), attach_to=self.ego)
+        # return self._get_obs()
         self.collision_sensor.listen(lambda event: get_collision_hist(event))
 
         def get_collision_hist(event):
@@ -273,7 +274,7 @@ class CarlaEnv(gym.Env):
 
     def step(self, action):
         print('------------------------------------STEP--------------------------------------\n\n\n')
-        # return (self._get_obs(), 0, False, {'waypoints': 0, 'vehicle_front': 0})
+        #return (self._get_obs(), 0, False, {'waypoints': 0, 'vehicle_front': 0})
         # Calculate acceleration and steering
         if self.discrete:
             acc = self.discrete_act[0][action // self.n_steer]
@@ -320,6 +321,7 @@ class CarlaEnv(gym.Env):
         self.total_step += 1
 
         print('step end')
+        print('---------------------reward----------------------------', self._get_reward())
         return (self._get_obs(), self._get_reward(), self._terminal(), copy.deepcopy(info))
 
     def seed(self, seed=None):
@@ -355,7 +357,7 @@ class CarlaEnv(gym.Env):
     """
         pygame.init()
         self.display = pygame.display.set_mode(
-            (2 * self.display_size * 3, 2 * self.display_size),
+            (self.display_size * 3, self.display_size),
             pygame.HWSURFACE | pygame.DOUBLEBUF)
 
         pixels_per_meter = self.display_size / self.obs_range
