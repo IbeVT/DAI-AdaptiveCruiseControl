@@ -6,9 +6,11 @@ from ultralytics import YOLO
 import numpy as np
 import carla
 
+from LowpassFilter import LowpassFilter
+
 
 class ComputerVision:
-    def __init__(self, vehicle):
+    def __init__(self, vehicle, radar_sample_rate=10):
         self.delta_v = None
         self.result_boxes = []
         self.image = None
@@ -22,11 +24,17 @@ class ComputerVision:
         self.camera_y_pixels = 1280
         self.n_points = 50
         self.max_depth = 100
-        self.max_speed = 120 / 3.6
-        self.max_distance_following_vehicle = 500
-        self.following_vehicle_cords = None
+        self.max_speed = 120 / 3.6  # 120 km/h
+        self.max_distance_following_vehicle = 500  # The maximum distance between the endpoint of the steer vector and the center of the bounding box of the vehicle
+        self.following_vehicle_box = None
+        self.following_vehicle_type = None
         self.distance = None
         self.steer_vector_endpoint = None
+        self.wheel_angles = []
+        self.radar_sample_rate = radar_sample_rate
+        self.low_pass_filter = LowpassFilter(2, radar_sample_rate, 5)
+        self.boxes = []
+        self.low_conf_boxes = []
 
     def set_resolution(self, x, y):
         self.camera_x_pixels = x
@@ -36,7 +44,7 @@ class ComputerVision:
         # Start by detecting objects in the image
         if self.image is None or self.radar_points is None:
             return
-        results = self.model.predict(source=self.image, save=False)
+        results = self.model.predict(source=self.image, save=False, conf=0.1)
         result = results[0]
 
         # Check which car is in front, if any
@@ -48,15 +56,32 @@ class ComputerVision:
         # altitude=mean_altitude_points would end on the camera
         # 5. Calculate the distance from the vector to the center of the bounding box of the vehicle
         # Reset the values
-        self.following_vehicle_cords = None
+        self.following_vehicle_box = None
         self.distance = self.max_depth
         self.delta_v = self.max_speed
 
-        smallest_distance_to_box = self.max_distance_following_vehicle      # The distance from the vector to the
+        smallest_distance_to_box = self.max_distance_following_vehicle  # The distance from the vector to the
         # center of the bounding box of the vehicle
         wheel_locations = carla.VehicleWheelLocation()
-        steer_angle = self.vehicle.get_wheel_steer_angle(wheel_locations.FL_Wheel)
+        self.wheel_angles.append(self.vehicle.get_wheel_steer_angle(wheel_locations.FL_Wheel))
+        n_points = self.radar_sample_rate * 2  # Use the data from the last 2 seconds for the low pass filter
+        # If the list is too short for filtering, just use the last value. It only happens for the first two seconds
+        # anyway.
+        list_len = len(self.wheel_angles)
+        if list_len > n_points:
+            filtered_wheel_angles = self.low_pass_filter.butter_lowpass_filter(self.wheel_angles[-n_points:])
+            steer_angle = filtered_wheel_angles[-1]
+        else:
+            steer_angle = self.wheel_angles[-1]
+        # Periodically reset the list to avoid taking up too much memory
+        if len(self.wheel_angles) > 10 * n_points:
+            self.wheel_angles = self.wheel_angles[-n_points:]
+
         vehicle_boxes = []
+        vehicle_types = []
+        previous_results = self.boxes
+        self.boxes = []
+        self.low_conf_boxes = []
         for box in result.boxes:
             class_id = result.names[box.cls[0].item()]
             cords = box.xyxy[0].tolist()
@@ -66,8 +91,28 @@ class ComputerVision:
             print("Coordinates:", cords)
             print("Probability:", conf)
             print("---")
+            # Check if a similar box was detected in the previous frame
+            for previous_box in previous_results:
+                class_id_previous = previous_box["class_id"]
+                cords_previous = previous_box["cords"]
+                # Check if the class is the same
+                if class_id == class_id_previous:
+                    # Check whether the boxes overlap
+                    if do_boxes_overlap(cords, cords_previous):
+                        # As approximately the same box was detected in the previous frame, we will suppose that it
+                        # is indeed a true positive
+                        self.boxes.append({"class_id": class_id, "cords": cords, "conf": conf})
+                        continue
+                # If the box was not detected in the previous frame, we will only consider it a true positive if the
+                # confidence is high enough
+                if conf > 0.5:
+                    self.boxes.append({"class_id": class_id, "cords": cords, "conf": conf})
+                else:
+                    # Still save the box, for debugging purposes
+                    self.low_conf_boxes.append({"class_id": class_id, "cords": cords, "conf": conf})
+
             if str(class_id) in self.vehicle_classes:
-                vehicle_boxes.append(cords)
+                vehicle_boxes.append({"class_id": class_id, "cords": cords, "conf": conf})
 
         # 2. Group all points that belong to the same box
         distances = []  # The distances of all points that belong to the i-th box
@@ -81,7 +126,7 @@ class ComputerVision:
                     distances.append([])
                     velocities.append([])
                     altitudes.append([])
-                [x_lower, y_lower, x_upper, y_upper] = box
+                [x_lower, y_lower, x_upper, y_upper] = box["cords"]
                 if x_lower < x < x_upper and y_lower < y < y_upper:
                     distances[i].append(point.depth)
                     velocities[i].append(point.velocity)
@@ -90,20 +135,28 @@ class ComputerVision:
         # 3. For each box, calculate the median distance and speed
         distances = [np.median(i) for i in distances]
         velocities = [np.median(i) for i in velocities]
-        altitudes = [np.mean(i) for i in altitudes]
+        altitudes = [np.median(i) for i in altitudes]
         # Now we have the median distance and speed for each box
 
         # 4. Calculate where the vector with length=median_distance and angle=steer_angle would end on the camera
         # 5. Calculate the distance from the vector to the center of the bounding box of the vehicle
+        # self.steer_vector_endpoint = [self.camera_x_pixels/2, self.camera_y_pixels/2]           # Initialize it to
+        # # the middle of the screen for when there is no vehicle in front
+        # Initialize the steer vector endpoint to half of the maximum depth and elevation 0
+        self.steer_vector_endpoint = self.get_image_coordinates_from_radar_point(steer_angle, 0, self.max_depth / 2)
         for i, box in enumerate(vehicle_boxes):
-            cords = self.get_image_coordinates_from_radar_point(steer_angle, altitudes[i], distances[i])
-            distance_to_box = math.sqrt((cords[0] - np.mean([box[0], box[2]])) ** 2 +
-                                        (cords[1] - np.mean([box[1], box[3]])) ** 2)
+            altitude = altitudes[i]
+            # If there are no points in the box, skip it
+            if math.isnan(altitude):
+                continue
+            cords = self.get_image_coordinates_from_radar_point(steer_angle, altitude, distances[i])
+            distance_to_box = math.sqrt((cords[0] - np.mean([box["cords"][0], box["cords"][2]])) ** 2 +
+                                        (cords[1] - np.mean([box["cords"][1], box["cords"][3]])) ** 2)
             print("Cords:", cords)
             print("Box:", box)
             print("Distance to box:", distance_to_box)
             if distance_to_box < smallest_distance_to_box:
-                self.following_vehicle_cords = box
+                self.following_vehicle_box = box
                 self.distance = distances[i]
                 self.delta_v = velocities[i]
                 self.steer_vector_endpoint = cords
@@ -113,7 +166,7 @@ class ComputerVision:
         return self.result_boxes
 
     def get_current_bounding_box(self):
-        return self.following_vehicle_cords
+        return self.following_vehicle_box
 
     def get_distance(self):
         return self.distance
@@ -153,7 +206,7 @@ class ComputerVision:
         # transform to camera coordinates
         point_camera = np.dot(self.inverse_camera_matrix, point)
 
-        # New we must change from UE4's coordinate system to an "standard"
+        # New we must change from UE4's coordinate system to a "standard"
         # (x, y ,z) -> (y, -z, x)
         # and we remove the fourth component also
         point_camera = [point_camera[1], -point_camera[2], point_camera[0]]
@@ -163,8 +216,23 @@ class ComputerVision:
         # normalize
         point_img[0] /= point_img[2]
         point_img[1] /= point_img[2]
-
         return point_img[0:2]
 
     def set_inverse_camera_matrix(self, inverse_matrix):
         self.inverse_camera_matrix = inverse_matrix
+
+
+def do_boxes_overlap(box1, box2):
+    x1_lower, y1_lower, x1_upper, y1_upper = box1
+    x2_lower, y2_lower, x2_upper, y2_upper = box2
+
+    # Check if one box is to the left of the other
+    if x1_upper < x2_lower or x2_upper < x1_lower:
+        return False
+
+    # Check if one box is above the other
+    if y1_upper < y2_lower or y2_upper < y1_lower:
+        return False
+
+    # If the above conditions are not met, the boxes overlap
+    return True

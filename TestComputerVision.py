@@ -160,14 +160,14 @@ class CameraManager(SensorManager):
 
     def draw_camera(self):
         all_boxes = self.computer_vision.get_boxes()
-        following_bb_cords = self.computer_vision.get_current_bounding_box()
+        following_bb = self.computer_vision.get_current_bounding_box()
         # Create surface from image array.
         if self.display_man.render_enabled() and self.camera_array is not None:
             self.surface = pygame.surfarray.make_surface(self.camera_array.swapaxes(0, 1))
             # Draw bounding boxes on screen.
             # Draw the bounding box of the followed vehicle.
-            if (following_bb_cords is not None) and (self.surface is not None):
-                [x_lower, y_lower, x_upper, y_upper] = following_bb_cords
+            if (following_bb is not None) and (self.surface is not None):
+                [x_lower, y_lower, x_upper, y_upper] = following_bb["cords"]
                 pygame.draw.rect(self.surface, (255, 0, 0), (x_lower, y_lower, x_upper - x_lower, y_upper - y_lower), 2)
 
                 # Display the last distance and speed on screen.
@@ -198,14 +198,14 @@ class CameraManager(SensorManager):
                 for box in all_boxes:
                     cords = box.xyxy[0].tolist()
                     cords = [round(x) for x in cords]
-                    if cords != following_bb_cords:
+                    if cords != following_bb:
                         [x_lower, y_lower, x_upper, y_upper] = cords
                         pygame.draw.rect(self.surface, (0, 255, 0),
                                          (x_lower, y_lower, x_upper - x_lower, y_upper - y_lower), 2)
 
             # For debug purposes: draw the steer vector endpoint
             if self.computer_vision.steer_vector_endpoint is not None:
-                pygame.draw.circle(self.surface, (0, 0, 255), self.computer_vision.steer_vector_endpoint, 5)
+                pygame.draw.circle(self.surface, (0, 0, 255), self.computer_vision.steer_vector_endpoint, 20)
 
 
 class RadarManager(SensorManager):
@@ -228,47 +228,48 @@ class RadarManager(SensorManager):
     # Draws the radar points on the screen. It should be executed AFTER the camera has been drawn.
     def draw_radar(self):
         radar_points = self.computer_vision.radar_points
-        object_points = self.computer_vision.get_object_points()
-        current_rot = radar_points.transform.rotation
-        # Colors for radar points.
-        color_object = carla.Color(255, 0, 0)
-        color_no_object = carla.Color(255, 255, 255)
-        # Draw the points on the screen.
-        for point in radar_points:
-            azi = point.azimuth
-            alt = point.altitude
-            depth = point.depth
-            delta_v = point.velocity
+        if radar_points is not None:
+            object_points = self.computer_vision.get_object_points()
+            current_rot = radar_points.transform.rotation
+            # Colors for radar points.
+            color_object = carla.Color(255, 0, 0)
+            color_no_object = carla.Color(255, 255, 255)
+            # Draw the points on the screen.
+            for point in radar_points:
+                azi = point.azimuth
+                alt = point.altitude
+                depth = point.depth
+                delta_v = point.velocity
 
-            azi_deg = math.degrees(azi)
-            alt_deg = math.degrees(alt)
-            # The 0.25 adjusts a bit the distance so the dots can
-            # be properly seen
-            fw_vec = carla.Vector3D(x=depth - 0.25)
-            carla.Transform(
-                carla.Location(),
-                carla.Rotation(
-                    pitch=current_rot.pitch + alt_deg,
-                    yaw=current_rot.yaw + azi_deg,
-                    roll=current_rot.roll)).transform(fw_vec)
+                azi_deg = math.degrees(azi)
+                alt_deg = math.degrees(alt)
+                # The 0.25 adjusts a bit the distance so the dots can
+                # be properly seen
+                fw_vec = carla.Vector3D(x=depth - 0.25)
+                carla.Transform(
+                    carla.Location(),
+                    carla.Rotation(
+                        pitch=current_rot.pitch + alt_deg,
+                        yaw=current_rot.yaw + azi_deg,
+                        roll=current_rot.roll)).transform(fw_vec)
 
-            # As it does not work to check whether point is in object_points, we manually check the coordinates.
-            color = color_no_object
-            if object_points is not None:
-                for object_point in object_points:
-                    if object_point.altitude == point.altitude and object_point.azimuth == point.azimuth:
-                        color = color_object
-                        break
+                # As it does not work to check whether point is in object_points, we manually check the coordinates.
+                color = color_no_object
+                if object_points is not None:
+                    for object_point in object_points:
+                        if object_point.altitude == point.altitude and object_point.azimuth == point.azimuth:
+                            color = color_object
+                            break
 
-            # display radar data on screen.
-            if self.display_man.render_enabled():
-                self.world.debug.draw_point(
-                    radar_points.transform.location + fw_vec,
-                    size=0.075,
-                    life_time=0.1,
-                    persistent_lines=False,
-                    color=color
-                )
+                # display radar data on screen.
+                if self.display_man.render_enabled():
+                    self.world.debug.draw_point(
+                        radar_points.transform.location + fw_vec,
+                        size=0.075,
+                        life_time=0.1,
+                        persistent_lines=False,
+                        color=color
+                    )
 
 
 def run_simulation(args, client):
@@ -308,16 +309,17 @@ def run_simulation(args, client):
         # It can easily configure the grid and the total window size
         display_manager = DisplayManager(grid_size=[1, 1], window_size=[args.width, args.height])
 
-        # Create the ComputerVision object
-        computer_vision = ComputerVision(vehicle)
-
         camera_h_fov = 40
         camera_v_fov = 40
+        radar_sample_rate = 10
+
+        # Create the ComputerVision object
+        computer_vision = ComputerVision(vehicle, radar_sample_rate)
 
         # Then, SensorManager is used to spawn RGBCamera and Radar and assign each of them to a grid position.
         camera_manager = CameraManager(world, display_manager,
                                        carla.Transform(carla.Location(x=0, z=2.4), carla.Rotation(yaw=+00)),
-                                       vehicle, {'sensor_tick': '0.1'}, display_pos=[0, 0],
+                                       vehicle, {'sensor_tick': f'{1/radar_sample_rate}'}, display_pos=[0, 0],
                                        computer_vision=computer_vision)
         radar_manager = RadarManager(world, display_manager,
                                      carla.Transform(carla.Location(x=0, z=2.4)),
