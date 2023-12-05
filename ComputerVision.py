@@ -1,10 +1,8 @@
 import math
-from datetime import datetime
 
-import cv2
-from ultralytics import YOLO
-import numpy as np
 import carla
+import numpy as np
+from ultralytics import YOLO
 
 from LowpassFilter import LowpassFilter
 
@@ -110,9 +108,8 @@ class ComputerVision:
                 if class_id == class_id_previous:
                     # Check whether the boxes overlap
                     if do_boxes_overlap(cords, cords_previous):
-                        # As approximately the same box was detected in the previous frame, we will suppose that it
+                        # If approximately the same box was detected in the previous frame, we will suppose that it
                         # is indeed a true positive
-                        print("Same box detected in previous frame")
                         self.boxes.append({"class_id": class_id, "cords": cords, "conf": conf})
                         if str(class_id) in self.vehicle_classes:
                             vehicle_boxes.append({"class_id": class_id, "cords": cords, "conf": conf})
@@ -128,9 +125,8 @@ class ComputerVision:
                     if class_id == class_id_previous:
                         # Check whether the boxes overlap
                         if do_boxes_overlap(cords, cords_previous):
-                            # As approximately the same box was detected in the previous frame, we will suppose that it
+                            # If approximately the same box was detected in the previous frame, we will suppose that it
                             # is indeed a true positive
-                            print("Same box detected in previous frame")
                             if previous_box["conf"] + conf > 0.6:
                                 self.boxes.append({"class_id": class_id, "cords": cords, "conf": conf})
                                 if str(class_id) in self.vehicle_classes:
@@ -138,7 +134,6 @@ class ComputerVision:
                                 found = True
                                 break
             if not found:
-                print("Low confidence box detected")
                 # Still save the box, for debugging purposes
                 self.low_conf_boxes.append({"class_id": class_id, "cords": cords, "conf": conf})
 
@@ -168,8 +163,6 @@ class ComputerVision:
 
         # 4. Calculate where the vector with length=median_distance and angle=steer_angle would end on the camera
         # 5. Calculate the distance from the vector to the center of the bounding box of the vehicle
-        # self.steer_vector_endpoint = [self.camera_x_pixels/2, self.camera_y_pixels/2]           # Initialize it to
-        # # the middle of the screen for when there is no vehicle in front
         # Initialize the steer vector endpoint to half of the maximum depth and elevation 0
         self.steer_vector_endpoint = self.get_image_coordinates_from_radar_point(steer_angle, 0, self.max_depth / 2)
         for i, box in enumerate(vehicle_boxes):
@@ -179,7 +172,8 @@ class ComputerVision:
                 continue
             cords = self.get_image_coordinates_from_radar_point(steer_angle, altitude, distances[i])
             distance_to_box = math.sqrt((cords[0] - np.mean([box["cords"][0], box["cords"][2]])) ** 2 +
-                                        ((cords[1] - np.mean([box["cords"][1], box["cords"][3]]))/2) ** 2)  # Y is less important than X
+                                        ((cords[1] - np.mean([box["cords"][1], box["cords"][
+                                            3]])) / 2) ** 2)  # Y is less important than X
             print("Box:", box)
             print("Distance to box:", distance_to_box)
             if distance_to_box < smallest_distance_to_box:
