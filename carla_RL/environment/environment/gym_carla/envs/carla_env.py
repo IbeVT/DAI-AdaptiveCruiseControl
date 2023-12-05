@@ -163,7 +163,7 @@ class CarlaEnv(gym.Env):
         print('-------------------------------------RESET--------------------------------------\n\n\n')
 
         # Log total episode reward
-        wandb.log({"step_reward": sum(self.episode_rewards)})
+        wandb.log({"episode_reward": sum(self.episode_rewards)})
         self.episode_rewards = []
 
         # Clear sensor objects
