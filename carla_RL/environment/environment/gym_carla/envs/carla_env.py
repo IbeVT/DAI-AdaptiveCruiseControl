@@ -27,8 +27,9 @@ from gym_carla.envs.misc import *
 class CarlaEnv(gym.Env):
     """An OpenAI gym wrapper for CARLA simulator."""
 
-    def __init__(self):
+    def __init__(self, env_config):
         print('------------------------------------INIT------------------------------------------\n\n\n')
+        print(env_config)
         env_config = {
             'number_of_vehicles': 100,
             'number_of_walkers': 0,
@@ -89,16 +90,19 @@ class CarlaEnv(gym.Env):
             'state': spaces.Box(np.array([-2, -1, -5, 0]), np.array([2, 1, 30, 1]), dtype=np.float32)
         }
 
-        observation_space_dict = {'camera': spaces.Box(low=0, high=255, shape=(5,), dtype=np.float32)}
+        #observation_space_dict = {'camera': spaces.Box(low=0, high=255, shape=(5,), dtype=np.float32)}
 
         self.observation_space = spaces.Dict(observation_space_dict)
-        self.observation_space = spaces.Box(low=float('-inf'), high=float('inf'), shape=(10,), dtype=np.float32)
+        #self.observation_space = spaces.Box(low=float('-inf'), high=float('inf'), shape=(10,), dtype=np.float32)
 
         # Connect to carla server and get world object
         print('connecting to Carla server...')
-        client = carla.Client('localhost', env_config['port'])
-        client.set_timeout(10.0)
-        self.world = client.load_world(env_config['town'])
+        try:
+            client = carla.Client('localhost', env_config['port'])
+            client.set_timeout(10.0)
+            self.world = client.load_world(env_config['town'])
+        except Exception as e:
+            print('error', e)
         print('Carla server connected!')
 
         # Create a Traffic Manager
@@ -220,9 +224,14 @@ class CarlaEnv(gym.Env):
         print(15)
 
         # Add collision sensor
-        self.collision_sensor = self.world.spawn_actor(self.collision_bp, carla.Transform(), attach_to=self.ego)
+        #self.collision_sensor = self.world.spawn_actor(self.collision_bp, carla.Transform(), attach_to=self.ego)
         # return self._get_obs()
-        self.collision_sensor.listen(lambda event: get_collision_hist(event))
+        #self.collision_sensor.listen(lambda event: get_collision_hist(event))
+        try:
+            self.collision_sensor = self.world.spawn_actor(self.collision_bp, carla.Transform(), attach_to=self.ego)
+            self.collision_sensor.listen(lambda event: get_collision_hist(event))
+        except Exception as e:
+            print(f"Error: {e}")
 
         def get_collision_hist(event):
             impulse = event.normal_impulse
@@ -252,9 +261,10 @@ class CarlaEnv(gym.Env):
         # Update timesteps
         self.time_step = 0
         self.reset_step += 1
-
+        print(171)
         # Enable sync mode
         self.settings.synchronous_mode = True
+        print(172)
         self.world.apply_settings(self.settings)
 
         self.routeplanner = RoutePlanner(self.ego, self.max_waypt)
@@ -321,7 +331,6 @@ class CarlaEnv(gym.Env):
         self.total_step += 1
 
         print('step end')
-        print('---------------------reward----------------------------', self._get_reward())
         return (self._get_obs(), self._get_reward(), self._terminal(), copy.deepcopy(info))
 
     def seed(self, seed=None):
@@ -531,7 +540,7 @@ class CarlaEnv(gym.Env):
 
     def _get_reward(self):
         """Calculate the step reward."""
-        return 1
+        #return 1
         # reward for speed tracking
         v = self.ego.get_velocity()
         speed = np.sqrt(v.x ** 2 + v.y ** 2)
@@ -559,6 +568,7 @@ class CarlaEnv(gym.Env):
 
         r = 200 * r_collision + 1 * lspeed_lon + 10 * r_fast + 0.2 * r_lat - 0.1
 
+        #r = {'reward': r}
         return r
 
     def _terminal(self):
