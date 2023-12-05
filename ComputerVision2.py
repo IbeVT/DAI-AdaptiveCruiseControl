@@ -48,8 +48,8 @@ class ComputerVision2:
         # Start by detecting objects in the image
         #if self.image is None or self.radar_points is None:
             #return
-    results = self.model.predict(source=self.image, save=False)
-    result = results[0]
+      results = self.model.predict(source=self.image, save=False)
+      result = results[0]
 
 
     for box in result.boxes:
