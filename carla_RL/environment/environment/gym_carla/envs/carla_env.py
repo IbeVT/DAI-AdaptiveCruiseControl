@@ -238,8 +238,13 @@ class CarlaEnv(gym.Env):
         # return self._get_obs()
         #self.collision_sensor.listen(lambda event: get_collision_hist(event))
 
-        self.collision_sensor = self.world.spawn_actor(self.collision_bp, carla.Transform(), attach_to=self.ego)
-        self.collision_sensor.listen(lambda event: get_collision_hist(event))
+        while:
+            try:
+                self.collision_sensor = self.world.spawn_actor(self.collision_bp, carla.Transform(), attach_to=self.ego)
+                self.collision_sensor.listen(lambda event: get_collision_hist(event))
+                break
+            except:
+                print('failed to add collision sensor')
 
 
         def get_collision_hist(event):
