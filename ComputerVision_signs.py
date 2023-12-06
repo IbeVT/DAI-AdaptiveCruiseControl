@@ -15,7 +15,7 @@ class ComputerVision:
         self.vehicle = vehicle
         self.inverse_camera_matrix = None
         self.radar_points = None
-        self.model = YOLO('signal_best.pt')
+        self.model = YOLO('signs_best.pt')
         self.vehicle_classes = ['bus', 'bike', 'car', 'motorcycle', 'vehicle']
         self.camera_x_pixels = 720
         self.camera_y_pixels = 1280
