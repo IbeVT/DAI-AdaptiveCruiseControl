@@ -161,7 +161,7 @@ class CarlaEnv(gym.Env):
         print('init end')
 
     def reset(self):
-        print('-------------------------------------RESET--------------------------------------')
+        print(f'-------------------------------------RESET {self.reset_step}--------------------------------------')
 
         # Log total episode reward
         wandb.log({"episode_reward": sum(self.episode_rewards)})
@@ -175,10 +175,6 @@ class CarlaEnv(gym.Env):
         self._clear_all_actors(['sensor.other.collision', 'sensor.lidar.ray_cast', 'sensor.camera.rgb', 'vehicle.*',
                                 'controller.ai.walker', 'walker.*'])
         for actor in self.actor_list:
-            if actor.type_id == 'controller.ai.walker':
-                print('actor stopped')
-                actor.stop()
-
             try:
                 actor.stop()
             except:
@@ -584,6 +580,17 @@ class CarlaEnv(gym.Env):
         # reward for speed tracking
         v = self.ego.get_velocity()
         speed = np.sqrt(v.x ** 2 + v.y ** 2)
+
+        # Calculate the acceleration and the change in acceleration to make the ride smooth and energy efficient
+        a = self.ego.get_acceleration
+        acceleration = np.sqrt(a.x ** 2 + a.y ** 2)
+        try:
+            change_in_acc = abs(acceleration - self.prev_acceleration)
+        except:
+            change_in_acc = 0
+        self.prev_acceleration = acceleration
+        print(acceleration, change_in_acc)
+
 
         # reward for collision
         r_collision = 0
