@@ -150,18 +150,6 @@ class CarlaEnv(gym.Env):
         display_width, display_height = [1280, 720]
         self.display_manager = DisplayManager(grid_size=[1, 1], window_size=[display_width, display_height])
 
-        # Camera sensor
-        # self.camera_img = np.zeros((self.obs_size, self.obs_size, 3), dtype=np.uint8)
-        # self.camera_trans = carla.Transform(carla.Location(x=0.8, z=1.7))
-        # self.camera_bp = self.world.get_blueprint_library().find('sensor.camera.rgb')
-        # # Modify the attributes of the blueprint to set image resolution and field of view.
-        # self.camera_bp.set_attribute('image_size_x', str(self.obs_size))
-        # self.camera_bp.set_attribute('image_size_y', str(self.obs_size))
-        # # self.camera_bp.set_attribute('fov', '40')
-        # # Set the time in seconds between sensor captures
-        # self.camera_bp.set_attribute('sensor_tick', '0.10')
->>>>>>> 7bd8f59086a9acfd0df2e4405ad0881aa9df5346
-
         # Set fixed simulation step for synchronous mode
         self.settings = self.world.get_settings()
         self.settings.fixed_delta_seconds = self.dt
