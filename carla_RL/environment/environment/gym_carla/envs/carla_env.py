@@ -457,7 +457,7 @@ class CarlaEnv(gym.Env):
 
     def _spawn_sensors(self):
         # Create the ComputerVision object
-        self.computer_vision = ComputerVision(self.ego, self.sensor_tick)
+        self.computer_vision = ComputerVision(self.ego, 1 / self.sensor_tick)
 
         # Then, SensorManager is used to spawn RGBCamera and Radar and assign each of them to a grid position.
         self.camera_manager = CameraManager(self.world, self.display_manager,
