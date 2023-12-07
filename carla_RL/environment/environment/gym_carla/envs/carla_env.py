@@ -625,9 +625,11 @@ class CarlaEnv(gym.Env):
 
     def _clear_all_actors(self, actor_filters):
         """Clear specific actors."""
+        print('N_actors:', len(self.world.get_actors()))
         for actor_filter in actor_filters:
             for actor in self.world.get_actors().filter(actor_filter):
                 if actor.is_alive:
+                    print('destroy actor: ', str(actor)[:10])
                     if actor.type_id == 'controller.ai.walker':
                         actor.stop()
                     actor.destroy()
