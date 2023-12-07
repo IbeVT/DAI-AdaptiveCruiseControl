@@ -146,11 +146,10 @@ class CarlaEnv(gym.Env):
         self.collision_hist_l = 1  # collision history length
         self.collision_bp = self.world.get_blueprint_library().find('sensor.other.collision')
 
-<<<<<<< HEAD
         # Display manager
         display_width, display_height = [1280, 720]
         self.display_manager = DisplayManager(grid_size=[1, 1], window_size=[display_width, display_height])
-=======
+
         # Camera sensor
         # self.camera_img = np.zeros((self.obs_size, self.obs_size, 3), dtype=np.uint8)
         # self.camera_trans = carla.Transform(carla.Location(x=0.8, z=1.7))
