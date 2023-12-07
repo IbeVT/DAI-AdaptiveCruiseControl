@@ -80,6 +80,10 @@ class CarlaEnv(gym.Env):
         self.episode_rewards = []
         self.actor_list = []
 
+        self.display_manager = None
+        self.camera_manager = None
+        self.radar_manager = None
+
         # Destination
         if env_config['task_mode'] == 'roundabout':
             self.dests = [[4.46, -61.46, 0], [-49.53, -2.89, 0], [-6.48, 55.47, 0], [35.96, 3.33, 0]]
@@ -142,9 +146,22 @@ class CarlaEnv(gym.Env):
         self.collision_hist_l = 1  # collision history length
         self.collision_bp = self.world.get_blueprint_library().find('sensor.other.collision')
 
+<<<<<<< HEAD
         # Display manager
         display_width, display_height = [1280, 720]
         self.display_manager = DisplayManager(grid_size=[1, 1], window_size=[display_width, display_height])
+=======
+        # Camera sensor
+        # self.camera_img = np.zeros((self.obs_size, self.obs_size, 3), dtype=np.uint8)
+        # self.camera_trans = carla.Transform(carla.Location(x=0.8, z=1.7))
+        # self.camera_bp = self.world.get_blueprint_library().find('sensor.camera.rgb')
+        # # Modify the attributes of the blueprint to set image resolution and field of view.
+        # self.camera_bp.set_attribute('image_size_x', str(self.obs_size))
+        # self.camera_bp.set_attribute('image_size_y', str(self.obs_size))
+        # # self.camera_bp.set_attribute('fov', '40')
+        # # Set the time in seconds between sensor captures
+        # self.camera_bp.set_attribute('sensor_tick', '0.10')
+>>>>>>> 7bd8f59086a9acfd0df2e4405ad0881aa9df5346
 
         # Set fixed simulation step for synchronous mode
         self.settings = self.world.get_settings()
@@ -182,6 +199,11 @@ class CarlaEnv(gym.Env):
         self.collision_sensor = None
         self.camera_manager = None
         self.radar_manager = None
+        self.display_manager = None
+
+        # Display manager
+        display_width, display_height = [1280, 720]
+        self.display_manager = DisplayManager(grid_size=[1, 1], window_size=[display_width, display_height])
 
         # Disable sync mode
         self._set_synchronous_mode(True)
