@@ -462,12 +462,12 @@ class CarlaEnv(gym.Env):
         # Then, SensorManager is used to spawn RGBCamera and Radar and assign each of them to a grid position.
         self.camera_manager = CameraManager(self.world, self.display_manager,
                                             carla.Transform(carla.Location(x=0, z=2.4), carla.Rotation(yaw=+00)),
-                                            self.ego_bp, {'sensor_tick': f'{1 / self.sensor_tick}'},
+                                            self.ego, {'sensor_tick': f'{1 / self.sensor_tick}'},
                                             display_pos=[0, 0],
                                             computer_vision=self.computer_vision)
         self.radar_manager = RadarManager(self.world, self.display_manager,
                                           carla.Transform(carla.Location(x=0, z=2.4)),
-                                          self.ego_bp,
+                                          self.ego,
                                           {'horizontal_fov': f'{self.radar_fov}', 'points_per_second': '5000',
                                            'range': '100',
                                            'sensor_tick': '0.1', 'vertical_fov': f'{self.radar_fov}'},
