@@ -582,7 +582,7 @@ class CarlaEnv(gym.Env):
         speed = np.sqrt(v.x ** 2 + v.y ** 2)
 
         # Calculate the acceleration and the change in acceleration to make the ride smooth and energy efficient
-        a = self.ego.get_acceleration
+        a = self.ego.get_acceleration()
         acceleration = np.sqrt(a.x ** 2 + a.y ** 2)
         try:
             change_in_acc = abs(acceleration - self.prev_acceleration)
