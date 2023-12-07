@@ -4,7 +4,7 @@ import carla
 import numpy as np
 from ultralytics import YOLO
 
-from LowpassFilter import LowpassFilter
+from gym_carla.LowpassFilter import LowpassFilter
 
 
 class ComputerVision:

@@ -24,8 +24,8 @@ from gym_carla.envs.route_planner import RoutePlanner
 from gym_carla.envs.misc import *
 import wandb
 
-from ComputerVision import ComputerVision
-from Managers import DisplayManager, CameraManager, RadarManager
+from gym_carla.ComputerVision import ComputerVision
+from gym_carla.Managers import DisplayManager, CameraManager, RadarManager
 
 wandb.init(project="CARLA_RL")
 
