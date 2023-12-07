@@ -175,7 +175,7 @@ class CarlaEnv(gym.Env):
                                 'controller.ai.walker', 'walker.*'])
 
         # Disable sync mode
-        self._set_synchronous_mode(False)
+        self._set_synchronous_mode(True)
 
         # Spawn surrounding vehicles
         random.shuffle(self.vehicle_spawn_points)
