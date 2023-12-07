@@ -71,6 +71,7 @@ class CarlaEnv(gym.Env):
         self.display_route = env_config['display_route']
 
         self.episode_rewards = []
+        self.actor_list = []
 
         # Destination
         if env_config['task_mode'] == 'roundabout':
@@ -173,6 +174,21 @@ class CarlaEnv(gym.Env):
         # Delete sensors, vehicles and walkers
         self._clear_all_actors(['sensor.other.collision', 'sensor.lidar.ray_cast', 'sensor.camera.rgb', 'vehicle.*',
                                 'controller.ai.walker', 'walker.*'])
+        for actor in self.actor_list:
+            if actor.type_id == 'controller.ai.walker':
+                print('actor stopped')
+                actor.stop()
+
+            try:
+                actor.stop()
+            except:
+                pass
+
+            try:
+                actor.destroy()
+            except:
+                pass
+        self.actor_list = []
 
         # Disable sync mode
         self._set_synchronous_mode(True)
@@ -241,6 +257,7 @@ class CarlaEnv(gym.Env):
             try:
                 # Add collision sensor
                 self.collision_sensor = self.world.spawn_actor(self.collision_bp, carla.Transform(), attach_to=self.ego)
+                self.actor_list.append(self.collision_sensor)
                 self.collision_sensor.listen(lambda event: get_collision_hist(event))
                 break
             except:
@@ -261,6 +278,7 @@ class CarlaEnv(gym.Env):
             try:
                 # Add camera sensor
                 self.camera_sensor = self.world.spawn_actor(self.camera_bp, self.camera_trans, attach_to=self.ego)
+                self.actor_list.append(self.camera_sensor)
 
                 # return self._get_obs()
                 self.camera_sensor.listen(lambda data: get_camera_img(data))
@@ -471,6 +489,7 @@ class CarlaEnv(gym.Env):
 
         if not overlap:
             vehicle = self.world.try_spawn_actor(self.ego_bp, transform)
+            self.actor_list.append(vehicle)
             if vehicle is not None:
                 vehicle.set_autopilot()
 
