@@ -100,10 +100,10 @@ class CarlaEnv(gym.Env):
             self.action_space = spaces.Box(np.array([env_config['continuous_accel_range'][0]]),
                                            np.array([env_config['continuous_accel_range'][1]]), dtype=np.float32)  # acc
         observation_space_dict = {
-            'speed': spaces.Box(low=-50, high=50, shape=(1,), dtype=float),
-            'distance': spaces.Box(low=0, high=100, shape=(1,), dtype=float),
-            'delta_V': spaces.Box(low=-100, high=100, shape=(1,), dtype=float),
-            'speed_limit': spaces.Box(low=0, high=50, shape=(1,), dtype=float),
+            'speed': spaces.Box(low=-50, high=50, shape=(1,), dtype=np.float32),
+            'distance': spaces.Box(low=0, high=100, shape=(1,), dtype=np.float32),
+            'delta_V': spaces.Box(low=-100, high=100, shape=(1,), dtype=np.float32),
+            'speed_limit': spaces.Box(low=0, high=50, shape=(1,), dtype=np.float32),
             'is_red_light': spaces.Box(low=0, high=1, shape=(1,), dtype=int),
         }
 
@@ -517,11 +517,11 @@ class CarlaEnv(gym.Env):
         self.display_manager.render()
 
         obs = {
-            'speed': self.ego.get_velocity().length(),
-            'distance': self.computer_vision.get_distance(),
-            'delta_V': self.computer_vision.get_delta_v(),
-            'speed_limit': 50,
-            'is_red_light': self.computer_vision.get_red_light(),
+            'speed': np.array(self.ego.get_velocity().length()),
+            'distance': np.array(self.computer_vision.get_distance()),
+            'delta_V': np.array(self.computer_vision.get_delta_v()),
+            'speed_limit': np.array(50.0),
+            'is_red_light': np.array(1 if self.computer_vision.get_red_light() else 0)
         }
 
         return obs
