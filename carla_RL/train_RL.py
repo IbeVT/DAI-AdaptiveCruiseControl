@@ -77,7 +77,7 @@ if __name__ == "__main__":
             "max_concurrent_trials": 1,
             "framework": "torch",
             # "num_gpus": 0.5,
-            "num_workers": 1,
+            "num_workers": 0,
             "env": "CustomCarlaEnv",
             #"env": "CartPole-v1",
             "env_config": {
@@ -97,7 +97,7 @@ if __name__ == "__main__":
             #stop={"episode_reward_mean": 30},
             callbacks=[
                 WandbLoggerCallback(
-                    project="SweepProject",
+                    project="CarlaRL",
                     api_key="cee1795c4e0d51b4eb7fa2b4f7f180c85403aae1",
                 )
             ],
