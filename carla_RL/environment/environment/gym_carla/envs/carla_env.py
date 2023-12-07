@@ -96,31 +96,24 @@ class CarlaEnv(gym.Env):
             self.action_space = spaces.Box(np.array([env_config['continuous_accel_range'][0]]),
                                            np.array([env_config['continuous_accel_range'][1]]), dtype=np.float32)  # acc
         observation_space_dict = {
-            # 'camera': spaces.Box(low=0, high=255, shape=(self.obs_size, self.obs_size, 3), dtype=np.uint8),
-            # 'birdeye': spaces.Box(low=0, high=255, shape=(self.obs_size, self.obs_size, 3), dtype=np.uint8),
-            #'state': spaces.Box(np.array([-2, -1, -5, 0]), np.array([2, 1, 30, 1]), dtype=np.float32)
+            'speed': spaces.Box(low=-50, high=50, shape=(1,), dtype=float),
             'distance': spaces.Box(low=0, high=100, shape=(1,), dtype=float),
-            'delta_V': spaces.Box(low=0, high=200, shape=(1,), dtype=float),
-            'speed_limit': spaces.Box(low=0, high=200, shape=(1,), dtype=float),
-            'is_red_light': spaces.Box(low=False, high=True, shape=(1,), dtype=bool),
-            'state': spaces.Box(np.array([-5, 0]), np.array([30, 1]), dtype=np.float32)
-            'state': spaces.Box(np.array([-5, 0, 0, 0, -240]), np.array([30, 1, 120, 100, 240]), dtype=np.float32)
+            'delta_V': spaces.Box(low=-100, high=100, shape=(1,), dtype=float),
+            'speed_limit': spaces.Box(low=0, high=50, shape=(1,), dtype=float),
+            'is_red_light': spaces.Box(low=0, high=1, shape=(1,), dtype=int),
         }
 
-        #observation_space_dict = {'camera': spaces.Box(low=0, high=255, shape=(5,), dtype=np.float32)}
-
         self.observation_space = spaces.Dict(observation_space_dict)
-        #self.observation_space = spaces.Box(low=float('-inf'), high=float('inf'), shape=(10,), dtype=np.float32)
 
-        # Connect to carla server and get world object
+        # Try to disconnect to connected world
         print('connecting to Carla server...')
         client = carla.Client('localhost', env_config['port'])
         try:
             client.unload_world()
-        except Exception as e:
+        except:
             pass
-            #print('Error unloading world', e)
 
+        # Connect to carla server and get world object
         client.set_timeout(10.0)
         self.world = client.load_world(env_config['town'])
         print('Carla server connected!')
@@ -152,17 +145,6 @@ class CarlaEnv(gym.Env):
         # Display manager
         display_width, display_height = [1280, 720]
         self.display_manager = DisplayManager(grid_size=[1, 1], window_size=[display_width, display_height])
-
-        # Camera sensor
-        # self.camera_img = np.zeros((self.obs_size, self.obs_size, 3), dtype=np.uint8)
-        # self.camera_trans = carla.Transform(carla.Location(x=0.8, z=1.7))
-        # self.camera_bp = self.world.get_blueprint_library().find('sensor.camera.rgb')
-        # # Modify the attributes of the blueprint to set image resolution and field of view.
-        # self.camera_bp.set_attribute('image_size_x', str(self.obs_size))
-        # self.camera_bp.set_attribute('image_size_y', str(self.obs_size))
-        # # self.camera_bp.set_attribute('fov', '40')
-        # # Set the time in seconds between sensor captures
-        # self.camera_bp.set_attribute('sensor_tick', '0.10')
 
         # Set fixed simulation step for synchronous mode
         self.settings = self.world.get_settings()
@@ -210,8 +192,7 @@ class CarlaEnv(gym.Env):
 
         if count > 0:
             for spawn_point in self.vehicle_spawn_points:
-                # if self._try_spawn_random_vehicle_at(spawn_point, number_of_wheels=[4]):
-                if True:
+                if self._try_spawn_random_vehicle_at(spawn_point, number_of_wheels=[4]):
                     count -= 1
                 if count <= 0:
                     break
@@ -262,10 +243,6 @@ class CarlaEnv(gym.Env):
 
         self._spawn_sensors()
 
-        # Add collision sensor
-        #self.collision_sensor = self.world.spawn_actor(self.collision_bp, carla.Transform(), attach_to=self.ego)
-        #self.collision_sensor.listen(lambda event: get_collision_hist(event))
-
         while True:
             try:
                 # Add collision sensor
@@ -286,27 +263,6 @@ class CarlaEnv(gym.Env):
 
         self.collision_hist = []
 
-        # Add camera sensor
-        # self.camera_sensor = self.world.spawn_actor(self.camera_bp, self.camera_trans, attach_to=self.ego)
-
-        # #return self._get_obs()
-        # self.camera_sensor.listen(lambda data: get_camera_img(data))
-
-        while True:
-            try:
-                self.actor_list.append(self.camera_sensor)
-                break
-            except:
-                print('failed to add camera sensor')
-
-
-        # def get_camera_img(data):
-        #     array = np.frombuffer(data.raw_data, dtype=np.dtype("uint8"))
-        #     array = np.reshape(array, (data.height, data.width, 4))
-        #     array = array[:, :, :3]
-        #     array = array[:, :, ::-1]
-        #     self.camera_img = array
-
         # Update timesteps
         self.time_step = 0
         self.reset_step += 1
@@ -322,14 +278,10 @@ class CarlaEnv(gym.Env):
         location_list = [carla.Location(x=loc[0], y=loc[1], z=loc[2]) for loc in self.waypoints]
         self.traffic_manager.set_path(self.ego, location_list)
 
-        # # Set ego information for render
-        # self.birdeye_render.set_hero(self.ego, self.ego.id)
-
-        #print('reset end')
         return self._get_obs()
 
     def step(self, action):
-        #print('------------------------------------STEP--------------------------------------\n\n\n')
+        #print('------------------------------------STEP--------------------------------------')
         #return (self._get_obs(), 0, False, {'waypoints': 0, 'vehicle_front': 0})
         # Calculate acceleration and steering
         if self.discrete:
@@ -411,23 +363,6 @@ class CarlaEnv(gym.Env):
                 color = random.choice(bp.get_attribute('color').recommended_values)
             bp.set_attribute('color', color)
         return bp
-
-    # def _init_renderer(self):
-    #     """Initialize the birdeye view renderer.
-    # """
-    #     pygame.init()
-    #     self.display = pygame.display.set_mode(
-    #         (self.display_size * 3, self.display_size),
-    #         pygame.HWSURFACE | pygame.DOUBLEBUF)
-    #
-    #     pixels_per_meter = self.display_size / self.obs_range
-    #     pixels_ahead_vehicle = (self.obs_range / 2 - self.d_behind) * pixels_per_meter
-    #     birdeye_params = {
-    #         'screen_size': [self.display_size, self.display_size],
-    #         'pixels_per_meter': pixels_per_meter,
-    #         'pixels_ahead_vehicle': pixels_ahead_vehicle
-    #     }
-        # self.birdeye_render = BirdeyeRender(self.world, birdeye_params)
 
     def _set_synchronous_mode(self, synchronous=True):
         """Set whether to use the synchronous mode.
@@ -563,49 +498,6 @@ class CarlaEnv(gym.Env):
         #return np.zeros(shape=(10,), dtype=np.float32)
 
         """Get the observations."""
-        ## Birdeye rendering
-        # self.birdeye_render.vehicle_polygons = self.vehicle_polygons
-        # self.birdeye_render.walker_polygons = self.walker_polygons
-        # self.birdeye_render.waypoints = self.waypoints
-
-        # # birdeye view with roadmap and actors
-        # birdeye_render_types = ['roadmap', 'actors']
-        # if self.display_route:
-        #     birdeye_render_types.append('waypoints')
-        # self.birdeye_render.render(self.display, birdeye_render_types)
-        # birdeye = pygame.surfarray.array3d(self.display)
-        # birdeye = birdeye[0:self.display_size, :, :]
-        # birdeye = display_to_rgb(birdeye, self.obs_size)
-
-        # # Display birdeye image
-        # birdeye_surface = rgb_to_display_surface(birdeye, self.display_size)
-        # self.display.blit(birdeye_surface, (0, 0))
-
-        # ## Display camera image
-        # camera = resize(self.camera_img, (self.obs_size, self.obs_size)) * 255
-        # camera_surface = rgb_to_display_surface(camera, self.display_size)
-        # self.display.blit(camera_surface, (self.display_size * 2, 0))
-
-        # # Display on pygame
-        # pygame.display.flip()
-
-        #  # State observation
-        # ego_trans = self.ego.get_transform()
-        # ego_x = ego_trans.location.x
-        # ego_y = ego_trans.location.y
-        # ego_yaw = ego_trans.rotation.yaw / 180 * np.pi
-        # lateral_dis, w = get_preview_lane_dis(self.waypoints, ego_x, ego_y)
-        # delta_yaw = np.arcsin(np.cross(w, np.array(np.array([np.cos(ego_yaw), np.sin(ego_yaw)]))))
-        # v = self.ego.get_velocity()
-        # speed = np.sqrt(v.x ** 2 + v.y ** 2)
-        # #state = np.array([lateral_dis, - delta_yaw, speed, self.vehicle_front])
-        # state = np.array([speed, self.vehicle_front])
-        #
-        # obs = {
-        #     'camera': camera.astype(np.uint8),
-        #     'birdeye': birdeye.astype(np.uint8),
-        #     'state': state,
-        # }
         self.computer_vision.process_data()
 
         # First draw camera on the screen, then the radar
@@ -616,12 +508,11 @@ class CarlaEnv(gym.Env):
         self.display_manager.render()
 
         obs = {
+            'speed': self.ego.get_velocity().length(),
             'distance': self.computer_vision.get_distance(),
             'delta_V': self.computer_vision.get_delta_v(),
-            # 'speed_limit': self.computer_vision.get_speed_limit(),
             'speed_limit': 50,
             'is_red_light': self.computer_vision.get_red_light(),
-            'ego_speed': self.ego.get_velocity().length()
         }
 
         return obs
@@ -643,11 +534,8 @@ class CarlaEnv(gym.Env):
         self.prev_acceleration = acceleration
         print(acceleration, change_in_acc)
 
-
         # reward for collision
-        r_collision = 0
-        if len(self.collision_hist) > 0:
-            r_collision = -1
+        collision = 1 if len(self.collision_hist) > 0 else 0
 
         # reward for out of lane
         ego_x, ego_y = get_pos(self.ego)
@@ -655,19 +543,13 @@ class CarlaEnv(gym.Env):
 
         # longitudinal speed
         lspeed = np.array([v.x, v.y])
-        lspeed_lon = np.dot(lspeed, w)
+        lspeed = np.dot(lspeed, w)
 
         # cost for too fast
-        r_fast = 0
-        if lspeed_lon > self.desired_speed:
-            r_fast = -1
+        to_fast = 1 if lspeed_lon > self.desired_speed else 0
 
-        # cost for lateral acceleration
-        r_lat = - abs(self.ego.get_control().steer) * lspeed_lon ** 2
+        r = 1*lspeed - 200*collision - 10*to_fast - 0.1
 
-        r = 200 * r_collision + 1 * lspeed_lon + 10 * r_fast + 0.2 * r_lat - 0.1
-
-        #r = {'reward': r}
         return r
 
     def _terminal(self):
