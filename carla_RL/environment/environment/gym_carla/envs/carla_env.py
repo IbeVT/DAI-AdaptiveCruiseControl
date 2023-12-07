@@ -167,13 +167,7 @@ class CarlaEnv(gym.Env):
         wandb.log({"episode_reward": sum(self.episode_rewards)})
         self.episode_rewards = []
 
-        # Clear sensor objects
-        self.collision_sensor = None
-        self.camera_sensor = None
-
         # Delete sensors, vehicles and walkers
-        self._clear_all_actors(['sensor.other.collision', 'sensor.lidar.ray_cast', 'sensor.camera.rgb', 'vehicle.*',
-                                'controller.ai.walker', 'walker.*'])
         for actor in self.actor_list:
             try:
                 actor.stop()
@@ -185,6 +179,10 @@ class CarlaEnv(gym.Env):
             except:
                 pass
         self.actor_list = []
+
+        # Clear sensor objects
+        self.collision_sensor = None
+        self.camera_sensor = None
 
         # Disable sync mode
         self._set_synchronous_mode(True)
@@ -563,8 +561,13 @@ class CarlaEnv(gym.Env):
         delta_yaw = np.arcsin(np.cross(w, np.array(np.array([np.cos(ego_yaw), np.sin(ego_yaw)]))))
         v = self.ego.get_velocity()
         speed = np.sqrt(v.x ** 2 + v.y ** 2)
+        speed_limit = 50
+        dist_vehicle_front = 20
+        v_diff_vehicle_front = 0
         #state = np.array([lateral_dis, - delta_yaw, speed, self.vehicle_front])
-        state = np.array([speed, self.vehicle_front])
+        #state = np.array([speed, self.vehicle_front])
+        print('vehicle_front:', self.vehicle_front)
+        state = np.array([speed, self.vehicle_front, speed_limit, dist_vehicle_front, v_diff_vehicle_front])
 
         obs = {
             'camera': camera.astype(np.uint8),
@@ -648,14 +651,3 @@ class CarlaEnv(gym.Env):
             return True
         #print('No termination')
         return False
-
-    def _clear_all_actors(self, actor_filters):
-        """Clear specific actors."""
-        print('N_actors:', len(self.world.get_actors()))
-        for actor_filter in actor_filters:
-            for actor in self.world.get_actors().filter(actor_filter):
-                if actor.is_alive:
-                    print('destroy actor: ', str(actor)[:10])
-                    if actor.type_id == 'controller.ai.walker':
-                        actor.stop()
-                    actor.destroy()
