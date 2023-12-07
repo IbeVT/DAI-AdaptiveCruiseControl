@@ -515,11 +515,18 @@ class CarlaEnv(gym.Env):
 
         # Render received data
         self.display_manager.render()
-
+        """
         obs = {
             'speed': np.array(self.ego.get_velocity().length(), dtype=np.float32),
             'distance': np.array(self.computer_vision.get_distance(), dtype=np.float32),
             'delta_V': np.array(self.computer_vision.get_delta_v(), dtype=np.float32),
+            'speed_limit': np.array(50.0, dtype=np.float32),
+            'is_red_light': np.array(1 if self.computer_vision.get_red_light() else 0, dtype=int)
+        }"""
+        obs = {
+            'speed': np.array(self.ego.get_velocity().length(), dtype=np.float32),
+            'distance': np.array(10, dtype=np.float32),
+            'delta_V': np.array(10, dtype=np.float32),
             'speed_limit': np.array(50.0, dtype=np.float32),
             'is_red_light': np.array(1 if self.computer_vision.get_red_light() else 0, dtype=int)
         }
