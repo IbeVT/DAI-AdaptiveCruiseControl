@@ -80,6 +80,10 @@ class CarlaEnv(gym.Env):
         self.episode_rewards = []
         self.actor_list = []
 
+        self.display_manager = None
+        self.camera_manager = None
+        self.radar_manager = None
+
         # Destination
         if env_config['task_mode'] == 'roundabout':
             self.dests = [[4.46, -61.46, 0], [-49.53, -2.89, 0], [-6.48, 55.47, 0], [35.96, 3.33, 0]]
@@ -149,10 +153,6 @@ class CarlaEnv(gym.Env):
         self.collision_hist_l = 1  # collision history length
         self.collision_bp = self.world.get_blueprint_library().find('sensor.other.collision')
 
-        # Display manager
-        display_width, display_height = [1280, 720]
-        self.display_manager = DisplayManager(grid_size=[1, 1], window_size=[display_width, display_height])
-
         # Camera sensor
         # self.camera_img = np.zeros((self.obs_size, self.obs_size, 3), dtype=np.uint8)
         # self.camera_trans = carla.Transform(carla.Location(x=0.8, z=1.7))
@@ -200,6 +200,11 @@ class CarlaEnv(gym.Env):
         self.collision_sensor = None
         self.camera_manager = None
         self.radar_manager = None
+        self.display_manager = None
+
+        # Display manager
+        display_width, display_height = [1280, 720]
+        self.display_manager = DisplayManager(grid_size=[1, 1], window_size=[display_width, display_height])
 
         # Disable sync mode
         self._set_synchronous_mode(True)
