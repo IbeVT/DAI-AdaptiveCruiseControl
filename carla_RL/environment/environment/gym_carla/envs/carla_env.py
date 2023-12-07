@@ -44,7 +44,7 @@ class CarlaEnv(gym.Env):
             'port': 2000,  # connection port
             'town': 'Town03',  # which town to simulate
             'task_mode': 'random',  # mode of the task, [random, roundabout (only for Town03)]
-            'max_time_episode': 1000,  # maximum timesteps per episode
+            'max_time_episode': 10,  # maximum timesteps per episode
             'max_waypt': 12,  # maximum number of waypoints
             'obs_range': 32,  # observation range (meter)
             'd_behind': 12,  # distance behind the ego vehicle (meter)
@@ -386,6 +386,7 @@ class CarlaEnv(gym.Env):
     def _init_renderer(self):
         """Initialize the birdeye view renderer.
     """
+        return
         pygame.init()
         self.display = pygame.display.set_mode(
             (self.display_size * 3, self.display_size),
