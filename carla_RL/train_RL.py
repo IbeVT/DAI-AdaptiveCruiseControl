@@ -66,7 +66,7 @@ env.reset()"""
 
 
 if __name__ == "__main__":
-    ray.init(local_mode=True)
+    ray.init(num_cpus=1)
 
     tuner = tune.Tuner(
         PPO,
