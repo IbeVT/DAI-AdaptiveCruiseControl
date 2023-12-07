@@ -384,8 +384,7 @@ class CarlaEnv(gym.Env):
         return bp
 
     def _init_renderer(self):
-        """Initialize the birdeye view renderer.
-    """
+        """Initialize the birdeye view renderer."""
         pygame.init()
         self.display = pygame.display.set_mode(
             (self.display_size * 3, self.display_size),
@@ -523,22 +522,22 @@ class CarlaEnv(gym.Env):
         birdeye_render_types = ['roadmap', 'actors']
         if self.display_route:
             birdeye_render_types.append('waypoints')
-        #self.birdeye_render.render(self.display, birdeye_render_types)
+        self.birdeye_render.render(self.display, birdeye_render_types)
         birdeye = pygame.surfarray.array3d(self.display)
         birdeye = birdeye[0:self.display_size, :, :]
         birdeye = display_to_rgb(birdeye, self.obs_size)
 
         # Display birdeye image
         birdeye_surface = rgb_to_display_surface(birdeye, self.display_size)
-        #self.display.blit(birdeye_surface, (0, 0))
+        self.display.blit(birdeye_surface, (0, 0))
 
         ## Display camera image
         camera = resize(self.camera_img, (self.obs_size, self.obs_size)) * 255
-        """camera_surface = rgb_to_display_surface(camera, self.display_size)
+        camera_surface = rgb_to_display_surface(camera, self.display_size)
         self.display.blit(camera_surface, (self.display_size * 2, 0))
 
         # Display on pygame
-        pygame.display.flip()"""
+        pygame.display.flip()
 
         # State observation
         ego_trans = self.ego.get_transform()
