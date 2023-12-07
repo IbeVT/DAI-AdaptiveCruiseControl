@@ -7,7 +7,9 @@ from ultralytics import YOLO
 from gym_carla.LowpassFilter import LowpassFilter
 import sys
 sys.path.append('gym_carla')
-print(sys.path)
+
+import os
+print(os.getcwd())
 
 class ComputerVision:
     def __init__(self, vehicle, radar_sample_rate=10):
