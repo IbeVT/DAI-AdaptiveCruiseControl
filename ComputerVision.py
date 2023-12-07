@@ -94,7 +94,6 @@ class ComputerVision:
             print("---")
             # If the confidence is high enough, immediately save the box
             if conf > 0.5:
-                print("New box detected")
                 self.boxes.append({"class_id": class_id, "cords": cords, "conf": conf})
                 if str(class_id) in self.vehicle_classes:
                     vehicle_boxes.append({"class_id": class_id, "cords": cords, "conf": conf})
@@ -171,16 +170,18 @@ class ComputerVision:
             if math.isnan(altitude):
                 continue
             cords = self.get_image_coordinates_from_radar_point(steer_angle, altitude, distances[i])
-            distance_to_box = math.sqrt((cords[0] - np.mean([box["cords"][0], box["cords"][2]])) ** 2 +
-                                        ((cords[1] - np.mean([box["cords"][1], box["cords"][
-                                            3]])) / 2) ** 2)  # Y is less important than X
-            print("Box:", box)
-            print("Distance to box:", distance_to_box)
-            if distance_to_box < smallest_distance_to_box:
-                self.following_vehicle_box = box
-                self.distance = distances[i]
-                self.delta_v = velocities[i]
-                self.steer_vector_endpoint = cords
+            # distance_to_box = math.sqrt((cords[0] - np.mean([box["cords"][0], box["cords"][2]])) ** 2 +
+            #                             ((cords[1] - np.mean([box["cords"][1], box["cords"][
+            #                                 3]])) / 2) ** 2)  # Y is less important than X
+
+            # Follow the closest vehicle that is under the threshold
+            # if distance_to_box < smallest_distance_to_box:
+            if is_point_in_box(box["cords"], cords):
+                if distances[i] < self.distance:
+                    self.following_vehicle_box = box
+                    self.distance = distances[i]
+                    self.delta_v = velocities[i]
+                    self.steer_vector_endpoint = cords
 
     def get_current_bounding_box(self):
         return self.following_vehicle_box
@@ -259,3 +260,10 @@ def do_boxes_overlap(box1, box2):
 
     # If the above conditions are not met, the boxes overlap
     return True
+
+def is_point_in_box(box, point):
+    x_lower, y_lower, x_upper, y_upper = box
+    x, y = point
+    if x_lower < x < x_upper and y_lower < y < y_upper:
+        return True
+    return False
