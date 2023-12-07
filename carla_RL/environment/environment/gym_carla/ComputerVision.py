@@ -5,7 +5,9 @@ import numpy as np
 from ultralytics import YOLO
 
 from gym_carla.LowpassFilter import LowpassFilter
-
+import sys
+sys.path.append('gym_carla')
+print(sys.path)
 
 class ComputerVision:
     def __init__(self, vehicle, radar_sample_rate=10):
@@ -15,7 +17,7 @@ class ComputerVision:
         self.vehicle = vehicle
         self.inverse_camera_matrix = None
         self.radar_points = None
-        self.model = YOLO('gym_carla\\best.pt')
+        self.model = YOLO('./gym_carla/best.pt')
         self.vehicle_classes = ['bus', 'bike', 'car', 'motorcycle', 'vehicle']
         self.camera_x_pixels = 720
         self.camera_y_pixels = 1280
