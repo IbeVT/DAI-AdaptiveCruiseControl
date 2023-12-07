@@ -24,6 +24,9 @@ from gym_carla.envs.route_planner import RoutePlanner
 from gym_carla.envs.misc import *
 import wandb
 
+from ...ComputerVision import ComputerVision
+from ...Managers import DisplayManager, CameraManager, RadarManager
+
 wandb.init(project="CARLA_RL")
 
 class CarlaEnv(gym.Env):
@@ -44,7 +47,7 @@ class CarlaEnv(gym.Env):
             'port': 2000,  # connection port
             'town': 'Town03',  # which town to simulate
             'task_mode': 'random',  # mode of the task, [random, roundabout (only for Town03)]
-            'max_time_episode': 10,  # maximum timesteps per episode
+            'max_time_episode': 50,  # maximum timesteps per episode
             'max_waypt': 12,  # maximum number of waypoints
             'obs_range': 32,  # observation range (meter)
             'd_behind': 12,  # distance behind the ego vehicle (meter)
@@ -52,6 +55,7 @@ class CarlaEnv(gym.Env):
             'desired_speed': 8,  # desired speed (m/s)
             'max_ego_spawn_times': 200,  # maximum times to spawn ego vehicle
             'display_route': True,  # whether to render the desired route
+            'radar_fov': 40
         }
         # parameters
         self.display_size = env_config['display_size']  # rendering screen size
@@ -69,6 +73,9 @@ class CarlaEnv(gym.Env):
         self.desired_speed = env_config['desired_speed']
         self.max_ego_spawn_times = env_config['max_ego_spawn_times']
         self.display_route = env_config['display_route']
+
+        self.sensor_tick = self.dt
+        self.radar_fov = env_config['radar_fov']
 
         self.episode_rewards = []
         self.actor_list = []
@@ -89,9 +96,14 @@ class CarlaEnv(gym.Env):
             self.action_space = spaces.Box(np.array([env_config['continuous_accel_range'][0]]),
                                            np.array([env_config['continuous_accel_range'][1]]), dtype=np.float32)  # acc
         observation_space_dict = {
-            'camera': spaces.Box(low=0, high=255, shape=(self.obs_size, self.obs_size, 3), dtype=np.uint8),
-            'birdeye': spaces.Box(low=0, high=255, shape=(self.obs_size, self.obs_size, 3), dtype=np.uint8),
+            # 'camera': spaces.Box(low=0, high=255, shape=(self.obs_size, self.obs_size, 3), dtype=np.uint8),
+            # 'birdeye': spaces.Box(low=0, high=255, shape=(self.obs_size, self.obs_size, 3), dtype=np.uint8),
             #'state': spaces.Box(np.array([-2, -1, -5, 0]), np.array([2, 1, 30, 1]), dtype=np.float32)
+            'distance': spaces.Box(low=0, high=100, shape=(1,), dtype=float),
+            'delta_V': spaces.Box(low=0, high=200, shape=(1,), dtype=float),
+            'speed_limit': spaces.Box(low=0, high=200, shape=(1,), dtype=float),
+            'is_red_light': spaces.Box(low=False, high=True, shape=(1,), dtype=bool),
+            'state': spaces.Box(np.array([-5, 0]), np.array([30, 1]), dtype=np.float32)
             'state': spaces.Box(np.array([-5, 0, 0, 0, -240]), np.array([30, 1, 120, 100, 240]), dtype=np.float32)
         }
 
@@ -130,23 +142,27 @@ class CarlaEnv(gym.Env):
                 self.walker_spawn_points.append(spawn_point)
 
         # Create the ego vehicle blueprint
-        self.ego_bp = self._create_vehicle_bluepprint(env_config['ego_vehicle_filter'], color='49,8,8')
+        self.ego_bp = self._create_vehicle_blueprint(env_config['ego_vehicle_filter'], color='49,8,8')
 
         # Collision sensor
         self.collision_hist = []  # The collision history
         self.collision_hist_l = 1  # collision history length
         self.collision_bp = self.world.get_blueprint_library().find('sensor.other.collision')
 
+        # Display manager
+        display_width, display_height = [1280, 720]
+        self.display_manager = DisplayManager(grid_size=[1, 1], window_size=[display_width, display_height])
+
         # Camera sensor
-        self.camera_img = np.zeros((self.obs_size, self.obs_size, 3), dtype=np.uint8)
-        self.camera_trans = carla.Transform(carla.Location(x=0.8, z=1.7))
-        self.camera_bp = self.world.get_blueprint_library().find('sensor.camera.rgb')
-        # Modify the attributes of the blueprint to set image resolution and field of view.
-        self.camera_bp.set_attribute('image_size_x', str(self.obs_size))
-        self.camera_bp.set_attribute('image_size_y', str(self.obs_size))
-        self.camera_bp.set_attribute('fov', '110')
-        # Set the time in seconds between sensor captures
-        self.camera_bp.set_attribute('sensor_tick', '0.02')
+        # self.camera_img = np.zeros((self.obs_size, self.obs_size, 3), dtype=np.uint8)
+        # self.camera_trans = carla.Transform(carla.Location(x=0.8, z=1.7))
+        # self.camera_bp = self.world.get_blueprint_library().find('sensor.camera.rgb')
+        # # Modify the attributes of the blueprint to set image resolution and field of view.
+        # self.camera_bp.set_attribute('image_size_x', str(self.obs_size))
+        # self.camera_bp.set_attribute('image_size_y', str(self.obs_size))
+        # # self.camera_bp.set_attribute('fov', '40')
+        # # Set the time in seconds between sensor captures
+        # self.camera_bp.set_attribute('sensor_tick', '0.10')
 
         # Set fixed simulation step for synchronous mode
         self.settings = self.world.get_settings()
@@ -157,7 +173,7 @@ class CarlaEnv(gym.Env):
         self.total_step = 0
 
         # Initialize the renderer
-        self._init_renderer()
+        # self._init_renderer()
         print('init end')
 
     def reset(self):
@@ -182,7 +198,8 @@ class CarlaEnv(gym.Env):
 
         # Clear sensor objects
         self.collision_sensor = None
-        self.camera_sensor = None
+        self.camera_manager = None
+        self.radar_manager = None
 
         # Disable sync mode
         self._set_synchronous_mode(True)
@@ -243,6 +260,8 @@ class CarlaEnv(gym.Env):
                 ego_spawn_times += 1
                 time.sleep(0.1)
 
+        self._spawn_sensors()
+
         # Add collision sensor
         #self.collision_sensor = self.world.spawn_actor(self.collision_bp, carla.Transform(), attach_to=self.ego)
         #self.collision_sensor.listen(lambda event: get_collision_hist(event))
@@ -267,28 +286,26 @@ class CarlaEnv(gym.Env):
 
         self.collision_hist = []
 
+        # Add camera sensor
+        # self.camera_sensor = self.world.spawn_actor(self.camera_bp, self.camera_trans, attach_to=self.ego)
+
+        # #return self._get_obs()
+        # self.camera_sensor.listen(lambda data: get_camera_img(data))
 
         while True:
             try:
-                # Add camera sensor
-                self.camera_sensor = self.world.spawn_actor(self.camera_bp, self.camera_trans, attach_to=self.ego)
                 self.actor_list.append(self.camera_sensor)
-
-                # return self._get_obs()
-                self.camera_sensor.listen(lambda data: get_camera_img(data))
                 break
             except:
                 print('failed to add camera sensor')
 
 
-        # return self._get_obs()
-
-        def get_camera_img(data):
-            array = np.frombuffer(data.raw_data, dtype=np.dtype("uint8"))
-            array = np.reshape(array, (data.height, data.width, 4))
-            array = array[:, :, :3]
-            array = array[:, :, ::-1]
-            self.camera_img = array
+        # def get_camera_img(data):
+        #     array = np.frombuffer(data.raw_data, dtype=np.dtype("uint8"))
+        #     array = np.reshape(array, (data.height, data.width, 4))
+        #     array = array[:, :, :3]
+        #     array = array[:, :, ::-1]
+        #     self.camera_img = array
 
         # Update timesteps
         self.time_step = 0
@@ -305,8 +322,8 @@ class CarlaEnv(gym.Env):
         location_list = [carla.Location(x=loc[0], y=loc[1], z=loc[2]) for loc in self.waypoints]
         self.traffic_manager.set_path(self.ego, location_list)
 
-        # Set ego information for render
-        self.birdeye_render.set_hero(self.ego, self.ego.id)
+        # # Set ego information for render
+        # self.birdeye_render.set_hero(self.ego, self.ego.id)
 
         #print('reset end')
         return self._get_obs()
@@ -374,7 +391,7 @@ class CarlaEnv(gym.Env):
     def render(self, mode):
         pass
 
-    def _create_vehicle_bluepprint(self, actor_filter, color=None, number_of_wheels=[4]):
+    def _create_vehicle_blueprint(self, actor_filter, color=None, number_of_wheels=[4]):
         """Create the blueprint for a specific actor type.
 
     Args:
@@ -395,21 +412,22 @@ class CarlaEnv(gym.Env):
             bp.set_attribute('color', color)
         return bp
 
-    def _init_renderer(self):
-        """Initialize the birdeye view renderer."""
-        pygame.init()
-        self.display = pygame.display.set_mode(
-            (self.display_size * 3, self.display_size),
-            pygame.HWSURFACE | pygame.DOUBLEBUF)
-
-        pixels_per_meter = self.display_size / self.obs_range
-        pixels_ahead_vehicle = (self.obs_range / 2 - self.d_behind) * pixels_per_meter
-        birdeye_params = {
-            'screen_size': [self.display_size, self.display_size],
-            'pixels_per_meter': pixels_per_meter,
-            'pixels_ahead_vehicle': pixels_ahead_vehicle
-        }
-        self.birdeye_render = BirdeyeRender(self.world, birdeye_params)
+    # def _init_renderer(self):
+    #     """Initialize the birdeye view renderer.
+    # """
+    #     pygame.init()
+    #     self.display = pygame.display.set_mode(
+    #         (self.display_size * 3, self.display_size),
+    #         pygame.HWSURFACE | pygame.DOUBLEBUF)
+    #
+    #     pixels_per_meter = self.display_size / self.obs_range
+    #     pixels_ahead_vehicle = (self.obs_range / 2 - self.d_behind) * pixels_per_meter
+    #     birdeye_params = {
+    #         'screen_size': [self.display_size, self.display_size],
+    #         'pixels_per_meter': pixels_per_meter,
+    #         'pixels_ahead_vehicle': pixels_ahead_vehicle
+    #     }
+        # self.birdeye_render = BirdeyeRender(self.world, birdeye_params)
 
     def _set_synchronous_mode(self, synchronous=True):
         """Set whether to use the synchronous mode.
@@ -426,7 +444,7 @@ class CarlaEnv(gym.Env):
     Returns:
       Bool indicating whether the spawn is successful.
     """
-        blueprint = self._create_vehicle_bluepprint('vehicle.*', number_of_wheels=number_of_wheels)
+        blueprint = self._create_vehicle_blueprint('vehicle.*', number_of_wheels=number_of_wheels)
         blueprint.set_attribute('role_name', 'autopilot')
         vehicle = self.world.try_spawn_actor(blueprint, transform)
         if vehicle is not None:
@@ -493,6 +511,25 @@ class CarlaEnv(gym.Env):
 
         return False
 
+    def _spawn_sensors(self):
+        # Create the ComputerVision object
+        self.computer_vision = ComputerVision(self.ego, self.sensor_tick)
+
+        # Then, SensorManager is used to spawn RGBCamera and Radar and assign each of them to a grid position.
+        self.camera_manager = CameraManager(self.world, self.display_manager,
+                                            carla.Transform(carla.Location(x=0, z=2.4), carla.Rotation(yaw=+00)),
+                                            self.ego_bp, {'sensor_tick': f'{1 / self.sensor_tick}'},
+                                            display_pos=[0, 0],
+                                            computer_vision=self.computer_vision)
+        self.radar_manager = RadarManager(self.world, self.display_manager,
+                                          carla.Transform(carla.Location(x=0, z=2.4)),
+                                          self.ego_bp,
+                                          {'horizontal_fov': f'{self.radar_fov}', 'points_per_second': '5000',
+                                           'range': '100',
+                                           'sensor_tick': '0.1', 'vertical_fov': f'{self.radar_fov}'},
+                                          display_pos=[0, 0],
+                                          computer_vision=self.computer_vision)
+
     def _get_actor_polygons(self, filt):
         """Get the bounding box polygon of actors.
 
@@ -527,52 +564,64 @@ class CarlaEnv(gym.Env):
 
         """Get the observations."""
         ## Birdeye rendering
-        self.birdeye_render.vehicle_polygons = self.vehicle_polygons
-        self.birdeye_render.walker_polygons = self.walker_polygons
-        self.birdeye_render.waypoints = self.waypoints
+        # self.birdeye_render.vehicle_polygons = self.vehicle_polygons
+        # self.birdeye_render.walker_polygons = self.walker_polygons
+        # self.birdeye_render.waypoints = self.waypoints
 
-        # birdeye view with roadmap and actors
-        birdeye_render_types = ['roadmap', 'actors']
-        if self.display_route:
-            birdeye_render_types.append('waypoints')
-        self.birdeye_render.render(self.display, birdeye_render_types)
-        birdeye = pygame.surfarray.array3d(self.display)
-        birdeye = birdeye[0:self.display_size, :, :]
-        birdeye = display_to_rgb(birdeye, self.obs_size)
+        # # birdeye view with roadmap and actors
+        # birdeye_render_types = ['roadmap', 'actors']
+        # if self.display_route:
+        #     birdeye_render_types.append('waypoints')
+        # self.birdeye_render.render(self.display, birdeye_render_types)
+        # birdeye = pygame.surfarray.array3d(self.display)
+        # birdeye = birdeye[0:self.display_size, :, :]
+        # birdeye = display_to_rgb(birdeye, self.obs_size)
 
-        # Display birdeye image
-        birdeye_surface = rgb_to_display_surface(birdeye, self.display_size)
-        self.display.blit(birdeye_surface, (0, 0))
+        # # Display birdeye image
+        # birdeye_surface = rgb_to_display_surface(birdeye, self.display_size)
+        # self.display.blit(birdeye_surface, (0, 0))
 
-        ## Display camera image
-        camera = resize(self.camera_img, (self.obs_size, self.obs_size)) * 255
-        camera_surface = rgb_to_display_surface(camera, self.display_size)
-        self.display.blit(camera_surface, (self.display_size * 2, 0))
+        # ## Display camera image
+        # camera = resize(self.camera_img, (self.obs_size, self.obs_size)) * 255
+        # camera_surface = rgb_to_display_surface(camera, self.display_size)
+        # self.display.blit(camera_surface, (self.display_size * 2, 0))
 
-        # Display on pygame
-        pygame.display.flip()
+        # # Display on pygame
+        # pygame.display.flip()
 
-        # State observation
-        ego_trans = self.ego.get_transform()
-        ego_x = ego_trans.location.x
-        ego_y = ego_trans.location.y
-        ego_yaw = ego_trans.rotation.yaw / 180 * np.pi
-        lateral_dis, w = get_preview_lane_dis(self.waypoints, ego_x, ego_y)
-        delta_yaw = np.arcsin(np.cross(w, np.array(np.array([np.cos(ego_yaw), np.sin(ego_yaw)]))))
-        v = self.ego.get_velocity()
-        speed = np.sqrt(v.x ** 2 + v.y ** 2)
-        speed_limit = 50
-        dist_vehicle_front = 20
-        v_diff_vehicle_front = 0
-        #state = np.array([lateral_dis, - delta_yaw, speed, self.vehicle_front])
-        #state = np.array([speed, self.vehicle_front])
-        print('vehicle_front:', self.vehicle_front)
-        state = np.array([speed, self.vehicle_front, speed_limit, dist_vehicle_front, v_diff_vehicle_front])
+        #  # State observation
+        # ego_trans = self.ego.get_transform()
+        # ego_x = ego_trans.location.x
+        # ego_y = ego_trans.location.y
+        # ego_yaw = ego_trans.rotation.yaw / 180 * np.pi
+        # lateral_dis, w = get_preview_lane_dis(self.waypoints, ego_x, ego_y)
+        # delta_yaw = np.arcsin(np.cross(w, np.array(np.array([np.cos(ego_yaw), np.sin(ego_yaw)]))))
+        # v = self.ego.get_velocity()
+        # speed = np.sqrt(v.x ** 2 + v.y ** 2)
+        # #state = np.array([lateral_dis, - delta_yaw, speed, self.vehicle_front])
+        # state = np.array([speed, self.vehicle_front])
+        #
+        # obs = {
+        #     'camera': camera.astype(np.uint8),
+        #     'birdeye': birdeye.astype(np.uint8),
+        #     'state': state,
+        # }
+        self.computer_vision.process_data()
+
+        # First draw camera on the screen, then the radar
+        self.camera_manager.draw_camera()
+        self.radar_manager.draw_radar()
+
+        # Render received data
+        self.display_manager.render()
 
         obs = {
-            'camera': camera.astype(np.uint8),
-            'birdeye': birdeye.astype(np.uint8),
-            'state': state,
+            'distance': self.computer_vision.get_distance(),
+            'delta_V': self.computer_vision.get_delta_v(),
+            # 'speed_limit': self.computer_vision.get_speed_limit(),
+            'speed_limit': 50,
+            'is_red_light': self.computer_vision.get_red_light(),
+            'ego_speed': self.ego.get_velocity().length()
         }
 
         return obs
