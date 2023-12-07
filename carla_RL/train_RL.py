@@ -77,7 +77,7 @@ if __name__ == "__main__":
             "max_concurrent_trials": 1,
             "framework": "torch",
             # "num_gpus": 0.5,
-            "num_workers": 1,
+            "num_workers": 0,
             "env": "CustomCarlaEnv",
             #"env": "CartPole-v1",
             "env_config": {
