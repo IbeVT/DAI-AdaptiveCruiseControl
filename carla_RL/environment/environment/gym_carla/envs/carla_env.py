@@ -92,7 +92,7 @@ class CarlaEnv(gym.Env):
             'camera': spaces.Box(low=0, high=255, shape=(self.obs_size, self.obs_size, 3), dtype=np.uint8),
             'birdeye': spaces.Box(low=0, high=255, shape=(self.obs_size, self.obs_size, 3), dtype=np.uint8),
             #'state': spaces.Box(np.array([-2, -1, -5, 0]), np.array([2, 1, 30, 1]), dtype=np.float32)
-            'state': spaces.Box(np.array([-5, 0]), np.array([30, 1]), dtype=np.float32)
+            'state': spaces.Box(np.array([-5, 0, 0, 0, -240]), np.array([30, 1, 120, 100, 240]), dtype=np.float32)
         }
 
         #observation_space_dict = {'camera': spaces.Box(low=0, high=255, shape=(5,), dtype=np.float32)}
