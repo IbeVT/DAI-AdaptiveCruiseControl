@@ -104,7 +104,7 @@ class CarlaEnv(gym.Env):
             'distance': spaces.Box(low=0, high=100, shape=(1,), dtype=np.float32),
             'delta_V': spaces.Box(low=-100, high=100, shape=(1,), dtype=np.float32),
             'speed_limit': spaces.Box(low=0, high=50, shape=(1,), dtype=np.float32),
-            'is_red_light': spaces.Box(low=0, high=1, shape=(1,), dtype=int),
+            'is_red_light': spaces.Box(low=0, high=1, shape=(1,), dtype=np.uint8),
         }
 
         self.observation_space = spaces.Dict(observation_space_dict)
@@ -528,7 +528,7 @@ class CarlaEnv(gym.Env):
             'distance': np.array(10, dtype=np.float32),
             'delta_V': np.array(10, dtype=np.float32),
             'speed_limit': np.array(50.0, dtype=np.float32),
-            'is_red_light': np.array(1 if self.computer_vision.get_red_light() else 0, dtype=int)
+            'is_red_light': np.array(1 if self.computer_vision.get_red_light() else 0, dtype=np.uint8)
         }
 
         return obs
