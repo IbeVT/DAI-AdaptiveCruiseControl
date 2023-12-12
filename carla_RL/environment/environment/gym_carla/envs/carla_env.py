@@ -311,7 +311,7 @@ class CarlaEnv(gym.Env):
             brake = np.clip(-acc / 8, 0, 1)
 
         # Apply control
-        act = carla.VehicleControl(throttle=float(self.ego.get_control().throttle), steer=float(self.ego.get_control().steer), brake=float(self.ego.get_control().brake))
+        act = carla.VehicleControl(throttle=float(-self.ego.get_control().throttle), steer=float(-self.ego.get_control().steer), brake=float(-self.ego.get_control().brake))
         self.ego.apply_control(act)
 
         self.world.tick()
