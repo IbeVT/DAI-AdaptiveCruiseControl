@@ -487,7 +487,7 @@ def run_simulation(args, client):
                                      computer_vision=computer_vision)
         
         #def speed():
-        print(computer_vision.get_speed)
+        print('speed prueba 3', computer_vision.get_speed)
         
         # Simulation loop
         call_exit = False

@@ -94,6 +94,7 @@ class ComputerVision:
             print("---")
             if class_id != 'Green Light' and class_id != 'Red Light' and class_id != 'Stop':
                 self.speed = int(class_id[-3:])
+                print('speed prueba 1')
             # If the confidence is high enough, immediately save the box
             if conf > 0.5:
                 print("New box detected")
@@ -249,6 +250,7 @@ class ComputerVision:
         self.inverse_camera_matrix = inverse_matrix
         
     def get_speed(self):
+        print('speed prueba 2')
         return self.speed
 
 
