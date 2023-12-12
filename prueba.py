@@ -57,7 +57,7 @@ try:
     sensor = world.spawn_actor(cam_bp, spawn_point, attach_to=vehicle)
     actor_list.append(sensor)
     
-    sensor.listen(Lambda data: process_img(data))
+    sensor.listen(lambda data: process_img(data))
     
     
     #blueprint = 
