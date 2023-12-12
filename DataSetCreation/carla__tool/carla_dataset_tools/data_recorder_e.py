@@ -22,7 +22,7 @@ duration= os.environ['DUR'] #seconds
 weather= carla.WeatherParameters(
         cloudiness=30.0,
         precipitation=40.0,
-        sun_altitude_angle=-50.0,
+        sun_altitude_angle=-35.0,
         wind_intensity=0.0)
 def termination_handler(signum,frame):
     print("Killing map/weather")
