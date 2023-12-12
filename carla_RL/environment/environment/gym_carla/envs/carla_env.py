@@ -100,11 +100,11 @@ class CarlaEnv(gym.Env):
             self.action_space = spaces.Box(np.array([env_config['continuous_accel_range'][0]]),
                                            np.array([env_config['continuous_accel_range'][1]]), dtype=np.float32)  # acc
         observation_space_dict = {
-            'speed': spaces.Box(low=-50, high=50, shape=(1,), dtype=np.float32),
-            'distance': spaces.Box(low=0, high=100, shape=(1,), dtype=np.float32),
-            'delta_V': spaces.Box(low=-100, high=100, shape=(1,), dtype=np.float32),
-            'speed_limit': spaces.Box(low=0, high=50, shape=(1,), dtype=np.float32),
-            'is_red_light': spaces.Box(low=0, high=1, shape=(1,), dtype=np.uint8),
+            'speed': spaces.Box(low=-50, high=50, shape=(1,), dtype=float),
+            'distance': spaces.Box(low=0, high=100, shape=(1,), dtype=float),
+            'delta_V': spaces.Box(low=-100, high=100, shape=(1,), dtype=float),
+            'speed_limit': spaces.Box(low=0, high=50, shape=(1,), dtype=float),
+            'is_red_light': spaces.Box(low=0, high=1, shape=(1,), dtype=int),
         }
 
         self.observation_space = spaces.Dict(observation_space_dict)
@@ -524,11 +524,11 @@ class CarlaEnv(gym.Env):
             'is_red_light': np.array(1 if self.computer_vision.get_red_light() else 0, dtype=int)
         }"""
         obs = {
-            'speed': np.array(np.float32(self.ego.get_velocity().length()), dtype=np.float32),
-            'distance': np.array(np.float32(10.0), dtype=np.float32),
-            'delta_V': np.array(np.float32(10.0), dtype=np.float32),
-            'speed_limit': np.array(np.float32(40.0), dtype=np.float32),
-            'is_red_light': np.array(np.uint8(1) if self.computer_vision.get_red_light() else np.uint8(0), dtype=np.uint8)
+            'speed': np.reshape(np.array(self.ego.get_velocity().length(), dtype=float), (1,)),
+            'distance': np.reshape(np.array(10.0, dtype=float), (1,)),
+            'delta_V': np.reshape(np.array(10.0, dtype=float), (1,)),
+            'speed_limit': np.reshape(np.array(40.0, dtype=float), (1,)),
+            'is_red_light': np.reshape(np.array(1 if self.computer_vision.get_red_light() else 0, dtype=int), (1,))
         }
 
         return obs
@@ -562,7 +562,7 @@ class CarlaEnv(gym.Env):
         lspeed = np.dot(lspeed, w)
 
         # cost for too fast
-        to_fast = 1 if lspeed_lon > self.desired_speed else 0
+        to_fast = 1 if lspeed > self.desired_speed else 0
 
         r = 1*lspeed - 200*collision - 10*to_fast - 0.1
 
