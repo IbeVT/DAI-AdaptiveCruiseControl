@@ -10,8 +10,6 @@ import gym_carla
 import carla
 
 def main():
-  print('Best checkpoint:', best_checkpoint)
-
   # load and restore model
   agent = ppo.PPO(env="CustomCarlaEnv")
   agent.restore('/home/carla/PythonScripts/Stijn/DAI-AdaptiveCruiseControl/carla_RL/Checkpoints')
