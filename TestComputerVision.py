@@ -174,12 +174,12 @@ class CameraManager(SensorManager):
                 # Display distance and speed on screen.
                 distance = self.computer_vision.get_distance()
                 x = x_lower
-                y = y_lower - 5
+                y = y_lower
                 # Catch errors, mostly when a NaN occurs.
                 try:
                     distance = round(distance)
                     text, rect = font.render(f'Distance: {distance}', (0, 255, 0))
-                    y -= rect.height
+                    y -= rect.height + 10
                     self.surface.blit(text, (x, y))
                 except:
                     pass
@@ -187,14 +187,14 @@ class CameraManager(SensorManager):
                 try:
                     speed = round(speed)
                     text, rect = font.render(f'Speed: {speed}', (0, 255, 0))
-                    y -= rect.height - 10
+                    y -= rect.height + 10
                     self.surface.blit(text, (x, y))
                 except:
                     pass
 
                 # Display the vehicle category on screen.
                 text, rect = font.render(following_bb["class_id"], (0, 255, 0))
-                y -= rect.height
+                y -= rect.height + 10
                 self.surface.blit(text, (x, y))
 
             # Draw all other bounding boxes on screen.
@@ -202,7 +202,7 @@ class CameraManager(SensorManager):
             if boxes is not None:
                 for box in boxes:
                     cords = box["cords"]
-                    if following_bb is not None and cords != following_bb["cords"]:
+                    if following_bb is None or (following_bb is not None and cords != following_bb["cords"]):
                         [x_lower, y_lower, x_upper, y_upper] = cords
                         pygame.draw.rect(self.surface, (0, 0, 255),
                                          (x_lower, y_lower, x_upper - x_lower, y_upper - y_lower), 2)
@@ -215,10 +215,6 @@ class CameraManager(SensorManager):
                         [x_lower, y_lower, x_upper, y_upper] = cords
                         pygame.draw.rect(self.surface, (255, 0, 0),
                                          (x_lower, y_lower, x_upper - x_lower, y_upper - y_lower), 2)
-
-            # For debug purposes: draw the steer vector endpoint
-            if self.computer_vision.steer_vector_endpoint is not None:
-                pygame.draw.circle(self.surface, (0, 0, 255), self.computer_vision.steer_vector_endpoint, 15)
 
 
 class RadarManager(SensorManager):
@@ -245,7 +241,7 @@ class RadarManager(SensorManager):
             object_points = self.computer_vision.get_object_points()
             current_rot = radar_points.transform.rotation
             # Colors for radar points.
-            color_object = carla.Color(255, 0, 0)
+            color_object = carla.Color(0, 255, 0)
             color_no_object = carla.Color(255, 255, 255)
             # Draw the points on the screen.
             for point in radar_points:
@@ -482,7 +478,7 @@ def run_simulation(args, client):
         radar_manager = RadarManager(world, display_manager,
                                      carla.Transform(carla.Location(x=0, z=2.4)),
                                      ego_vehicle,
-                                     {'horizontal_fov': f'{camera_h_fov}', 'points_per_second': '5000', 'range': '100',
+                                     {'horizontal_fov': f'{camera_h_fov}', 'points_per_second': '10000', 'range': '100',
                                       'sensor_tick': '0.1', 'vertical_fov': f'{camera_v_fov}'}, display_pos=[0, 0],
                                      computer_vision=computer_vision)
 
