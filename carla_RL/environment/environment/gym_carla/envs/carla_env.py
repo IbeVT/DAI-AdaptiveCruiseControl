@@ -295,6 +295,7 @@ class CarlaEnv(gym.Env):
         #print('------------------------------------STEP--------------------------------------')
         #return (self._get_obs(), 0, False, {'waypoints': 0, 'vehicle_front': 0})
         throttle, brake = 1-self.ego.get_control().throttle, 1-self.ego.get_control().brake
+        print('before before before', self.ego.get_control().throttle, self.ego.get_control().brake)
         print('before before', throttle, brake)
 
         # Calculate acceleration and steering
