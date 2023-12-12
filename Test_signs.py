@@ -527,8 +527,8 @@ def run_simulation(args, client):
 def update_traffic_manager(traffic_manager, actor, speed_diff, route):
     # Set parameters of TM vehicle control, we don't want lane changes
     traffic_manager.update_vehicle_lights(actor, True)
-    traffic_manager.random_left_lanechange_percentage(actor, 0)
-    traffic_manager.random_right_lanechange_percentage(actor, 0)
+    #traffic_manager.random_left_lanechange_percentage(actor, 0)
+    #traffic_manager.random_right_lanechange_percentage(actor, 0)
     traffic_manager.auto_lane_change(actor, False)
     # traffic_manager.ignore_lights_percentage(vehicle1, 50)
     traffic_manager.vehicle_percentage_speed_difference(actor, speed_diff)
