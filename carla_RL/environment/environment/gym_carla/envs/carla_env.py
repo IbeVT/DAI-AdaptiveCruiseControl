@@ -516,6 +516,7 @@ class CarlaEnv(gym.Env):
         self.computer_vision.process_data()
 
         # First draw camera on the screen, then the radar
+        print(1)
         self.camera_manager.draw_camera()
         self.radar_manager.draw_radar()
 

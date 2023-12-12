@@ -86,7 +86,7 @@ class CameraManager(SensorManager):
         # Create surface from image array.
         if self.display_man.render_enabled() and self.camera_array is not None:
             self.surface = pygame.surfarray.make_surface(self.camera_array.swapaxes(0, 1))
-            self.camera_array
+            print(self.surface)
             # Draw bounding boxes on screen.
             # Draw the bounding box of the followed vehicle.
             if (following_bb is not None) and (self.surface is not None):
