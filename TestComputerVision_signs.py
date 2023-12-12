@@ -357,12 +357,15 @@ def run_simulation(args, client):
 
             # This time we are using try_spawn_actor. If the spot is already
             # occupied by another object, the function will return None.
+            '''
             npc = world.try_spawn_actor(bp, transform)
             if npc is not None:
                 vehicle_list.append(npc)
                 npc.set_autopilot(True)
                 number_of_vehicles += 1
                 print('created %s' % npc.type_id)
+                
+            '''
 
         # Simulation loop
         call_exit = False
