@@ -224,8 +224,7 @@ class ComputerVision:
                 yaw=azi_deg,
                 roll=0)).transform(loc)
         
-    def get_speed(self):
-        return self.speed
+    
 
         # Calculate 2D projection of 3D coordinate
 
@@ -248,6 +247,9 @@ class ComputerVision:
 
     def set_inverse_camera_matrix(self, inverse_matrix):
         self.inverse_camera_matrix = inverse_matrix
+        
+    def get_speed(self):
+        return self.speed
 
 
 def do_boxes_overlap(box1, box2):
