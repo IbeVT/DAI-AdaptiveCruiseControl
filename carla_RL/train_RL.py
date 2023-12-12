@@ -96,8 +96,8 @@ if __name__ == "__main__":
         run_config=train.RunConfig(
             #ignore_workers_failures=False,
             #disable_env_checking=True,
-            stop={"episode_reward_mean": 800},
-            checkpoint_config=train.CheckpointConfig(checkpoint_at_end=True),
+            stop={"episode_reward_mean": 500},
+            checkpoint_config=train.CheckpointConfig(checkpoint_at_end=True, checkpoint_freq=1),
             callbacks=[
                 WandbLoggerCallback(
                     project="CarlaRL",
@@ -113,3 +113,4 @@ if __name__ == "__main__":
 
     # Get the best checkpoint corresponding to the best result.
     best_checkpoint = best_result.checkpoint
+    print(best_checkpoint)
