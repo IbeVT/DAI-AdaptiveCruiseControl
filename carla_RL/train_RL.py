@@ -96,7 +96,8 @@ if __name__ == "__main__":
         run_config=train.RunConfig(
             #ignore_workers_failures=False,
             #disable_env_checking=True,
-            #stop={"episode_reward_mean": 30},
+            stop={"episode_reward_mean": 800},
+            checkpoint_config=train.CheckpointConfig(checkpoint_at_end=True),
             callbacks=[
                 WandbLoggerCallback(
                     project="CarlaRL",
@@ -104,7 +105,11 @@ if __name__ == "__main__":
                 )
             ],
         ),
-        local_dir='Checkpoints',
-        checkpoint_freq=1           # Checkpoint frequency (1/episode)
     )
     results = tuner.fit()
+
+    # Get the best result based on a particular metric.
+    best_result = results.get_best_result(metric="episode_reward_mean", mode="max")
+
+    # Get the best checkpoint corresponding to the best result.
+    best_checkpoint = best_result.checkpoint
