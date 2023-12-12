@@ -128,6 +128,9 @@ class CarlaEnv(gym.Env):
         # Set weather
         self.world.set_weather(carla.WeatherParameters.ClearNoon)
 
+        # Initialize spectator
+        self.spectator = self.world.get_spectator()
+
         # Get spawn points
         self.vehicle_spawn_points = list(self.world.get_map().get_spawn_points())
         self.walker_spawn_points = []
@@ -315,6 +318,12 @@ class CarlaEnv(gym.Env):
         self.ego.apply_control(act)
         print('after', self.ego.get_control().throttle, self.ego.get_control().brake)
 
+
+        # Update the spectator's position to follow the ego vehicle
+        transform = carla.Transform(self.ego.get_transform().transform(carla.Location(x=-4, z=2.5)),
+                                    self.ego.get_transform().rotation)
+        self.spectator.set_transform(transform)
+
         self.world.tick()
 
         # Append actors polygon list
@@ -456,6 +465,7 @@ class CarlaEnv(gym.Env):
             vehicle.set_autopilot()
             self.ego = vehicle
             self.actor_list.append(vehicle)
+            self.ego.show_debug_telemetry()
             return True
 
         return False
