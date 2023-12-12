@@ -80,7 +80,6 @@ class CameraManager(SensorManager):
         array = array[:, :, ::-1]
         self.camera_array = array
         self.computer_vision.image = array
-        print('\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\npapa', array)
 
     def draw_camera(self):
         following_bb = self.computer_vision.get_current_bounding_box()
