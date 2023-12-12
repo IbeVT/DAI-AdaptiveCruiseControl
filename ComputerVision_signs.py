@@ -92,6 +92,8 @@ class ComputerVision:
             print("Coordinates:", cords)
             print("Probability:", conf)
             print("---")
+            if class_id != 'Green Light' and class_id != 'Red Light' and class_id != 'Stop':
+                self.speed = int(class_id[-3:])
             # If the confidence is high enough, immediately save the box
             if conf > 0.5:
                 print("New box detected")
@@ -221,6 +223,9 @@ class ComputerVision:
                 pitch=alt_deg,
                 yaw=azi_deg,
                 roll=0)).transform(loc)
+        
+    def get_speed(self):
+        return self.speed
 
         # Calculate 2D projection of 3D coordinate
 
@@ -239,7 +244,7 @@ class ComputerVision:
         # normalize
         point_img[0] /= point_img[2]
         point_img[1] /= point_img[2]
-        return point_img[0:2],class_id
+        return point_img[0:2]
 
     def set_inverse_camera_matrix(self, inverse_matrix):
         self.inverse_camera_matrix = inverse_matrix

@@ -471,8 +471,8 @@ def run_simulation(args, client):
         radar_sample_rate = 10
 
         # Create the ComputerVision object
-        computer_vision, clase = ComputerVision(ego_vehicle, radar_sample_rate)
-        print(computer_vis, clase)
+        computer_vision = ComputerVision(ego_vehicle, radar_sample_rate)
+        
 
         # Then, SensorManager is used to spawn RGBCamera and Radar and assign each of them to a grid position.
         camera_manager = CameraManager(world, display_manager,
@@ -487,6 +487,7 @@ def run_simulation(args, client):
                                      computer_vision=computer_vision)
         
         #def speed():
+        print(computer_vision.get_speed)
         
         # Simulation loop
         call_exit = False
