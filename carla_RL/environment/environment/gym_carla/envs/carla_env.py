@@ -448,8 +448,6 @@ class CarlaEnv(gym.Env):
 
         if not overlap:
             vehicle = self.world.try_spawn_actor(self.ego_bp, transform)
-            print(len(self.world.get_actors()))
-            print(str(vehicle))
             self.actor_list.append(vehicle)
             if vehicle is not None:
                 vehicle.set_autopilot()
@@ -516,7 +514,6 @@ class CarlaEnv(gym.Env):
         self.computer_vision.process_data()
 
         # First draw camera on the screen, then the radar
-        print(1)
         self.camera_manager.draw_camera()
         self.radar_manager.draw_radar()
 
@@ -555,7 +552,6 @@ class CarlaEnv(gym.Env):
         except:
             change_in_acc = 0
         self.prev_acceleration = acceleration
-        print(acceleration, change_in_acc)
 
         # reward for collision
         collision = 1 if len(self.collision_hist) > 0 else 0
@@ -571,7 +567,7 @@ class CarlaEnv(gym.Env):
         # cost for too fast
         to_fast = 1 if lspeed > self.desired_speed else 0
 
-        r = 1*lspeed - 200*collision - 10*to_fast - 0.1
+        r = 1*lspeed - 200*collision - 10*to_fast - 2*acceleration - 2*change_in_acc - 0.1
 
         return r
 
