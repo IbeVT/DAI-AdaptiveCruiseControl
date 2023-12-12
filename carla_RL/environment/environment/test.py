@@ -31,6 +31,8 @@ def env_creator(env_config=None):
 register_env("CustomCarlaEnv", env_creator)
 
 if __name__ == "__main__":
+    #ray.init(local_mode=True)
+
     tuner = tune.Tuner(
         PPO,
         tune_config=tune.TuneConfig(
@@ -43,6 +45,7 @@ if __name__ == "__main__":
             "framework": "torch",
             "num_workers": 0,
             "env": "CustomCarlaEnv",
+            #"env": "CartPole-v1",
             "env_config": {
                 "disable_env_checking": True,
                 "ignore_workers_failure": False,
