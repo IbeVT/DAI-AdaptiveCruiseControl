@@ -239,7 +239,7 @@ class ComputerVision:
         # normalize
         point_img[0] /= point_img[2]
         point_img[1] /= point_img[2]
-        return (point_img[0:2],class_id)
+        return point_img[0:2],class_id
 
     def set_inverse_camera_matrix(self, inverse_matrix):
         self.inverse_camera_matrix = inverse_matrix
