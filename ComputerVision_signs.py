@@ -16,7 +16,7 @@ class ComputerVision:
         self.inverse_camera_matrix = None
         self.radar_points = None
         self.model = YOLO('signs_best.pt')
-        self.vehicle_classes = ['bus', 'bike', 'car', 'motorcycle', 'vehicle']
+        self.vehicle_classes = ['Green Light', 'Red Light', 'Speed Limit 10', 'Speed Limit 100', 'Speed Limit 110', 'Speed Limit 120', 'Speed Limit 20', 'Speed Limit 30', 'Speed Limit 40', 'Speed Limit 50', 'Speed Limit 60', 'Speed Limit 70', 'Speed Limit 80', 'Speed Limit 90', 'Stop']
         self.camera_x_pixels = 720
         self.camera_y_pixels = 1280
         self.n_points = 50
