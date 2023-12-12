@@ -72,8 +72,6 @@ if __name__ == "__main__":
         PPO,
         tune_config=tune.TuneConfig(
             max_concurrent_trials=1,
-            checkpoint_at_end=True,     # Checkpoint when training is finished
-            checkpoint_freq=1           # Checkpoint frequency (1/episode)
         ),
         param_space={
             "disable_env_checking": True,
@@ -106,6 +104,7 @@ if __name__ == "__main__":
                 )
             ],
         ),
-        local_dir='Checkpoints'
+        local_dir='Checkpoints',
+        checkpoint_freq=1           # Checkpoint frequency (1/episode)
     )
     results = tuner.fit()
