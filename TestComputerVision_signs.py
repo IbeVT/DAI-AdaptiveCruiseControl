@@ -311,7 +311,8 @@ def run_simulation(args, client):
             world.apply_settings(settings)
 
         # Instantiating the vehicle to which we attached the sensors
-        transform = random.choice(world.get_map().get_spawn_points())
+        spawn_points = world.get_map().get_spawn_points()
+        transform = random.choice(spawn_points)
         bp_lib = world.get_blueprint_library()
         ego_bp = random.choice(bp_lib.filter('vehicle'))
         ego_bp.set_attribute('role_name', 'ego')
