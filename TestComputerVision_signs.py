@@ -349,7 +349,35 @@ def run_simulation(args, client):
         while number_of_vehicles < 200:
             transform.location.x += 4.0
 
-            bp = random.choice(world.get_blueprint_library().filter('vehicle'))
+            # First let's get the blueprint library and the spawn points for our world.
+            # Depending on your Carla version and the map chosen, you get different actors
+            # and spawn points respectively
+
+            bp_lib = world.get_blueprint_library() 
+            spawn_points = world.get_map().get_spawn_points()
+
+
+            # I am spawning an Audi etron here. You can check out the blueprint library
+            # to spawn your vehicle of choice. Also we spawn in a random safe point 79
+
+            vehicle_bp = bp_lib.find('vehicle.audi.etron')
+            ego_vehicle = world.try_spawn_actor(vehicle_bp, spawn_points[79]) 
+
+            # Let's position the spectator just behind the vehicle
+            # Carla.Transform has two parameters - Location and Rotation. We use this to
+            # to position the spectator by going 4 metres behind and 2.5 metres above the 
+            # ego_vehicle
+
+            spectator = world.get_spectator()
+            transform = carla.Transform(ego_vehicle.get_transform().transform(carla.Location(x=-4,z=2.5)),ego_vehicle.get_transform().rotation)
+            spectator.set_transform(transform)
+
+            # If you want to position the your_actor with just the coordinates, 
+            # you can use the below codes.
+            # location = carla.Location(x=0, y=0, z=30)
+            # rotation = carla.Rotation(roll=0, pitch=-30, yaw=180)
+            # transform = carla.Transform(location, rotation)
+            # your_actor.set_transform(transform)
 
             # This time we are using try_spawn_actor. If the spot is already
             # occupied by another object, the function will return None.
@@ -444,3 +472,5 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+
