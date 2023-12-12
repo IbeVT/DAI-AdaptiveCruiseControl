@@ -8,7 +8,7 @@ from gym_carla.LowpassFilter import LowpassFilter
 
 
 import os
-print(os.getcwd())
+#print(os.getcwd())
 
 class ComputerVision:
     def __init__(self, vehicle, radar_sample_rate=10):
@@ -91,10 +91,10 @@ class ComputerVision:
             cords = box.xyxy[0].tolist()
             cords = [round(x) for x in cords]
             conf = round(box.conf[0].item(), 2)
-            print("Object type:", class_id)
-            print("Coordinates:", cords)
-            print("Probability:", conf)
-            print("---")
+            #print("Object type:", class_id)
+            #print("Coordinates:", cords)
+            #print("Probability:", conf)
+            #print("---")
             # If the confidence is high enough, immediately save the box
             if conf > 0.5:
                 self.boxes.append({"class_id": class_id, "cords": cords, "conf": conf})
