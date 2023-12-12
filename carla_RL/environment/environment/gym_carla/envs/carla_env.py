@@ -312,7 +312,7 @@ class CarlaEnv(gym.Env):
 
         # Apply control
         act = carla.VehicleControl(throttle=float(throttle), steer=float(-steer), brake=float(brake))
-        self.ego.apply_control(act)
+        #self.ego.apply_control(act)
 
         self.world.tick()
 
@@ -450,10 +450,9 @@ class CarlaEnv(gym.Env):
         if not overlap:
             vehicle = self.world.try_spawn_actor(self.ego_bp, transform)
             self.actor_list.append(vehicle)
-            if vehicle is not None:
-                vehicle.set_autopilot()
 
         if vehicle is not None:
+            vehicle.set_autopilot()
             self.ego = vehicle
             self.actor_list.append(vehicle)
             return True
