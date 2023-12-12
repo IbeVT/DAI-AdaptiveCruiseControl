@@ -311,14 +311,19 @@ def run_simulation(args, client):
             world.apply_settings(settings)
 
         # Instantiating the vehicle to which we attached the sensors
-        spawn_points = world.get_map().get_spawn_points()
-        transform = random.choice(spawn_points)
         bp_lib = world.get_blueprint_library()
+        spawn_points = world.get_map().get_spawn_points()
+        
+        vehicle_bp = bp_lib.find('vehicle.audi.etron')
+        ego_vehicle = world.try_spawn_actor(vehicle_bp, spawn_points[79]) 
+        '''
+        transform = random.choice(spawn_points)
+        
         ego_bp = random.choice(bp_lib.filter('vehicle'))
         ego_bp.set_attribute('role_name', 'ego')
         vehicle = world.spawn_actor(ego_bp, transform)
         vehicle_list.append(vehicle)
-        
+        '''
         spectator = world.get_spectator()
         transform = carla.Transform(vehicle.get_transform().transform(carla.Location(x=-4,z=2.5)),vehicle.get_transform().rotation)
         spectator.set_transform(transform)
@@ -372,12 +377,14 @@ def run_simulation(args, client):
                 vehicle_bp = random.choice(bp_lib.filter('vehicle')) 
                 npc = world.try_spawn_actor(vehicle_bp, random.choice(spawn_points))
 
-            '''
+            
 
             #Set traffic in motion
             for v in world.get_actors().filter('*vehicle*'): 
                 v.set_autopilot(True) # This makes all the vehicles function in autopilot
 
+            '''
+            
         # Simulation loop
         call_exit = False
         while True:
