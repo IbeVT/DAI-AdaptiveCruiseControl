@@ -498,7 +498,6 @@ def run_simulation(args, client):
                 world.wait_for_tick()
 
             computer_vision.process_data()
-            print('speed prueba 3', computer_vision.get_speed())
 
             # First draw camera on the screen, then the radar
             camera_manager.draw_camera()

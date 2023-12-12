@@ -36,9 +36,6 @@ class ComputerVision:
     def set_resolution(self, x, y):
         self.camera_x_pixels = x
         self.camera_y_pixels = y
-        
-    def get_speed(self):
-        return self.speed
 
     def process_data(self):
         # Start by detecting objects in the image
@@ -96,8 +93,8 @@ class ComputerVision:
             print("Probability:", conf)
             print("---")
             if class_id != 'Green Light' and class_id != 'Red Light' and class_id != 'Stop':
-                self.speed = int(class_id[-3:])
-                print('speed prueba 1')
+                self.delta_v = int(class_id[-3:])
+                print('speed prueba 1', self.delta_v)
             # If the confidence is high enough, immediately save the box
             if conf > 0.5:
                 print("New box detected")
