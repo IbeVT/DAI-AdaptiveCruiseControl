@@ -165,9 +165,10 @@ class CarlaEnv(gym.Env):
     def reset(self):
         print(f'-------------------------------------RESET {self.reset_step}--------------------------------------')
 
-        # Log total episode reward
-        wandb.log({"episode_reward": sum(self.episode_rewards)})
-        self.episode_rewards = []
+        if self.reset_step != 0:
+            # Log total episode reward
+            wandb.log({"episode_reward": sum(self.episode_rewards)})
+            self.episode_rewards = []
 
         # Delete sensors, vehicles and walkers
         for actor in self.actor_list:
