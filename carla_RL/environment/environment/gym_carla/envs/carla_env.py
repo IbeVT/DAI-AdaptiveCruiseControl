@@ -184,10 +184,10 @@ class CarlaEnv(gym.Env):
         self.actor_list = []
 
         # Clear sensor objects
+        self.display_manager.destroy()
         self.collision_sensor = None
         self.camera_manager = None
         self.radar_manager = None
-        self.display_manager.destroy()
         self.display_manager = None
 
         # Display manager
