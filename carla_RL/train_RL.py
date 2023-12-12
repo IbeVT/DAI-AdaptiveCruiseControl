@@ -97,7 +97,7 @@ if __name__ == "__main__":
             #ignore_workers_failures=False,
             #disable_env_checking=True,
             stop={"episode_reward_mean": 500},
-            local_dir='Checkpoints',
+            local_dir='/home/carla/PythonScripts/Stijn/DAI-AdaptiveCruiseControl/carla_RL/Checkpoints',
             checkpoint_config=train.CheckpointConfig(checkpoint_at_end=True, checkpoint_frequency=1),
             callbacks=[
                 WandbLoggerCallback(
