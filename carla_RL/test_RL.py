@@ -20,11 +20,11 @@ import wandb
 import carla
 import ray.rllib.algorithms.ppo as ppo
 
-"""def env_creator(env_config=None):
+def env_creator(env_config=None):
     print('-----------------------ENV_CREATOR-------------------------\n\n\n')
     return EnvCompatibility(CarlaEnv())
 
-register_env("CustomCarlaEnv", env_creator)"""
+register_env("CustomCarlaEnv", env_creator)
 
 def main():
   # load and restore model
