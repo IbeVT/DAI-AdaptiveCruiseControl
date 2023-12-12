@@ -114,7 +114,6 @@ class SensorManager:
     def destroy(self):
         self.sensor.destroy()
 
-
 class CameraManager(SensorManager):
     def __init__(self, world, display_man, transform, attached, sensor_options, display_pos,
                  computer_vision):
@@ -472,7 +471,8 @@ def run_simulation(args, client):
         radar_sample_rate = 10
 
         # Create the ComputerVision object
-        computer_vision = ComputerVision(ego_vehicle, radar_sample_rate)
+        computer_vision, clase = ComputerVision(ego_vehicle, radar_sample_rate)
+        print(computer_vis, clase)
 
         # Then, SensorManager is used to spawn RGBCamera and Radar and assign each of them to a grid position.
         camera_manager = CameraManager(world, display_manager,
@@ -485,7 +485,9 @@ def run_simulation(args, client):
                                      {'horizontal_fov': f'{camera_h_fov}', 'points_per_second': '5000', 'range': '100',
                                       'sensor_tick': '0.1', 'vertical_fov': f'{camera_v_fov}'}, display_pos=[0, 0],
                                      computer_vision=computer_vision)
-
+        
+        #def speed():
+        
         # Simulation loop
         call_exit = False
         while True:
@@ -522,7 +524,7 @@ def run_simulation(args, client):
         client.apply_batch([carla.command.DestroyActor(x) for x in vehicle_list])
 
         world.apply_settings(original_settings)
-
+    
 
 def update_traffic_manager(traffic_manager, actor, speed_diff, route):
     # Set parameters of TM vehicle control, we don't want lane changes
