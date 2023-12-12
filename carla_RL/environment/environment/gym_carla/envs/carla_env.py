@@ -294,25 +294,26 @@ class CarlaEnv(gym.Env):
     def step(self, action):
         #print('------------------------------------STEP--------------------------------------')
         #return (self._get_obs(), 0, False, {'waypoints': 0, 'vehicle_front': 0})
+        throttle, brake = 1-self.ego.get_control().throttle, 1-self.ego.get_control().brake
+        print('before before', throttle, brake)
+
         # Calculate acceleration and steering
         if self.discrete:
             acc = self.discrete_act[0][action // self.n_steer]
-            steer = -self.ego.get_control().steer
         else:
             acc = action[0]
-            steer = -self.ego.get_control().steer
 
         # Convert acceleration to throttle and brake
         if acc > 0:
-            throttle = np.clip(acc / 3, 0, 1)
-            brake = 0
+            throttle += np.clip(acc / 3, 0, 1)
         else:
-            throttle = 0
-            brake = np.clip(-acc / 8, 0, 1)
+            brake += np.clip(-acc / 8, 0, 1)
 
         # Apply control
-        act = carla.VehicleControl(throttle=float(1-self.ego.get_control().throttle), steer=float(-self.ego.get_control().steer), brake=float(1-self.ego.get_control().brake))
+        print('before', throttle, brake)
+        act = carla.VehicleControl(throttle=float(throttle), steer=0, brake=float(brake))
         self.ego.apply_control(act)
+        print('after', self.ego.get_control().throttle, self.ego.get_control().brake)
 
         self.world.tick()
 
