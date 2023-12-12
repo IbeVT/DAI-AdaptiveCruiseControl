@@ -15,7 +15,6 @@ sys.path.append('carla_RL/environment/environment/gym_carla')
 import gym_carla
 from gym_carla.envs.carla_env import CarlaEnv
 from gymnasium.wrappers import EnvCompatibility
-import wandb
 
 import carla
 import ray.rllib.algorithms.ppo as ppo
