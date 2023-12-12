@@ -297,7 +297,7 @@ class CarlaEnv(gym.Env):
     def step(self, action):
         #print('------------------------------------STEP--------------------------------------')
         #return (self._get_obs(), 0, False, {'waypoints': 0, 'vehicle_front': 0})
-        throttle, brake = 1-self.ego.get_control().throttle, 1-self.ego.get_control().brake
+        throttle, brake = self.ego.get_control().throttle, self.ego.get_control().brake
         print('before before before', self.ego.get_control())
         print('before before', throttle, brake)
 
@@ -313,7 +313,7 @@ class CarlaEnv(gym.Env):
         else:
             brake += np.clip(-acc / 8, 0, 1)"""
 
-        throttle += 0.1
+        #throttle += 0.1
         # Apply control
         print('before', throttle, brake)
         act = carla.VehicleControl(throttle=float(throttle), steer=0, brake=float(brake))
