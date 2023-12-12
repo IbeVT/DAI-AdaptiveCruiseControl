@@ -304,11 +304,12 @@ class CarlaEnv(gym.Env):
             acc = action[0]
 
         # Convert acceleration to throttle and brake
-        if acc > 0:
+        """if acc > 0:
             throttle += np.clip(acc / 3, 0, 1)
         else:
-            brake += np.clip(-acc / 8, 0, 1)
+            brake += np.clip(-acc / 8, 0, 1)"""
 
+        throttle += 0.1
         # Apply control
         print('before', throttle, brake)
         act = carla.VehicleControl(throttle=float(throttle), steer=0, brake=float(brake))
