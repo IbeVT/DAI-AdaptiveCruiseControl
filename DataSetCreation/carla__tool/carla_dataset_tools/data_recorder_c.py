@@ -36,8 +36,8 @@ timer= threading.Timer(duration, lambda: os.kill(os.getpid() ,signal.SIGALRM))
 timer.daemon= True
 timer.start()
 def signal_handler(signal, frame):
-global sig_interrupt
-sig_interrupt = True
+    global sig_interrupt
+    sig_interrupt = True
 
 def signal_handler(signal, frame):
     global sig_interrupt
