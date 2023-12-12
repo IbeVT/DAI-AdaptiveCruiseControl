@@ -47,7 +47,7 @@ class CarlaEnv(gym.Env):
             'port': 2000,  # connection port
             'town': 'Town03',  # which town to simulate
             'task_mode': 'random',  # mode of the task, [random, roundabout (only for Town03)]
-            'max_time_episode': 50,  # maximum timesteps per episode
+            'max_time_episode': 1000,  # maximum timesteps per episode
             'max_waypt': 12,  # maximum number of waypoints
             'obs_range': 32,  # observation range (meter)
             'd_behind': 12,  # distance behind the ego vehicle (meter)
@@ -391,6 +391,7 @@ class CarlaEnv(gym.Env):
         blueprint = self._create_vehicle_blueprint('vehicle.*', number_of_wheels=number_of_wheels)
         blueprint.set_attribute('role_name', 'autopilot')
         vehicle = self.world.try_spawn_actor(blueprint, transform)
+        self.actor_list.append(vehicle)
         if vehicle is not None:
             vehicle.set_autopilot()
             return True
@@ -410,6 +411,7 @@ class CarlaEnv(gym.Env):
         if walker_bp.has_attribute('is_invincible'):
             walker_bp.set_attribute('is_invincible', 'false')
         walker_actor = self.world.try_spawn_actor(walker_bp, transform)
+        self.actor_list.append(walker_actor)
 
         if walker_actor is not None:
             walker_controller_bp = self.world.get_blueprint_library().find('controller.ai.walker')
@@ -451,6 +453,7 @@ class CarlaEnv(gym.Env):
 
         if vehicle is not None:
             self.ego = vehicle
+            self.actor_list.append(vehicle)
             return True
 
         return False
