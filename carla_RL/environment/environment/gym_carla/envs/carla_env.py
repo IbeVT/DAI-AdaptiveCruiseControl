@@ -524,14 +524,14 @@ class CarlaEnv(gym.Env):
             'is_red_light': np.array(1 if self.computer_vision.get_red_light() else 0, dtype=int)
         }"""
         obs = {
-            'speed': np.array(self.ego.get_velocity().length(), dtype=np.float32),
-            'distance': np.array(10.0, dtype=np.float32),
-            'delta_V': np.array(10.0, dtype=np.float32),
-            'speed_limit': np.array(40.0, dtype=np.float32),
-            'is_red_light': np.array(1 if self.computer_vision.get_red_light() else 0, dtype=np.uint8)
+            'speed': np.array(np.float32(self.ego.get_velocity().length()), dtype=np.float32),
+            'distance': np.array(np.float32(10.0), dtype=np.float32),
+            'delta_V': np.array(np.float32(10.0), dtype=np.float32),
+            'speed_limit': np.array(np.float32(40.0), dtype=np.float32),
+            'is_red_light': np.array(np.uint8(1) if self.computer_vision.get_red_light() else np.uint8(0), dtype=np.uint8)
         }
 
-        return spaces.Dict(obs)
+        return obs
 
     def _get_reward(self):
         """Calculate the step reward."""
