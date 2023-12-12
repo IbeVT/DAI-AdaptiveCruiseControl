@@ -8,6 +8,8 @@
 import gymnasium as gym
 import gym_carla
 import carla
+from ray import tune, air
+import ray.rllib.algorithms.ppo as ppo
 
 def main():
   # load and restore model
