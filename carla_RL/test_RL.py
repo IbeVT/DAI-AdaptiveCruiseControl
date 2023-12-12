@@ -26,6 +26,8 @@ def env_creator(env_config=None):
 register_env("CustomCarlaEnv", env_creator)
 
 def main():
+  ray.init(local_mode=True)
+
   # load and restore model
   agent = ppo.PPO(env="CustomCarlaEnv")
   agent.restore('/home/carla/PythonScripts/Stijn/DAI-AdaptiveCruiseControl/carla_RL/Checkpoints')
