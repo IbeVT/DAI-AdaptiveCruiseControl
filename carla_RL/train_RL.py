@@ -70,7 +70,11 @@ if __name__ == "__main__":
 
     tuner = tune.Tuner(
         PPO,
-        tune_config=tune.TuneConfig(max_concurrent_trials=1),
+        tune_config=tune.TuneConfig(
+            max_concurrent_trials=1,
+            checkpoint_at_end=True,     # Checkpoint when training is finished
+            checkpoint_freq=1           # Checkpoint frequency (1/episode)
+        ),
         param_space={
             "disable_env_checking": True,
             "ignore_workers_failure": False,
@@ -101,8 +105,6 @@ if __name__ == "__main__":
                     api_key="cee1795c4e0d51b4eb7fa2b4f7f180c85403aae1",
                 )
             ],
-            checkpoint_at_end=True,     # Checkpoint when training is finished
-            checkpoint_freq=1,          # Checkpoint frequency (1/episode)
         ),
         local_dir='Checkpoints'
     )
