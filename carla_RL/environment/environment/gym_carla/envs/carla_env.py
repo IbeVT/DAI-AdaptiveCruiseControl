@@ -447,6 +447,8 @@ class CarlaEnv(gym.Env):
 
         if not overlap:
             vehicle = self.world.try_spawn_actor(self.ego_bp, transform)
+            print(len(self.world.get_actors()))
+            print(str(vehicle))
             self.actor_list.append(vehicle)
             if vehicle is not None:
                 vehicle.set_autopilot()
