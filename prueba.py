@@ -45,7 +45,7 @@ try:
     vehicle.apply_control(carla.VehicleControl(throttle=1.0, steer=0.0))
     actor_list.append(vehicle)
     
-    camera_bp = bp_lib().find('sensor.camera.rgb')
+    camera_bp = bp_lib.find('sensor.camera.rgb')
     
     camera_bp.set_attribute('image_size_x', "640")
     camera_bp.set_attribute('image_size_y', "480")
