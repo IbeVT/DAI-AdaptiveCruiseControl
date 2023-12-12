@@ -568,9 +568,12 @@ class CarlaEnv(gym.Env):
         # cost for too fast
         to_fast = 1 if lspeed > self.desired_speed else 0
 
-        r = 1*lspeed - 200*collision - 10*to_fast - 2*acceleration - 2*change_in_acc - 0.1
+        if collision:
+            reward = -200
+        else:
+            reward = 1.5*lspeed - 10*to_fast - 2*acceleration - 2*change_in_acc - 0.1
 
-        return r
+        return reward
 
     def _terminal(self):
         """Calculate whether to terminate the current episode."""
