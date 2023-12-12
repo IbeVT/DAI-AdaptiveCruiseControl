@@ -366,6 +366,14 @@ def run_simulation(args, client):
                 print('created %s' % npc.type_id)
                 
             '''
+            for i in range(200):  
+                vehicle_bp = random.choice(bp_lib.filter('vehicle')) 
+                npc = world.try_spawn_actor(vehicle_bp, random.choice(spawn_points))
+
+
+            #Set traffic in motion
+            for v in world.get_actors().filter('*vehicle*'): 
+                v.set_autopilot(True) # This makes all the vehicles function in autopilot
 
         # Simulation loop
         call_exit = False
