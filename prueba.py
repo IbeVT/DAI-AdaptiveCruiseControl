@@ -54,7 +54,7 @@ try:
     
     spawn_point = carla.Transform(carla.Location(x=2.5, z=0.7))
     
-    sensor = world.spawn_actor(cam_bp, spawn_point, attach_to=vehicle)
+    sensor = world.spawn_actor(camera_bp, spawn_point, attach_to=vehicle)
     actor_list.append(sensor)
     
     sensor.listen(lambda data: process_img(data))
