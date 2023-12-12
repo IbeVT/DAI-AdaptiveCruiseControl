@@ -36,6 +36,9 @@ class ComputerVision:
     def set_resolution(self, x, y):
         self.camera_x_pixels = x
         self.camera_y_pixels = y
+        
+    def get_speed(self):
+        return self.speed
 
     def process_data(self):
         # Start by detecting objects in the image
@@ -249,8 +252,7 @@ class ComputerVision:
     def set_inverse_camera_matrix(self, inverse_matrix):
         self.inverse_camera_matrix = inverse_matrix
         
-    def get_speed(self):
-        return self.speed
+    
 
 
 def do_boxes_overlap(box1, box2):
