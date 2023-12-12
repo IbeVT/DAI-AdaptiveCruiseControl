@@ -250,7 +250,7 @@ class ComputerVision:
         self.inverse_camera_matrix = inverse_matrix
         
     def get_speed(self):
-        print('speed prueba 2')
+        print(self.speed)
         return self.speed
 
 
