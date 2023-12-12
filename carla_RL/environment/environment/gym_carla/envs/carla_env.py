@@ -119,16 +119,19 @@ class CarlaEnv(gym.Env):
 
         # Connect to carla server and get world object
         client.set_timeout(10.0)
-        try:
-            self.world = client.load_world(env_config['town'])
-        except:
-            client = carla.Client('localhost', env_config['port']+1)
-            client.set_timeout(10.0)
-            self.world = client.load_world(env_config['town'])
+        self.world = client.load_world(env_config['town'])
         print('Carla server connected!')
 
         # Create a Traffic Manager
-        self.traffic_manager = client.get_trafficmanager()
+        try:
+            self.traffic_manager = client.get_trafficmanager()
+        except:
+            print('first failed')
+            client = carla.Client('localhost', env_config['port'] + 1)
+            client.set_timeout(10.0)
+            self.world = client.load_world(env_config['town'])
+            self.traffic_manager = client.get_trafficmanager()
+            print('succes')
 
         # Set weather
         self.world.set_weather(carla.WeatherParameters.ClearNoon)
