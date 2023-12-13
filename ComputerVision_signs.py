@@ -98,8 +98,8 @@ class ComputerVision:
             print("Coordinates:", cords)
             print("Probability:", conf)
             print("---")
-            if class_id != 'Green Light' and class_id != 'Red Light' and class_id != 'Stop':
-                self.delta_v = int(class_id[-3:])
+            if class_id2 != 'Green Light' and class_id != 'Red Light' and class_id != 'Stop':
+                self.delta_v = int(class_id2[-3:])
                 print('speed prueba 1', self.delta_v)
             # If the confidence is high enough, immediately save the box
             if conf > 0.5:
