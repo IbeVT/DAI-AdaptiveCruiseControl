@@ -16,6 +16,7 @@ class ComputerVision:
         self.inverse_camera_matrix = None
         self.radar_points = None
         self.model = YOLO('signs_best.pt')
+        self.model2 = YOLO('signs_best.pt')
         self.vehicle_classes = ['Green Light', 'Red Light', 'Speed Limit 10', 'Speed Limit 100', 'Speed Limit 110', 'Speed Limit 120', 'Speed Limit 20', 'Speed Limit 30', 'Speed Limit 40', 'Speed Limit 50', 'Speed Limit 60', 'Speed Limit 70', 'Speed Limit 80', 'Speed Limit 90', 'Stop']
         self.camera_x_pixels = 720
         self.camera_y_pixels = 1280
@@ -43,6 +44,9 @@ class ComputerVision:
             return
         results = self.model.predict(source=self.image, save=False, conf=0.1)
         result = results[0]
+        
+        results2 = self.model2.predict(source=self.image, save=False, conf=0.1)
+        result2 = results2[0]
 
         # Check which car is in front, if any
         # To find the vehicle in front, we will use the steer angle and the azimuth angle We do it as follows:
@@ -85,10 +89,12 @@ class ComputerVision:
         self.low_conf_boxes = []
         for box in result.boxes:
             class_id = result.names[box.cls[0].item()]
+            class_id2 = result2.names[box.cls[0].item()]
             cords = box.xyxy[0].tolist()
             cords = [round(x) for x in cords]
             conf = round(box.conf[0].item(), 2)
             print("Object type:", class_id)
+            print("Object type:", class_id2)
             print("Coordinates:", cords)
             print("Probability:", conf)
             print("---")
