@@ -325,11 +325,11 @@ def run_simulation(args, client):
         vehicle_list.append(vehicle)
         '''
         spectator = world.get_spectator()
-        transform = carla.Transform(ego_vehicle.get_transform().transform(carla.Location(x=-4,z=2.5)),vehicle.get_transform().rotation)
+        transform = carla.Transform(ego_vehicle.get_transform().transform(carla.Location(x=-4,z=2.5)),vehicle_bp.get_transform().rotation)
         spectator.set_transform(transform)
         
-        print('created %s' % vehicle.type_id)
-        vehicle.set_autopilot(True)
+        print('created %s' % vehicle_bp.type_id)
+        vehicle_bp.set_autopilot(True)
 
         # Display Manager organize all the sensors and its display in a window
         # It can easily configure the grid and the total window size
