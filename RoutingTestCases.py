@@ -49,7 +49,7 @@ traffic_manager = client.get_trafficmanager()
 traffic_manager.set_synchronous_mode(True)
 
 # Set a seed so behaviour can be repeated if necessary
-# traffic_manager.set_random_device_seed(1)
+traffic_manager.set_random_device_seed(1)
 random.seed(1)
 
 spawn_points = world.get_map().get_spawn_points()

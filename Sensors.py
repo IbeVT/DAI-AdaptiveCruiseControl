@@ -31,6 +31,7 @@ try:
 except ImportError:
     raise RuntimeError('cannot import pygame, make sure pygame package is installed')
 
+from pygame_recorder import ScreenRecorder
 
 class CustomTimer:
     def __init__(self):
@@ -41,6 +42,7 @@ class CustomTimer:
 
     def time(self):
         return self.timer()
+
 
 # The DisplayManager is in charge of displaying the data collected from the sensors on the screen.
 class DisplayManager:
@@ -184,6 +186,7 @@ class SensorManager:
             # give color to radar data: white = neutral; red= move closer; blue=moving away.
             def clamp(min_v, max_v, value):
                 return max(min_v, min(value, max_v))
+
             velocity_range = 7.5  # m/s
             norm_velocity = detect.velocity / velocity_range  # range [-1, 1]
             r = int(clamp(0.0, 1.0, 1.0 - norm_velocity) * 255.0)
@@ -198,7 +201,6 @@ class SensorManager:
                     persistent_lines=False,
                     color=carla.Color(r, g, b)
                 )
-
 
         t_end = self.timer.time()
         self.time_processing += (t_end - t_start)
@@ -253,13 +255,17 @@ def run_simulation(args, client):
         # Then, SensorManager is used to spawn RGBCamera and Radar and assign each of them to a grid position.
         SensorManager(world, display_manager, 'RGBCamera',
                       carla.Transform(carla.Location(x=0, z=2.4), carla.Rotation(yaw=+00)),
-                      vehicle, {'sensor_tick': '1.0'}, display_pos=[0, 0])
+                      vehicle, {'sensor_tick': '0.1'}, display_pos=[0, 0])
 
         SensorManager(world, display_manager, 'Radar',
                       carla.Transform(carla.Location(x=0, z=2.4)),
                       vehicle,
                       {'horizontal_fov': '90', 'points_per_second': '1500', 'range': '75',
-                       'sensor_tick': '1.0', 'vertical_fov': '60'}, display_pos=[0, 0])
+                       'sensor_tick': '0.0', 'vertical_fov': '60'}, display_pos=[0, 0])
+
+        recorder = ScreenRecorder(args.width, args.height, 40)  # start the screen-recording.
+        start_time = timer.time()
+        print('Recording time start at: ', start_time)
 
         # But the city now is probably quite empty, let's add a few more vehicles.
         transform.location += carla.Location(x=40, y=-3.2)
@@ -299,6 +305,9 @@ def run_simulation(args, client):
             # Render received data
             display_manager.render()
 
+            # capture the frame on recorder.
+            recorder.capture_frame(display_manager.display)
+
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     call_exit = True
@@ -310,9 +319,18 @@ def run_simulation(args, client):
             if call_exit:
                 break
 
+
+
     finally:
+        recorder.end_recording()  # stop the screen-recording.
+        stop_time = timer.time()
+        print('Recording time stop at: ', stop_time)
+        print('Time difference: ', stop_time - start_time)
+
         if display_manager:
             display_manager.destroy()
+
+        pygame.quit()
 
         client.apply_batch([carla.command.DestroyActor(x) for x in vehicle_list])
 

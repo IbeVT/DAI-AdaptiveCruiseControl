@@ -375,11 +375,12 @@ def game_loop(args):
             control = manual_control(ego_vehicle, throttle=throttle_input, brake=brake_input)
             ego_vehicle.apply_control(control)
             """
-
+            """
             # Update the spectator's position to follow the ego vehicle
             transform = carla.Transform(ego_vehicle.get_transform().transform(carla.Location(x=-4, z=2.5)),
                                         ego_vehicle.get_transform().rotation)
             spectator.set_transform(transform)
+            """
 
             # Carla Tick
             if args.sync:
