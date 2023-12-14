@@ -215,8 +215,8 @@ class CameraManager(SensorManager):
             low_confidence_boxes = self.computer_vision.get_low_conf_boxes()
             if low_confidence_boxes is not None:
                 for box in low_confidence_boxes:
-                    cords1 = box["cords1"]
-                    cords2 = box["cords2"]
+                    cords1 = box["cords"]
+                    cords2 = box["cords"]
                     if cords1 != following_bb:
                         [x_lower, y_lower, x_upper, y_upper] = cords1
                         pygame.draw.rect(self.surface, (255, 0, 0),
