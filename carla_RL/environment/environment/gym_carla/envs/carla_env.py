@@ -588,7 +588,7 @@ class CarlaEnv(gym.Env):
         if collision:
             reward = -200
         else:
-            reward = 1.5*lspeed - 10*to_fast - 2*acceleration - 2*change_in_acc - 0.1
+            reward = 1.5*lspeed - 10*to_fast - 2*acceleration - 2*change_in_acc + 40
 
         return reward
 
