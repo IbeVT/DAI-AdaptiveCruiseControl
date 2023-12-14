@@ -200,18 +200,30 @@ class CameraManager(SensorManager):
             boxes = self.computer_vision.get_boxes()
             if boxes is not None:
                 for box in boxes:
-                    cords = box["cords"]
-                    if following_bb is not None and cords != following_bb["cords"]:
-                        [x_lower, y_lower, x_upper, y_upper] = cords
+                    cords1 = box["cords1"]
+                    cords2 = box["cords2"]
+                    if following_bb is not None and cords1 != following_bb["cords"]:
+                        [x_lower, y_lower, x_upper, y_upper] = cords1
+                        pygame.draw.rect(self.surface, (0, 0, 255),
+                                         (x_lower, y_lower, x_upper - x_lower, y_upper - y_lower), 2)
+                        
+                    if following_bb is not None and cords2 != following_bb["cords"]:
+                        [x_lower, y_lower, x_upper, y_upper] = cords2
                         pygame.draw.rect(self.surface, (0, 0, 255),
                                          (x_lower, y_lower, x_upper - x_lower, y_upper - y_lower), 2)
             # Draw low confidence bounding boxes on screen.
             low_confidence_boxes = self.computer_vision.get_low_conf_boxes()
             if low_confidence_boxes is not None:
                 for box in low_confidence_boxes:
-                    cords = box["cords"]
-                    if cords != following_bb:
-                        [x_lower, y_lower, x_upper, y_upper] = cords
+                    cords1 = box["cords1"]
+                    cords2 = box["cords2"]
+                    if cords1 != following_bb:
+                        [x_lower, y_lower, x_upper, y_upper] = cords1
+                        pygame.draw.rect(self.surface, (255, 0, 0),
+                                         (x_lower, y_lower, x_upper - x_lower, y_upper - y_lower), 2)
+                        
+                    if cords2 != following_bb:
+                        [x_lower, y_lower, x_upper, y_upper] = cords2
                         pygame.draw.rect(self.surface, (255, 0, 0),
                                          (x_lower, y_lower, x_upper - x_lower, y_upper - y_lower), 2)
 
