@@ -96,24 +96,31 @@ class ComputerVision:
             cords = []
             
             if box in result.boxes:
+                print("box in result 1")
                 class_id = result.names[box.cls[0].item()]
-                cords = box.xyxy[0].tolist()
-                cords = [round(x) for x in cords]
-                conf = round(box.conf[0].item(), 2)
-                print("Object type:", class_id)
-                print("Coordinates:", cords)
-                print("Probability:", conf)
-                print("---")
+                print("Object type class1:", class_id)
+                
+                
+            cords = box.xyxy[0].tolist()
+            cords = [round(x) for x in cords]
+            conf = round(box.conf[0].item(), 2)
             
-            if box in result2.boxes:
+            print("Coordinates:", cords)
+            print("Probability:", conf)
+            print("---")
+            
+            if box in result2.boxes:s
+                print("box in result 2")
+                print("Object type class2:", class_id2)
                 class_id2 = result2.names[box.cls[0].item()]
-                cords = box.xyxy[0].tolist()
-                cords = [round(x) for x in cords]
-                conf = round(box.conf[0].item(), 2)
-                print("Object type:", class_id2)
-                print("Coordinates:", cords)
-                print("Probability:", conf)
-                print("---")
+            
+            cords = box.xyxy[0].tolist()
+            cords = [round(x) for x in cords]
+            conf = round(box.conf[0].item(), 2)
+            #print("Object type:", class_id2)
+            print("Coordinates:", cords)
+            print("Probability:", conf)
+            print("---")
             
                 if class_id2 != 'Green Light' and class_id2 != 'Red Light' and class_id2 != 'Stop':
                     self.delta_v = int(class_id2[-3:])
