@@ -47,24 +47,22 @@ class ComputerVision:
         results = self.model.predict(source=self.image, save=False, conf=0.1)
         result = results[0]
 
-        # Check which car is in front, if any
-        # To find the vehicle in front, we will use the steer angle and the azimuth angle We do it as follows:
-        # 1. Get all boxes that are vehicles
-        # 2. Group all points that belong to the same box
-        # 3. For each box, calculate the median distance and speed
-        # 4. Calculate where the vector with length=median_distance, azimuth=steer_angle and
-        # altitude=mean_altitude_points would end on the camera
-        # 5. Calculate the distance from the vector to the center of the bounding box of the vehicle
-        # Reset the values
+        # Check which car is in front, if any To find the vehicle in front, we will use the steer angle and the
+        # azimuth angle We do it as follows: 1. Get all boxes that are vehicles 2. Group all points that belong to
+        # the same box 3. For each box, calculate the median distance and speed 4. Calculate where the vector with
+        # length=median_distance, azimuth=steer_angle and altitude=mean_altitude_points would end on the camera 5.
+        # Calculate the distance from the vector to the center of the bounding box of the vehicle Reset the values
+        # Afterward, check if the center of the beam does not contain too much close points. The computer vision
+        # might have missed an object that is close.
         self.following_vehicle_box = None
+        self.following_vehicle_type = None
         self.distance = self.max_depth
         self.delta_v = self.max_speed
 
-        smallest_distance_to_box = self.max_distance_following_vehicle  # The distance from the vector to the
         # center of the bounding box of the vehicle
         wheel_locations = carla.VehicleWheelLocation()
         self.wheel_angles.append(self.vehicle.get_wheel_steer_angle(wheel_locations.FL_Wheel))
-        n_points = int(self.radar_sample_rate * 2)  # Use the data from the last 2 seconds for the low pass filter
+        n_points = self.radar_sample_rate * 2  # Use the data from the last 2 seconds for the low pass filter
         # If the list is too short for filtering, just use the last value. It only happens for the first two seconds
         # anyway.
         list_len = len(self.wheel_angles)
@@ -91,10 +89,6 @@ class ComputerVision:
             cords = box.xyxy[0].tolist()
             cords = [round(x) for x in cords]
             conf = round(box.conf[0].item(), 2)
-            #print("Object type:", class_id)
-            #print("Coordinates:", cords)
-            #print("Probability:", conf)
-            #print("---")
             # If the confidence is high enough, immediately save the box
             if conf > 0.5:
                 self.boxes.append({"class_id": class_id, "cords": cords, "conf": conf})
@@ -142,7 +136,8 @@ class ComputerVision:
         # 2. Group all points that belong to the same box
         distances = []  # The distances of all points that belong to the i-th box
         velocities = []  # The speeds of all points that belong to the i-th box
-        altitudes = []  # The altitudes of all points that belong to the i-th box
+        azimuths = []  # The azimuths of all points that belong to the i-th box
+        points_in_box = []
         for point in self.radar_points:
             [x, y] = self.get_image_coordinates_from_radar_point(point.azimuth, point.altitude, point.depth)
             for i, box in enumerate(vehicle_boxes):
@@ -150,41 +145,133 @@ class ComputerVision:
                 if len(distances) <= i:
                     distances.append([])
                     velocities.append([])
-                    altitudes.append([])
+                    azimuths.append([])
+                    points_in_box.append([])
                 [x_lower, y_lower, x_upper, y_upper] = box["cords"]
                 if x_lower < x < x_upper and y_lower < y < y_upper:
                     distances[i].append(point.depth)
                     velocities[i].append(point.velocity)
-                    altitudes[i].append(point.altitude)
+                    azimuths[i].append(point.azimuth)
+                    points_in_box[i].append(point)
                     break
-        # 3. For each box, calculate the median distance and speed
+        # 3. For each box, calculate the global distance, speed and azimuth
+        car_speed = self.vehicle.get_velocity().length()
+        # Remove the points that have a speed value that is close to the opposite of the speed of the car. These points are probably reflections of the ground.
+        for i, array in enumerate(velocities):
+            ind_to_remove = []
+            for j, value in enumerate(array):
+                if abs(value + car_speed) < 1:
+                    ind_to_remove.append(j)
+            # Only remove if there are enough points left, if not, the car itself is probably not moving
+            if vehicle_boxes[i]["class_id"] == "bike" or vehicle_boxes[i]["class_id"] == "motorcycle":
+                # Use a different threshold for bieks and motorbikes, as they are smaller, and thus, more points in the bounding box are reflected on the ground
+                if len(ind_to_remove) > 7 * len(array) / 8:
+                    continue
+            else:
+                if len(ind_to_remove) > 2 * len(array) / 3:
+                    continue
+
+            # Remove the elements in reverse order to avoid changing the indices of the elements that still need to be removed
+            for j in sorted(ind_to_remove, reverse=True):
+                del velocities[i][j]
+                del distances[i][j]
+                del azimuths[i][j]
+                del points_in_box[i][j]
+
+        # Take the median
         distances = [np.median(i) for i in distances]
+        azimuths = [np.median(i) for i in azimuths]
         velocities = [np.median(i) for i in velocities]
-        altitudes = [np.median(i) for i in altitudes]
         # Now we have the median distance and speed for each box
 
-        # 4. Calculate where the vector with length=median_distance and angle=steer_angle would end on the camera
-        # 5. Calculate the distance from the vector to the center of the bounding box of the vehicle
-        # Initialize the steer vector endpoint to half of the maximum depth and elevation 0
-        self.steer_vector_endpoint = self.get_image_coordinates_from_radar_point(steer_angle, 0, self.max_depth / 2)
+        # 4. Determine which box to follow
+        candidates = []
+        candidate_velocities = []
+        candidate_distances = []
+        candidate_points_in_box = []
+        following_azimuth = 10
         for i, box in enumerate(vehicle_boxes):
-            altitude = altitudes[i]
             # If there are no points in the box, skip it
-            if math.isnan(altitude):
+            if math.isnan(azimuths[i]):
                 continue
-            cords = self.get_image_coordinates_from_radar_point(steer_angle, altitude, distances[i])
-            # distance_to_box = math.sqrt((cords[0] - np.mean([box["cords"][0], box["cords"][2]])) ** 2 +
-            #                             ((cords[1] - np.mean([box["cords"][1], box["cords"][
-            #                                 3]])) / 2) ** 2)  # Y is less important than X
+            angle_diff = steer_angle - azimuths[i]
 
-            # Follow the closest vehicle that is under the threshold
-            # if distance_to_box < smallest_distance_to_box:
-            if is_point_in_box(box["cords"], cords):
-                if distances[i] < self.distance:
-                    self.following_vehicle_box = box
-                    self.distance = distances[i]
-                    self.delta_v = velocities[i]
-                    self.steer_vector_endpoint = cords
+            if abs(angle_diff) < np.radians(10) or abs(azimuths[i]) < np.radians(20):
+                # Calculate the absolute speed of the other car. If it is rapidly approaching, it will drive in th other direction
+                box_velocity = velocities[i] + car_speed
+                print("Car velocity:", car_speed)
+                print("Box velocity:", box_velocity)
+                print("Delta v:", velocities[i])
+                if box_velocity > -5:
+                    candidates.append(box)
+                    candidate_velocities.append(velocities[i])
+                    candidate_distances.append(distances[i])
+                    candidate_points_in_box.append(points_in_box[i])
+        if len(candidates) == 1:
+            self.following_vehicle_box = candidates[0]
+            self.following_vehicle_type = candidates[0]["class_id"]
+            self.distance = candidate_distances[0]
+            self.delta_v = candidate_velocities[0]
+            self.object_points = candidate_points_in_box[0]
+        elif len(candidates) > 1:
+            # This code can be optimized, but the effect is negligible due to the small size of candidates
+            for i, box in enumerate(candidates):
+                # Check if there is a box that is closer
+                for j, box2 in enumerate(candidates):
+                    if i == j:
+                        continue
+                    box_to_follow = None
+                    if is_box2_closer(box, box2):
+                        if azimuths[j] < following_azimuth:
+                            # Choose the car that is the closest to the center of the screen
+                            box_to_follow = box2
+                            index = j
+                    else:
+                        if azimuths[i] < following_azimuth:
+                            # Choose the car that is the closest to the center of the screen
+                            box_to_follow = box
+                            index = i
+                    if box_to_follow is not None:
+                        self.following_vehicle_box = box_to_follow
+                        self.following_vehicle_type = box_to_follow["class_id"]
+                        self.distance = candidate_distances[index]
+                        self.delta_v = candidate_velocities[index]
+                        self.object_points = candidate_points_in_box[index]
+            print("Following vehicle:", self.following_vehicle_box)
+
+        # If the car is close to a bus, the computer vision might not be able to detect it. In that case,
+        # we still want to use the radar distance. Therefore, we need some sort of detection to check whether there
+        # is an object close to the car. We will do this by checking whether there are points in the middle of the
+        # radar point cloud that are close to the car.
+        radar_angle = np.radians(5)
+        radar_center_distance = []
+        radar_center_velocities = []
+        for point in self.radar_points:
+            if abs(point.azimuth) < radar_angle and abs(point.altitude) < radar_angle:
+                radar_center_distance.append(point.depth)
+                radar_center_velocities.append(point.velocity)
+        # Remove the points that have a speed value that is close to the opposite of the speed of the car. These
+        # points are probably reflections on the ground.
+        ind_to_remove = []
+        for i, value in enumerate(radar_center_velocities):
+            if abs(value + car_speed) < 1:
+                ind_to_remove.append(i)
+        # Only remove if there are enough points left, if not, the car itself is probably not moving
+        if len(ind_to_remove) < 2 * len(radar_center_velocities) / 3:
+            # Remove the elements in reverse order to avoid changing the indices of the elements that still need to be removed
+            for i in sorted(ind_to_remove, reverse=True):
+                del radar_center_velocities[i]
+                del radar_center_distance[i]
+        center_distance_mean = np.mean(radar_center_distance)
+        if center_distance_mean < 10:
+            self.distance = center_distance_mean
+            self.delta_v = np.mean(radar_center_velocities)
+
+        # Do a last check to make sure there are no NaN values
+        if math.isnan(self.distance):
+            self.distance = self.max_depth
+        if math.isnan(self.delta_v):
+            self.delta_v = self.max_speed
 
     def get_current_bounding_box(self):
         return self.following_vehicle_box
@@ -265,6 +352,25 @@ def do_boxes_overlap(box1, box2):
         return False
 
     # If the above conditions are not met, the boxes overlap
+    return True
+
+def is_box2_closer(box1, box2):
+    x1_lower, y1_lower, x1_upper, y1_upper = box1["cords"]
+    x2_lower, y2_lower, x2_upper, y2_upper = box2["cords"]
+
+    # Check if one box is to the left of the other
+    if x1_upper < x2_lower or x2_upper < x1_lower:
+        return False
+
+    # Check if one box is to the right of the other
+    if x1_lower > x2_upper or x2_lower > x1_upper:
+        return False
+
+    # Check if y values of the second box are smaller
+    if y2_upper < y1_upper:
+        return False
+
+    # If the above conditions are not met, box2 is closer
     return True
 
 def is_point_in_box(box, point):
