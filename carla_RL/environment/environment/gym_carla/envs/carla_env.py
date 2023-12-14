@@ -318,11 +318,12 @@ class CarlaEnv(gym.Env):
             throttle = 0
 
         # Apply control
-        print(self.ego.get_control())
+        print('before after', self.ego.get_control())
         print('AI control', throttle, brake)
         act = carla.VehicleControl(throttle=0, steer=self.ego.get_control().steer, brake=0)
         self.ego.apply_control(act)
-
+        print('after', self.ego.get_control())
+        print()
 
         # Update the spectator's position to follow the ego vehicle
         transform = carla.Transform(self.ego.get_transform().transform(carla.Location(x=-4, z=2.5)),
