@@ -203,7 +203,7 @@ class CarlaEnv(gym.Env):
         self.display_manager = DisplayManager(grid_size=[1, 1], window_size=[display_width, display_height])
 
         # Disable sync mode
-        self._set_synchronous_mode(True)
+        self._set_synchronous_mode(False)
 
         # Spawn surrounding vehicles
         random.shuffle(self.vehicle_spawn_points)
@@ -287,6 +287,8 @@ class CarlaEnv(gym.Env):
         self.reset_step += 1
 
         # Enable sync mode
+
+        #self._set_synchronous_mode(True)
         self.settings.synchronous_mode = True
         self.world.apply_settings(self.settings)
 
@@ -318,7 +320,6 @@ class CarlaEnv(gym.Env):
             throttle = 0
 
         # Apply control
-        self.world.tick()
         print('before after', self.ego.get_control())
         print('AI control', throttle, brake)
         act = carla.VehicleControl(throttle=0.11, steer=self.ego.get_control().steer, brake=0.11)
@@ -327,6 +328,8 @@ class CarlaEnv(gym.Env):
 
         print('after', self.ego.get_control())
         print()
+
+        self.world.tick()
 
         # Update the spectator's position to follow the ego vehicle
         transform = carla.Transform(self.ego.get_transform().transform(carla.Location(x=-4, z=2.5)),
