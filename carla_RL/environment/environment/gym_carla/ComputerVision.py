@@ -8,7 +8,6 @@ from gym_carla.LowpassFilter import LowpassFilter
 
 
 import os
-#print(os.getcwd())
 
 class ComputerVision:
     def __init__(self, vehicle, radar_sample_rate=10):
@@ -196,12 +195,9 @@ class ComputerVision:
                 continue
             angle_diff = steer_angle - azimuths[i]
 
-            if abs(angle_diff) < np.radians(10) or abs(azimuths[i]) < np.radians(20):
+            if abs(angle_diff) < np.radians(10):
                 # Calculate the absolute speed of the other car. If it is rapidly approaching, it will drive in th other direction
                 box_velocity = velocities[i] + car_speed
-                print("Car velocity:", car_speed)
-                print("Box velocity:", box_velocity)
-                print("Delta v:", velocities[i])
                 if box_velocity > -5:
                     candidates.append(box)
                     candidate_velocities.append(velocities[i])
@@ -237,7 +233,6 @@ class ComputerVision:
                         self.distance = candidate_distances[index]
                         self.delta_v = candidate_velocities[index]
                         self.object_points = candidate_points_in_box[index]
-            print("Following vehicle:", self.following_vehicle_box)
 
         # If the car is close to a bus, the computer vision might not be able to detect it. In that case,
         # we still want to use the radar distance. Therefore, we need some sort of detection to check whether there
