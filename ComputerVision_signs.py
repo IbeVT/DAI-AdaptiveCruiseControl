@@ -17,7 +17,8 @@ class ComputerVision:
         self.radar_points = None
         self.model = YOLO('best.pt')
         self.model2 = YOLO('signs_best.pt')
-        self.vehicle_classes = ['Green Light', 'Red Light', 'Speed Limit 10', 'Speed Limit 100', 'Speed Limit 110', 'Speed Limit 120', 'Speed Limit 20', 'Speed Limit 30', 'Speed Limit 40', 'Speed Limit 50', 'Speed Limit 60', 'Speed Limit 70', 'Speed Limit 80', 'Speed Limit 90', 'Stop']
+        self.speed_classes = ['Green Light', 'Red Light', 'Speed Limit 10', 'Speed Limit 100', 'Speed Limit 110', 'Speed Limit 120', 'Speed Limit 20', 'Speed Limit 30', 'Speed Limit 40', 'Speed Limit 50', 'Speed Limit 60', 'Speed Limit 70', 'Speed Limit 80', 'Speed Limit 90', 'Stop']
+        self.vehicle_classes = ['bus', 'bike', 'car', 'motorcycle', 'vehicle']
         self.camera_x_pixels = 720
         self.camera_y_pixels = 1280
         self.n_points = 50
@@ -83,30 +84,51 @@ class ComputerVision:
             self.wheel_angles = self.wheel_angles[-n_points:]
 
         vehicle_boxes = []
+        speed_boxes = []
         previous_results = self.boxes
         previous_low_conf_results = self.low_conf_boxes
         self.boxes = []
         self.low_conf_boxes = []
-        for box in result.boxes:
-            class_id = result.names[box.cls[0].item()]
-            class_id2 = result2.names[box.cls[0].item()]
-            cords = box.xyxy[0].tolist()
-            cords = [round(x) for x in cords]
-            conf = round(box.conf[0].item(), 2)
-            print("Object type:", class_id)
-            print("Object type:", class_id2)
-            print("Coordinates:", cords)
-            print("Probability:", conf)
-            print("---")
-            if class_id2 != 'Green Light' and class_id2 != 'Red Light' and class_id2 != 'Stop':
-                self.delta_v = int(class_id2[-3:])
-                print('speed prueba 1', self.delta_v)
+        for box in result.boxes or box in result2.boxes:
+            
+            if box in result.boxes:
+                class_id = result.names[box.cls[0].item()]
+                cords = box.xyxy[0].tolist()
+                cords = [round(x) for x in cords]
+                conf = round(box.conf[0].item(), 2)
+                print("Object type:", class_id)
+                print("Coordinates:", cords)
+                print("Probability:", conf)
+                print("---")
+            
+            if box in result2.boxes:
+                
+                class_id2 = result2.names[box.cls[0].item()]
+                cords = box.xyxy[0].tolist()
+                cords = [round(x) for x in cords]
+                conf = round(box.conf[0].item(), 2)
+                print("Object type:", class_id2)
+                print("Coordinates:", cords)
+                print("Probability:", conf)
+                print("---")
+            
+                if class_id2 != 'Green Light' and class_id2 != 'Red Light' and class_id2 != 'Stop':
+                    self.delta_v = int(class_id2[-3:])
+                    print('speed prueba 1', self.delta_v)
             # If the confidence is high enough, immediately save the box
             if conf > 0.5:
                 print("New box detected")
-                self.boxes.append({"class_id": class_id, "cords": cords, "conf": conf})
-                if str(class_id) in self.vehicle_classes:
-                    vehicle_boxes.append({"class_id": class_id, "cords": cords, "conf": conf})
+                
+                if class_id != None
+                    self.boxes.append({"class_id": class_id, "cords": cords, "conf": conf})
+                    if str(class_id) in self.vehicle_classes:
+                        vehicle_boxes.append({"class_id": class_id, "cords": cords, "conf": conf})
+                    
+                if class_id2 != None
+                    self.boxes.append({"class_id": class_id2, "cords": cords, "conf": conf})
+                    if str(class_id2) in self.speed_classes:
+                        speed_boxes.append({"class_id": class_id2, "cords": cords, "conf": conf})
+    
                 continue
             # Check if a similar box was detected in the previous frame
             found = False
@@ -122,6 +144,8 @@ class ComputerVision:
                         self.boxes.append({"class_id": class_id, "cords": cords, "conf": conf})
                         if str(class_id) in self.vehicle_classes:
                             vehicle_boxes.append({"class_id": class_id, "cords": cords, "conf": conf})
+                        if str(class_id2) in self.speed_classes:
+                            speed_boxes.append({"class_id": class_id2, "cords": cords, "conf": conf})
                         found = True
                         break
 
