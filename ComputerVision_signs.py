@@ -119,12 +119,12 @@ class ComputerVision:
             if conf > 0.5:
                 print("New box detected")
                 
-                if class_id != None
+                if class_id != None:
                     self.boxes.append({"class_id": class_id, "cords": cords, "conf": conf})
                     if str(class_id) in self.vehicle_classes:
                         vehicle_boxes.append({"class_id": class_id, "cords": cords, "conf": conf})
                     
-                if class_id2 != None
+                if class_id2 != None:
                     self.boxes.append({"class_id": class_id2, "cords": cords, "conf": conf})
                     if str(class_id2) in self.speed_classes:
                         speed_boxes.append({"class_id": class_id2, "cords": cords, "conf": conf})
