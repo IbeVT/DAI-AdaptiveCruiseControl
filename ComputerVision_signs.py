@@ -93,7 +93,6 @@ class ComputerVision:
             conf = 0
             class_id = ""
             class_id2 = ""
-            cords = []
             
             if box in result.boxes:
                 print("box in result 1")
@@ -105,8 +104,8 @@ class ComputerVision:
             cords = [round(x) for x in cords]
             conf = round(box.conf[0].item(), 2)
             
-            print("Coordinates:", cords)
-            print("Probability:", conf)
+            print("Coordinates class1:", cords)
+            print("Probability class1:", conf)
             print("---")
             
             if box in result2.boxes:
@@ -121,8 +120,8 @@ class ComputerVision:
             cords = [round(x) for x in cords]
             conf = round(box.conf[0].item(), 2)
             #print("Object type:", class_id2)
-            print("Coordinates:", cords)
-            print("Probability:", conf)
+            print("Coordinates class2:", cords)
+            print("Probability class2:", conf)
             print("---")
             
                 
