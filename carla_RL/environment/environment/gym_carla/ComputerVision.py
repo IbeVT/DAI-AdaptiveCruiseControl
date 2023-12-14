@@ -61,7 +61,7 @@ class ComputerVision:
         # center of the bounding box of the vehicle
         wheel_locations = carla.VehicleWheelLocation()
         self.wheel_angles.append(self.vehicle.get_wheel_steer_angle(wheel_locations.FL_Wheel))
-        n_points = self.radar_sample_rate * 2  # Use the data from the last 2 seconds for the low pass filter
+        n_points = int(self.radar_sample_rate * 2)  # Use the data from the last 2 seconds for the low pass filter
         # If the list is too short for filtering, just use the last value. It only happens for the first two seconds
         # anyway.
         list_len = len(self.wheel_angles)
