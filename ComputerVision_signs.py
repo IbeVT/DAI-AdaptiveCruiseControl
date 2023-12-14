@@ -109,7 +109,7 @@ class ComputerVision:
             print("Probability:", conf)
             print("---")
             
-            if box in result2.boxes:s
+            if box in result2.boxes:
                 print("box in result 2")
                 print("Object type class2:", class_id2)
                 class_id2 = result2.names[box.cls[0].item()]
