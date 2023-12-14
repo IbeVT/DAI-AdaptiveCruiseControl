@@ -95,10 +95,10 @@ class ComputerVision:
             cords = box1.xyxy[0].tolist()
             cords = [round(x) for x in cords]
             conf = round(box1.conf[0].item(), 2)
-            print("Object type class1:", class_id)
-            print("Coordinates:", cords)
-            print("Probability:", conf)
-            print("---")
+            #print("Object type class1:", class_id)
+            #print("Coordinates:", cords)
+            #print("Probability:", conf)
+            #print("---")
                 
             # If the confidence is high enough, immediately save the box
             if conf > 0.5:
@@ -137,7 +137,7 @@ class ComputerVision:
             if not found:
                 # Check if a similar box was detected with low confidence in the previous frame
                 for previous_box in previous_low_conf_results:
-                    print("inicio",previous_box, "fin")
+                    #print("inicio",previous_box, "fin")
                     
                     if "class_id" in previous_box:
                         class_id_previous = previous_box["class_id"]
