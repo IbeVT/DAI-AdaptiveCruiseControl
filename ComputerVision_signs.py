@@ -176,6 +176,9 @@ class ComputerVision:
             if class_id2 != 'Green Light' and class_id2 != 'Red Light' and class_id2 != 'Stop':
                 self.delta_v = int(class_id2[-3:])
                 print('speed prueba 1', self.delta_v)
+                
+                print('\n\n\n\n\n AQUIIIIIIIIIIIIIIIIII \n\n\n\n\n')
+                
             
             if conf2 > 0.5:
                 print("New box2 detected")
