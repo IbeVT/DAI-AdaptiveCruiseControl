@@ -287,10 +287,8 @@ class CarlaEnv(gym.Env):
         self.reset_step += 1
 
         # Enable sync mode
-
-        #self._set_synchronous_mode(True)
-        self.settings.synchronous_mode = True
-        self.world.apply_settings(self.settings)
+        self._set_synchronous_mode(True)
+        
 
         self.routeplanner = RoutePlanner(self.ego, self.max_waypt)
         self.waypoints, _, self.vehicle_front = self.routeplanner.run_step()
