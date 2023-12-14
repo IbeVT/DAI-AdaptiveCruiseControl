@@ -122,9 +122,7 @@ class ComputerVision:
                         self.boxes.append({"class_id": class_id, "cords": cords, "conf": conf})
                         if str(class_id) in self.vehicle_classes:
                             vehicle_boxes.append({"class_id": class_id, "cords": cords, "conf": conf})
-                        if str(class_id2) in self.speed_classes:
-                            speed_boxes.append({"class_id": class_id2, "cords": cords, "conf": conf})
-                        found = True
+                                                found = True
                         break
 
             if not found:
