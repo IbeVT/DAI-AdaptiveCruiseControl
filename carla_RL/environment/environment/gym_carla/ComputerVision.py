@@ -12,7 +12,6 @@ import os
 
 class ComputerVision:
     def __init__(self, vehicle, radar_sample_rate=10):
-        self.delta_v = None
         self.image = None
         self.object_points = None
         self.vehicle = vehicle
@@ -28,7 +27,8 @@ class ComputerVision:
         self.max_distance_following_vehicle = 50  # The maximum distance between the endpoint of the steer vector and the center of the bounding box of the vehicle
         self.following_vehicle_box = None
         self.following_vehicle_type = None
-        self.distance = None
+        self.distance = self.max_depth
+        self.delta_v = self.max_speed
         self.steer_vector_endpoint = None
         self.wheel_angles = []
         self.radar_sample_rate = radar_sample_rate
