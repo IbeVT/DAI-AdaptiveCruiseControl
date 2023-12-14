@@ -311,17 +311,15 @@ class CarlaEnv(gym.Env):
 
         # Convert acc to value between -3 and 3 and to throttle and brake values
         if acc > 0:
-            acc = np.clip(acc, 0, 3)
             throttle = np.clip(acc / 3, 0, 1)
             brake = 0
         else:
-            acc = -np.clip(-acc, 0, 3)
-            brake = np.clip(-acc / 5, 0, 1)
+            brake = np.clip(-acc / 3, 0, 1)
             throttle = 0
 
         # Apply control
         print('AI control', throttle, brake)
-        act = carla.VehicleControl(throttle=throttle, steer=self.ego.get_control().steer, brake=brake)
+        act = carla.VehicleControl(throttle=0, steer=self.ego.get_control().steer, brake=0)
         self.ego.apply_control(act)
 
 
