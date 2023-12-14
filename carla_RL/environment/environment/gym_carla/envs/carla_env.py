@@ -330,7 +330,7 @@ class CarlaEnv(gym.Env):
         self.world.tick()
 
         # Reset the original control by the autopilot
-        self.ego.apply_control(original_act)
+        self.ego.apply_control(original_control)
 
         # Append actors polygon list
         vehicle_poly_dict = self._get_actor_polygons('vehicle.*')
