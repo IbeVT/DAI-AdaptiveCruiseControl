@@ -201,33 +201,33 @@ class CameraManager(SensorManager):
             if boxes is not None:
                 for box in boxes:
                     print('box1',box)
-                    cords1 = box["cords"]
-                    cords2 = box["cords"]
-                    if following_bb is not None and cords1 != following_bb["cords"]:
-                        [x_lower, y_lower, x_upper, y_upper] = cords1
+                    
+                    if "cords" in box:
+                        cords = box["cords"]
+                    if "cords2" in box:
+                        cords = box["cords2"]
+                    
+                    if following_bb is not None and cords != following_bb["cords"]:
+                        [x_lower, y_lower, x_upper, y_upper] = cords
                         pygame.draw.rect(self.surface, (0, 0, 255),
                                          (x_lower, y_lower, x_upper - x_lower, y_upper - y_lower), 2)
-                        
-                    if following_bb is not None and cords2 != following_bb["cords"]:
-                        [x_lower, y_lower, x_upper, y_upper] = cords2
-                        pygame.draw.rect(self.surface, (0, 0, 255),
-                                         (x_lower, y_lower, x_upper - x_lower, y_upper - y_lower), 2)
+                   
             # Draw low confidence bounding boxes on screen.
             low_confidence_boxes = self.computer_vision.get_low_conf_boxes()
             if low_confidence_boxes is not None:
                 for box in low_confidence_boxes:
                     print('box2',box)
-                    cords1 = box["cords"]
-                    cords2 = box["cords"]
-                    if cords1 != following_bb:
-                        [x_lower, y_lower, x_upper, y_upper] = cords1
+                    
+                    if "cords" in box:
+                        cords = box["cords"]
+                    if "cords2" in box:
+                        cords = box["cords2"]
+                        
+                    if cords != following_bb:
+                        [x_lower, y_lower, x_upper, y_upper] = cords
                         pygame.draw.rect(self.surface, (255, 0, 0),
                                          (x_lower, y_lower, x_upper - x_lower, y_upper - y_lower), 2)
                         
-                    if cords2 != following_bb:
-                        [x_lower, y_lower, x_upper, y_upper] = cords2
-                        pygame.draw.rect(self.surface, (255, 0, 0),
-                                         (x_lower, y_lower, x_upper - x_lower, y_upper - y_lower), 2)
 
             # For debug purposes: draw the steer vector endpoint
             if self.computer_vision.steer_vector_endpoint is not None:
