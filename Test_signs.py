@@ -200,6 +200,7 @@ class CameraManager(SensorManager):
             boxes = self.computer_vision.get_boxes()
             if boxes is not None:
                 for box in boxes:
+                    print('box1',box)
                     cords1 = box["cords"]
                     cords2 = box["cords"]
                     if following_bb is not None and cords1 != following_bb["cords"]:
@@ -215,6 +216,7 @@ class CameraManager(SensorManager):
             low_confidence_boxes = self.computer_vision.get_low_conf_boxes()
             if low_confidence_boxes is not None:
                 for box in low_confidence_boxes:
+                    print('box2',box)
                     cords1 = box["cords"]
                     cords2 = box["cords"]
                     if cords1 != following_bb:
