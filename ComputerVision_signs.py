@@ -228,7 +228,7 @@ class ComputerVision:
                         if do_boxes_overlap(cords2, cords_previous):
                             # If approximately the same box was detected in the previous frame, we will suppose that it
                             # is indeed a true positive
-                            if previous_box["conf2"] + conf > 0.6:
+                            if previous_box["conf2"] + conf2 > 0.6:
                                 self.boxes.append({"class_id2": class_id2, "cords2": cords2, "conf2": conf2})
                                 if str(class_id2) in self.speed_classes:
                                     speed_boxes.append({"class_id2": class_id2, "cords2": cords2, "conf2": conf2})
