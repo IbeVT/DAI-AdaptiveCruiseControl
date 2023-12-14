@@ -200,8 +200,8 @@ class CameraManager(SensorManager):
             boxes = self.computer_vision.get_boxes()
             if boxes is not None:
                 for box in boxes:
-                    cords1 = box["cords1"]
-                    cords2 = box["cords2"]
+                    cords1 = box["cords"]
+                    cords2 = box["cords"]
                     if following_bb is not None and cords1 != following_bb["cords"]:
                         [x_lower, y_lower, x_upper, y_upper] = cords1
                         pygame.draw.rect(self.surface, (0, 0, 255),
