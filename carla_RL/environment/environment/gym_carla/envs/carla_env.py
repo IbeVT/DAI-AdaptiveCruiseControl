@@ -577,17 +577,20 @@ class CarlaEnv(gym.Env):
         # Ideal following distance
         following_vehicle_speed = self.computer_vision.get_delta_v()
         following_distance = self.computer_vision.get_distance()
-        ideal_following_distance = 5 + 2*following_vehicle_speed
-        if following_distance == 100 or following_distance > ideal_following_distance:   # No vehicle in front
+        if following_vehicle_speed is None or following_distance is None:
             following_distance_error = 0
         else:
-            # How much to close is the ego vehicle to the vehicle in front (max 30m to close)
-            following_distance_error = min(abs(following_distance - ideal_following_distance), 30)
+            ideal_following_distance = 5 + 2*following_vehicle_speed
+            if following_distance == 100 or following_distance > ideal_following_distance:   # No vehicle in front
+                following_distance_error = 0
+            else:
+                # How much to close is the ego vehicle to the vehicle in front (max 30m to close)
+                following_distance_error = min(abs(following_distance - ideal_following_distance), 30)
 
         if collision:
             reward = -1000
         else:
-            print('reward', speed, acceleration, change_in_acc)
+            print('v', speed, ', a', acceleration, ', da', change_in_acc, ', follow_e', following_distance_error)
             reward = (1.5*speed + 20) - (10*to_fast + 3*acceleration + 1.5*change_in_acc + following_distance_error)
 
         return reward
