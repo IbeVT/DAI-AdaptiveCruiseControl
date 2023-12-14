@@ -247,7 +247,6 @@ class ComputerVision:
         for point in self.radar_points:
             [x, y] = self.get_image_coordinates_from_radar_point(point.azimuth, point.altitude, point.depth)
             for i, box in enumerate(vehicle_boxes):
-                print(box)
                 # If there is not yet a list for the i-th box, create it
                 if len(distances) <= i:
                     distances.append([])
