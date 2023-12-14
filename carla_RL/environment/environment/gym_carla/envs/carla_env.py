@@ -298,6 +298,7 @@ class CarlaEnv(gym.Env):
         #print('------------------------------------STEP--------------------------------------')
         #return (self._get_obs(), 0, False, {'waypoints': 0, 'vehicle_front': 0})
         throttle, brake = self.ego.get_control().throttle, self.ego.get_control().brake
+        original_control = self.ego.get_control()
         print('before before before', self.ego.get_control())
         print('before before', throttle, brake)
 
@@ -316,7 +317,7 @@ class CarlaEnv(gym.Env):
         #throttle += 0.1
         # Apply control
         print('before', throttle, brake)
-        act = carla.VehicleControl(throttle=np.clip(throttle / 3, 0, 1), steer=0, brake=np.clip(brake / 3, 0, 1))
+        act = carla.VehicleControl(throttle=0, steer=0, brake=0)
         self.ego.apply_control(act)
         print('after', self.ego.get_control().throttle, self.ego.get_control().brake)
 
@@ -327,6 +328,9 @@ class CarlaEnv(gym.Env):
         self.spectator.set_transform(transform)
 
         self.world.tick()
+
+        # Reset the original control by the autopilot
+        self.ego.apply_control(original_act)
 
         # Append actors polygon list
         vehicle_poly_dict = self._get_actor_polygons('vehicle.*')
