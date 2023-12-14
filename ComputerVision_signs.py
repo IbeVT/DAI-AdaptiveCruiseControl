@@ -113,6 +113,9 @@ class ComputerVision:
                 print("box in result 2")
                 print("Object type class2:", class_id2)
                 class_id2 = result2.names[box.cls[0].item()]
+                if class_id2 != 'Green Light' and class_id2 != 'Red Light' and class_id2 != 'Stop':
+                    self.delta_v = int(class_id2[-3:])
+                    print('speed prueba 1', self.delta_v)
             
             cords = box.xyxy[0].tolist()
             cords = [round(x) for x in cords]
@@ -122,9 +125,7 @@ class ComputerVision:
             print("Probability:", conf)
             print("---")
             
-                if class_id2 != 'Green Light' and class_id2 != 'Red Light' and class_id2 != 'Stop':
-                    self.delta_v = int(class_id2[-3:])
-                    print('speed prueba 1', self.delta_v)
+                
             # If the confidence is high enough, immediately save the box
             if conf > 0.5:
                 print("New box detected")
