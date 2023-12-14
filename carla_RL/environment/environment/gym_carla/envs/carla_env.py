@@ -47,7 +47,7 @@ class CarlaEnv(gym.Env):
             'port': 2000,  # connection port
             'town': 'Town03',  # which town to simulate
             'task_mode': 'random',  # mode of the task, [random, roundabout (only for Town03)]
-            'max_time_episode': 10,  # maximum timesteps per episode
+            'max_time_episode': 300,  # maximum timesteps per episode
             'max_waypt': 12,  # maximum number of waypoints
             'obs_range': 32,  # observation range (meter)
             'd_behind': 12,  # distance behind the ego vehicle (meter)
@@ -318,7 +318,7 @@ class CarlaEnv(gym.Env):
         # Apply control
         print('before', throttle, brake)
         act = carla.VehicleControl(throttle=0, steer=0, brake=0)
-        self.ego.apply_control(act)
+        #self.ego.apply_control(act)
         print('after', self.ego.get_control().throttle, self.ego.get_control().brake)
 
 
@@ -330,7 +330,7 @@ class CarlaEnv(gym.Env):
         self.world.tick()
 
         # Reset the original control by the autopilot
-        self.ego.apply_control(original_control)
+        #self.ego.apply_control(original_control)
 
         # Append actors polygon list
         vehicle_poly_dict = self._get_actor_polygons('vehicle.*')
