@@ -91,6 +91,9 @@ class ComputerVision:
         self.low_conf_boxes = []
         for box in result.boxes or box in result2.boxes:
             conf = 0
+            class_id = ""
+            class_id2 = ""
+            cords = []
             
             if box in result.boxes:
                 class_id = result.names[box.cls[0].item()]
@@ -103,7 +106,6 @@ class ComputerVision:
                 print("---")
             
             if box in result2.boxes:
-                
                 class_id2 = result2.names[box.cls[0].item()]
                 cords = box.xyxy[0].tolist()
                 cords = [round(x) for x in cords]
