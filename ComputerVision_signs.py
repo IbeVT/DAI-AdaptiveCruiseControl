@@ -129,6 +129,7 @@ class ComputerVision:
             if not found:
                 # Check if a similar box was detected with low confidence in the previous frame
                 for previous_box in previous_low_conf_results:
+                    print(previous_box)
                     class_id_previous = previous_box["class_id"]
                     cords_previous = previous_box["cords"]
                     # Check if the class is the same
