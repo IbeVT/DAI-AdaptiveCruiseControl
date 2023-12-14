@@ -300,7 +300,7 @@ class CarlaEnv(gym.Env):
         return self._get_obs()
 
     def step(self, action):
-        #print('------------------------------------STEP--------------------------------------')
+        print('------------------------------------STEP--------------------------------------')
         #return (self._get_obs(), 0, False, {'waypoints': 0, 'vehicle_front': 0})
 
         # Calculate acceleration and steering
