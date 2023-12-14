@@ -177,7 +177,7 @@ class ComputerVision:
                 self.delta_v = int(class_id2[-3:])
                 print('speed prueba 1', self.delta_v)
             
-            if conf > 0.5:
+            if conf2 > 0.5:
                 print("New box2 detected")
                 self.boxes.append({"class_id2": class_id2, "cords2": cords2, "conf2": conf2})
                 if str(class_id) in self.vehicle_classes:
