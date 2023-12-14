@@ -122,7 +122,8 @@ class ComputerVision:
                         self.boxes.append({"class_id": class_id, "cords": cords, "conf": conf})
                         if str(class_id) in self.vehicle_classes:
                             vehicle_boxes.append({"class_id": class_id, "cords": cords, "conf": conf})
-                                                found = True
+                        
+                        found = True
                         break
 
             if not found:
@@ -200,8 +201,8 @@ class ComputerVision:
                             # is indeed a true positive
                             if previous_box["conf2"] + conf > 0.6:
                                 self.boxes.append({"class_id2": class_id2, "cords2": cords2, "conf2": conf2})
-                                if str(class_id) in self.vehicle_classes:
-                                    vehicle_boxes.append({"class_id2": class_id2, "cords2": cords2, "conf2": conf2})
+                                if str(class_id2) in self.speed_classes:
+                                    speed_boxes.append({"class_id2": class_id2, "cords2": cords2, "conf2": conf2})
                                 found = True
                                 break
             if not found:
