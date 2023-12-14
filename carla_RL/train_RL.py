@@ -24,7 +24,7 @@ def env_creator(env_config=None):
 register_env("CustomCarlaEnv", env_creator)
 
 if __name__ == "__main__":
-    #ray.init(local_mode=True)
+    ray.init(local_mode=True)
 
     tuner = tune.Tuner(
         PPO,

@@ -203,7 +203,7 @@ class CarlaEnv(gym.Env):
         self.display_manager = DisplayManager(grid_size=[1, 1], window_size=[display_width, display_height])
 
         # Disable sync mode
-        self._set_synchronous_mode(False)
+        self._set_synchronous_mode(True)
 
         # Spawn surrounding vehicles
         random.shuffle(self.vehicle_spawn_points)
@@ -287,8 +287,8 @@ class CarlaEnv(gym.Env):
         self.reset_step += 1
 
         # Enable sync mode
-        self._set_synchronous_mode(True)
-        
+        self.settings.synchronous_mode = True
+        self.world.apply_settings(self.settings)
 
         self.routeplanner = RoutePlanner(self.ego, self.max_waypt)
         self.waypoints, _, self.vehicle_front = self.routeplanner.run_step()
