@@ -89,41 +89,16 @@ class ComputerVision:
         previous_low_conf_results = self.low_conf_boxes
         self.boxes = []
         self.low_conf_boxes = []
-        for box in result.boxes or box in result2.boxes:
-            conf = 0
-            class_id = ""
-            class_id2 = ""
-            
-            if box in result.boxes:
-                print("box in result 1")
-                class_id = result.names[box.cls[0].item()]
-                print("Object type class1:", class_id)
-                
-                
+        for box1 in result.boxes:
+
+            class_id = result.names[box.cls[0].item()]
             cords = box.xyxy[0].tolist()
             cords = [round(x) for x in cords]
             conf = round(box.conf[0].item(), 2)
-            
-            print("Coordinates class1:", cords)
-            print("Probability class1:", conf)
+            print("Object type class1:", class_id)
+            print("Coordinates:", cords)
+            print("Probability:", conf)
             print("---")
-            
-            if box in result2.boxes:
-                print("box in result 2")
-                print("Object type class2:", class_id2)
-                class_id2 = result2.names[box.cls[0].item()]
-                if class_id2 != 'Green Light' and class_id2 != 'Red Light' and class_id2 != 'Stop':
-                    self.delta_v = int(class_id2[-3:])
-                    print('speed prueba 1', self.delta_v)
-            
-            cords = box.xyxy[0].tolist()
-            cords = [round(x) for x in cords]
-            conf = round(box.conf[0].item(), 2)
-            #print("Object type:", class_id2)
-            print("Coordinates class2:", cords)
-            print("Probability class2:", conf)
-            print("---")
-            
                 
             # If the confidence is high enough, immediately save the box
             if conf > 0.5:
@@ -179,7 +154,60 @@ class ComputerVision:
             if not found:
                 # Still save the box, for debugging purposes
                 self.low_conf_boxes.append({"class_id": class_id, "cords": cords, "conf": conf})
+        
+        for box2 in result2.boxes:
+            
+            class_id2 = result2.names[box2.cls[0].item()]
+            cords2 = box2.xyxy[0].tolist()
+            cords2 = [round(x) for x in cords2]
+            conf2 = round(box2.conf[0].item(), 2)
+            print("Object type class2:", class_id2)
+            print("Coordinates class2:", cords2)
+            print("Probability class2:", conf2)
+            print("---")
+            
+            if class_id2 != 'Green Light' and class_id2 != 'Red Light' and class_id2 != 'Stop':
+                self.delta_v = int(class_id2[-3:])
+                print('speed prueba 1', self.delta_v)
+                
+                
+            found = False
+            for previous_box in previous_results:
+                class_id_previous = previous_box["class_id2"]
+                cords_previous = previous_box["cords2"]
+                # Check if the class is the same
+                if class_id2 == class_id_previous:
+                    # Check whether the boxes overlap
+                    if do_boxes_overlap(cords2, cords_previous):
+                        # If approximately the same box was detected in the previous frame, we will suppose that it
+                        # is indeed a true positive
+                        self.boxes.append({"class_id": class_id2, "cords": cords2, "conf": conf2})
+                        
+                        if str(class_id2) in self.speed_classes:
+                            speed_boxes.append({"class_id": class_id2, "cords": cords2, "conf": conf2})
+                        found = True
+                        break
 
+            if not found:
+                # Check if a similar box was detected with low confidence in the previous frame
+                for previous_box in previous_low_conf_results:
+                    class_id_previous = previous_box["class_id2"]
+                    cords_previous = previous_box["cords2"]
+                    # Check if the class is the same
+                    if class_id2 == class_id_previous:
+                        # Check whether the boxes overlap
+                        if do_boxes_overlap(cords2, cords_previous):
+                            # If approximately the same box was detected in the previous frame, we will suppose that it
+                            # is indeed a true positive
+                            if previous_box["conf2"] + conf > 0.6:
+                                self.boxes.append({"class_id": class_id, "cords": cords, "conf": conf})
+                                if str(class_id) in self.vehicle_classes:
+                                    vehicle_boxes.append({"class_id": class_id, "cords": cords, "conf": conf})
+                                found = True
+                                break
+            if not found:
+                # Still save the box, for debugging purposes
+                self.low_conf_boxes.append({"class_id": class_id, "cords": cords, "conf": conf})
         # 2. Group all points that belong to the same box
         distances = []  # The distances of all points that belong to the i-th box
         velocities = []  # The speeds of all points that belong to the i-th box
