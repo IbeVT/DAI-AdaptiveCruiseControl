@@ -557,8 +557,7 @@ class CarlaEnv(gym.Env):
         """Calculate the step reward."""
         #return 1
         # reward for speed tracking
-        v = self.ego.get_velocity()
-        speed = np.sqrt(v.x ** 2 + v.y ** 2)
+        speed = self.ego.get_velocity().length()
 
         # Calculate the acceleration and the change in acceleration to make the ride smooth and energy efficient
         a = self.ego.get_acceleration()
@@ -572,22 +571,24 @@ class CarlaEnv(gym.Env):
         # reward for collision
         collision = 1 if len(self.collision_hist) > 0 else 0
 
-        # reward for out of lane
-        ego_x, ego_y = get_pos(self.ego)
-        dis, w = get_lane_dis(self.waypoints, ego_x, ego_y)
-
-        # longitudinal speed
-        lspeed = np.array([v.x, v.y])
-        lspeed = abs(np.dot(lspeed, w))
-
         # cost for too fast
-        to_fast = 1 if lspeed > self.desired_speed else 0
+        to_fast = 1 if speed > self.desired_speed else 0
+
+        # Ideal following distance
+        following_vehicle_speed = self.computer_vision.get_delta_v()
+        following_distance = self.computer_vision.get_distance()
+        ideal_following_distance = 5 + 2*following_vehicle_speed
+        if following_distance == 100 or following_distance > ideal_following_distance:   # No vehicle in front
+            following_distance_error = 0
+        else:
+            # How much to close is the ego vehicle to the vehicle in front (max 30m to close)
+            following_distance_error = min(abs(following_distance - ideal_following_distance), 30)
 
         if collision:
-            reward = -200
+            reward = -1000
         else:
-            print('reward', lspeed, acceleration, change_in_acc)
-            reward = 1.5*lspeed - 10*to_fast - 2*acceleration - 2*change_in_acc + 20
+            print('reward', speed, acceleration, change_in_acc)
+            reward = (1.5*speed + 20) - (10*to_fast + 3*acceleration + 1.5*change_in_acc + following_distance_error)
 
         return reward
 
