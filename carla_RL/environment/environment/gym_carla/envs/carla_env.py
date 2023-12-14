@@ -578,7 +578,7 @@ class CarlaEnv(gym.Env):
 
         # longitudinal speed
         lspeed = np.array([v.x, v.y])
-        lspeed = np.dot(lspeed, w)
+        lspeed = abs(np.dot(lspeed, w))
 
         # cost for too fast
         to_fast = 1 if lspeed > self.desired_speed else 0
@@ -587,7 +587,7 @@ class CarlaEnv(gym.Env):
             reward = -200
         else:
             print('reward', lspeed, acceleration, change_in_acc)
-            reward = 1.5*lspeed - 10*to_fast - 2*acceleration - 2*change_in_acc + 40
+            reward = 1.5*lspeed - 10*to_fast - 2*acceleration - 2*change_in_acc + 20
 
         return reward
 
