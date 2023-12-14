@@ -181,7 +181,7 @@ class ComputerVision:
                 print("New box2 detected")
                 self.boxes.append({"class_id2": class_id2, "cords2": cords2, "conf2": conf2})
                 if str(class_id) in self.vehicle_classes:
-                    vehicle_boxes.append({"class_id2": class_id2, "cords2": cords2, "conf2": conf2})
+                    speed_boxes.append({"class_id2": class_id2, "cords2": cords2, "conf2": conf2})
                 
                 continue
                
