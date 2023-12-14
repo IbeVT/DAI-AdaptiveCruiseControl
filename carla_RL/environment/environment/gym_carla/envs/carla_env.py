@@ -299,7 +299,6 @@ class CarlaEnv(gym.Env):
         #return (self._get_obs(), 0, False, {'waypoints': 0, 'vehicle_front': 0})
         throttle, brake = self.ego.get_control().throttle, self.ego.get_control().brake
         original_control = self.ego.get_control()
-        print('autopilot', self.ego.get_control())
 
         # Calculate acceleration and steering
         if self.discrete:
@@ -320,7 +319,6 @@ class CarlaEnv(gym.Env):
         print('AI control', throttle, brake)
         act = carla.VehicleControl(throttle=throttle, steer=self.ego.get_control().steer, brake=brake)
         self.ego.apply_control(act)
-        print('Applied', self.ego.get_control().throttle, self.ego.get_control().brake)
 
 
         # Update the spectator's position to follow the ego vehicle
@@ -588,6 +586,7 @@ class CarlaEnv(gym.Env):
         if collision:
             reward = -200
         else:
+            print('reward', lspeed, acceleration, change_in_acc)
             reward = 1.5*lspeed - 10*to_fast - 2*acceleration - 2*change_in_acc + 40
 
         return reward
