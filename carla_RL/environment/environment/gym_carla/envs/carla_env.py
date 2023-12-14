@@ -318,7 +318,7 @@ class CarlaEnv(gym.Env):
         #throttle += 0.1
         # Apply control
         print('AI control', throttle, brake)
-        act = carla.VehicleControl(throttle=throttle, steer=self.ego.get_control.steer, brake=brake)
+        act = carla.VehicleControl(throttle=throttle, steer=self.ego.get_control().steer, brake=brake)
         self.ego.apply_control(act)
         print('Applied', self.ego.get_control().throttle, self.ego.get_control().brake)
 
