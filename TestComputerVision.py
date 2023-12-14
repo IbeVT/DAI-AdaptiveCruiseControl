@@ -234,7 +234,7 @@ class RadarManager(SensorManager):
     def update_radar(self, radar_points):
         self.computer_vision.radar_points = radar_points
 
-    # Draws the radar points on the screen. It should be executed AFTER the camera has been drawn.
+    # Draws the radar points on the screen. It sh   ould be executed AFTER the camera has been drawn.
     def draw_radar(self):
         radar_points = self.computer_vision.radar_points
         if radar_points is not None:
@@ -472,11 +472,11 @@ def run_simulation(args, client):
 
         # Then, SensorManager is used to spawn RGBCamera and Radar and assign each of them to a grid position.
         camera_manager = CameraManager(world, display_manager,
-                                       carla.Transform(carla.Location(x=0, z=2.4), carla.Rotation(yaw=+00)),
+                                       carla.Transform(carla.Location(x=1, z=1.5), carla.Rotation(yaw=+00)),
                                        ego_vehicle, {'sensor_tick': f'{1 / radar_sample_rate}'}, display_pos=[0, 0],
                                        computer_vision=computer_vision)
         radar_manager = RadarManager(world, display_manager,
-                                     carla.Transform(carla.Location(x=0, z=2.4)),
+                                     carla.Transform(carla.Location(x=1, z=1.5)),
                                      ego_vehicle,
                                      {'horizontal_fov': f'{camera_h_fov}', 'points_per_second': '10000', 'range': '100',
                                       'sensor_tick': '0.1', 'vertical_fov': f'{camera_v_fov}'}, display_pos=[0, 0],

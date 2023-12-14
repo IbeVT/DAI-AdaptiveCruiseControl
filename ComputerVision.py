@@ -161,8 +161,7 @@ class ComputerVision:
             for j, value in enumerate(array):
                 if abs(value + car_speed) < 1:
                     ind_to_remove.append(j)
-            print("Array:", array)
-            # Only remove if there are enough points left, if not, the car itself is probably standing not moving
+            # Only remove if there are enough points left, if not, the car itself is probably not moving
             if vehicle_boxes[i]["class_id"] == "bike" or vehicle_boxes[i]["class_id"] == "motorcycle":
                 # Use a different threshold for bieks and motorbikes, as they are smaller, and thus, more points in the bounding box are reflected on the ground
                 if len(ind_to_remove) > 7*len(array)/8:
@@ -177,7 +176,6 @@ class ComputerVision:
                 del distances[i][j]
                 del azimuths[i][j]
                 del points_in_box[i][j]
-            print("Array after:", array)
 
 
         # Take the median
@@ -201,7 +199,7 @@ class ComputerVision:
             if abs(angle_diff) < np.radians(10) or abs(azimuths[i]) < np.radians(20):
                 # Calculate the absolute speed of the other car. If it is rapidly approaching, it will drive in th other direction
                 box_velocity = velocities[i] + car_speed
-                print("Car velociy:", car_speed)
+                print("Car velocity:", car_speed)
                 print("Box velocity:", box_velocity)
                 print("Delta v:", velocities[i])
                 if box_velocity > -5:
@@ -209,7 +207,6 @@ class ComputerVision:
                     candidate_velocities.append(velocities[i])
                     candidate_distances.append(distances[i])
                     candidate_points_in_box.append(points_in_box[i])
-
         if len(candidates) == 1:
             self.following_vehicle_box = candidates[0]
             self.following_vehicle_type = candidates[0]["class_id"]
@@ -225,13 +222,13 @@ class ComputerVision:
                         continue
                     box_to_follow = None
                     if is_box2_closer(box, box2):
-                        if azimuths[
-                            j] < following_azimuth:  # Choose the car that is the closest to the center of the screen
+                        if azimuths[j] < following_azimuth:
+                            # Choose the car that is the closest to the center of the screen
                             box_to_follow = box2
                             index = j
                     else:
-                        if azimuths[
-                            i] < following_azimuth:  # Choose the car that is the closest to the center of the screen
+                        if azimuths[i] < following_azimuth:
+                            # Choose the car that is the closest to the center of the screen
                             box_to_follow = box
                             index = i
                     if box_to_follow is not None:
@@ -242,11 +239,40 @@ class ComputerVision:
                         self.object_points = candidate_points_in_box[index]
             print("Following vehicle:", self.following_vehicle_box)
 
+        # If the car is close to a bus, the computer vision might not be able to detect it. In that case,
+        # we still want to use the radar distance. Therefore, we need some sort of detection to check whether there
+        # is an object close to the car. We will do this by checking whether there are points in the middle of the
+        # radar point cloud that are close to the car.
+        radar_angle = np.radians(5)
+        radar_center_distance = []
+        radar_center_velocities = []
+        for point in self.radar_points:
+            if abs(point.azimuth) < radar_angle and abs(point.altitude) < radar_angle:
+                radar_center_distance.append(point.depth)
+                radar_center_velocities.append(point.velocity)
+        # Remove the points that have a speed value that is close to the opposite of the speed of the car. These
+        # points are probably reflections on the ground.
+        ind_to_remove = []
+        for i, value in enumerate(radar_center_velocities):
+            if abs(value + car_speed) < 1:
+                ind_to_remove.append(i)
+        # Only remove if there are enough points left, if not, the car itself is probably not moving
+        if len(ind_to_remove) < 2*len(radar_center_velocities)/3:
+            # Remove the elements in reverse order to avoid changing the indices of the elements that still need to be removed
+            for i in sorted(ind_to_remove, reverse=True):
+                del radar_center_velocities[i]
+                del radar_center_distance[i]
+        center_distance_mean = np.mean(radar_center_distance)
+        if center_distance_mean < 10:
+            self.distance = center_distance_mean
+            self.delta_v = np.mean(radar_center_velocities)
+
         # Do a last check to make sure there are no NaN values
         if math.isnan(self.distance):
             self.distance = self.max_depth
         if math.isnan(self.delta_v):
             self.delta_v = self.max_speed
+
 
     def get_current_bounding_box(self):
         return self.following_vehicle_box
