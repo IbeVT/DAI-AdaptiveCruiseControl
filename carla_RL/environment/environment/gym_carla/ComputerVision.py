@@ -195,7 +195,7 @@ class ComputerVision:
                 continue
             angle_diff = steer_angle - azimuths[i]
 
-            if abs(angle_diff) < np.radians(10) or abs(azimuths[i]) < np.radians(20):
+            if abs(angle_diff) < np.radians(10):
                 # Calculate the absolute speed of the other car. If it is rapidly approaching, it will drive in th other direction
                 box_velocity = velocities[i] + car_speed
                 if box_velocity > -5:
