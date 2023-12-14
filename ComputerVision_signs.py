@@ -102,18 +102,11 @@ class ComputerVision:
                 
             # If the confidence is high enough, immediately save the box
             if conf > 0.5:
-                print("New box detected")
+                print("New box1 detected")
+                self.boxes.append({"class_id": class_id, "cords": cords, "conf": conf})
+                if str(class_id) in self.vehicle_classes:
+                    vehicle_boxes.append({"class_id": class_id, "cords": cords, "conf": conf})
                 
-                if class_id != None:
-                    self.boxes.append({"class_id": class_id, "cords": cords, "conf": conf})
-                    if str(class_id) in self.vehicle_classes:
-                        vehicle_boxes.append({"class_id": class_id, "cords": cords, "conf": conf})
-                    
-                if class_id2 != None:
-                    self.boxes.append({"class_id": class_id2, "cords": cords, "conf": conf})
-                    if str(class_id2) in self.speed_classes:
-                        speed_boxes.append({"class_id": class_id2, "cords": cords, "conf": conf})
-    
                 continue
             # Check if a similar box was detected in the previous frame
             found = False
@@ -169,7 +162,15 @@ class ComputerVision:
             if class_id2 != 'Green Light' and class_id2 != 'Red Light' and class_id2 != 'Stop':
                 self.delta_v = int(class_id2[-3:])
                 print('speed prueba 1', self.delta_v)
+            
+            if conf > 0.5:
+                print("New box2 detected")
+                self.boxes.append({"class_id2": class_id2, "cords2": cords2, "conf2": conf2})
+                if str(class_id) in self.vehicle_classes:
+                    vehicle_boxes.append({"class_id2": class_id2, "cords2": cords2, "conf2": conf2})
                 
+                continue
+               
                 
             found = False
             for previous_box in previous_results:
@@ -181,10 +182,10 @@ class ComputerVision:
                     if do_boxes_overlap(cords2, cords_previous):
                         # If approximately the same box was detected in the previous frame, we will suppose that it
                         # is indeed a true positive
-                        self.boxes.append({"class_id": class_id2, "cords": cords2, "conf": conf2})
+                        self.boxes.append({"class_id2": class_id2, "cords2": cords2, "conf2": conf2})
                         
                         if str(class_id2) in self.speed_classes:
-                            speed_boxes.append({"class_id": class_id2, "cords": cords2, "conf": conf2})
+                            speed_boxes.append({"class_id2": class_id2, "cords2": cords2, "conf2": conf2})
                         found = True
                         break
 
@@ -200,14 +201,14 @@ class ComputerVision:
                             # If approximately the same box was detected in the previous frame, we will suppose that it
                             # is indeed a true positive
                             if previous_box["conf2"] + conf > 0.6:
-                                self.boxes.append({"class_id": class_id, "cords": cords, "conf": conf})
+                                self.boxes.append({"class_id2": class_id2, "cords2": cords2, "conf2": conf2})
                                 if str(class_id) in self.vehicle_classes:
-                                    vehicle_boxes.append({"class_id": class_id, "cords": cords, "conf": conf})
+                                    vehicle_boxes.append({"class_id2": class_id2, "cords2": cords2, "conf2": conf2})
                                 found = True
                                 break
             if not found:
                 # Still save the box, for debugging purposes
-                self.low_conf_boxes.append({"class_id": class_id, "cords": cords, "conf": conf})
+                self.low_conf_boxes.append({"class_id2": class_id2, "cords2": cords2, "conf2": conf2})
         # 2. Group all points that belong to the same box
         distances = []  # The distances of all points that belong to the i-th box
         velocities = []  # The speeds of all points that belong to the i-th box
