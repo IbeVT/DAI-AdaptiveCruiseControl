@@ -308,10 +308,10 @@ class CarlaEnv(gym.Env):
 
         # Convert acceleration to throttle and brake
         if acc > 0:
-            throttle += np.clip(acc / 3, 0, 1)
+            throttle = np.clip(acc / 3, 0, 1)
             brake = 0
         else:
-            brake += np.clip(-acc / 8, 0, 1)
+            brake = np.clip(-acc / 8, 0, 1)
             throttle = 0
 
         #throttle += 0.1
