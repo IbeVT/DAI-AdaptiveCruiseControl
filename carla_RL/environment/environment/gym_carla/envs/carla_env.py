@@ -320,7 +320,10 @@ class CarlaEnv(gym.Env):
         # Apply control
         print('before after', self.ego.get_control())
         print('AI control', throttle, brake)
-        act = carla.VehicleControl(throttle=0, steer=self.ego.get_control().steer, brake=0)
+        act = carla.VehicleControl()
+        act.throttle = 0
+        act.steer = self.ego.get_control().steer
+        act.brake = 0
         self.ego.apply_control(act)
         print('after', self.ego.get_control())
         print()
@@ -330,6 +333,7 @@ class CarlaEnv(gym.Env):
                                     self.ego.get_transform().rotation)
         self.spectator.set_transform(transform)
         self.world.tick()
+        print('after after', self.ego.get_control())
 
         # Append actors polygon list
         vehicle_poly_dict = self._get_actor_polygons('vehicle.*')
