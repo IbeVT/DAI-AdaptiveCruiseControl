@@ -85,8 +85,8 @@ class ComputerVision:
 
         vehicle_boxes = []
         speed_boxes = []
-        previous_results = self.boxes
-        previous_low_conf_results = self.low_conf_boxes
+        previous_results = self.boxes1
+        previous_low_conf_results = self.low_conf_boxes1
         self.boxes = []
         self.low_conf_boxes = []
         for box1 in result.boxes:
@@ -244,6 +244,7 @@ class ComputerVision:
         for point in self.radar_points:
             [x, y] = self.get_image_coordinates_from_radar_point(point.azimuth, point.altitude, point.depth)
             for i, box in enumerate(vehicle_boxes):
+                print(box)
                 # If there is not yet a list for the i-th box, create it
                 if len(distances) <= i:
                     distances.append([])
