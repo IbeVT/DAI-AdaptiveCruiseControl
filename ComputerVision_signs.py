@@ -90,6 +90,7 @@ class ComputerVision:
         self.boxes = []
         self.low_conf_boxes = []
         for box in result.boxes or box in result2.boxes:
+            conf = 0
             
             if box in result.boxes:
                 class_id = result.names[box.cls[0].item()]
