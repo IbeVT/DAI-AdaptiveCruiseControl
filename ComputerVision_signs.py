@@ -91,8 +91,8 @@ class ComputerVision:
         self.low_conf_boxes = []
         for box1 in result.boxes:
 
-            class_id = result.names[box.cls[0].item()]
-            cords = box.xyxy[0].tolist()
+            class_id = result.names[box1.cls[0].item()]
+            cords = box1.xyxy[0].tolist()
             cords = [round(x) for x in cords]
             conf = round(box.conf[0].item(), 2)
             print("Object type class1:", class_id)
