@@ -174,7 +174,7 @@ class ComputerVision:
             print("---")
             
             if class_id2 != 'Green Light' and class_id2 != 'Red Light' and class_id2 != 'Stop':
-                #self.delta_v = int(class_id2[-3:])
+                self.delta_v = int(class_id2[-3:])
                 print('speed prueba 1', self.delta_v)
                 
                 print('\n\n\n\n\n AQUIIIIIIIIIIIIIIIIII \n\n\n\n\n')
