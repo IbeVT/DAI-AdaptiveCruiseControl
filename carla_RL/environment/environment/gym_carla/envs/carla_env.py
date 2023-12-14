@@ -608,16 +608,16 @@ class CarlaEnv(gym.Env):
             return True
 
         # If at destination
-        if self.dests is not None:  # If at destination
+        '''if self.dests is not None:  # If at destination
             for dest in self.dests:
                 if np.sqrt((ego_x - dest[0]) ** 2 + (ego_y - dest[1]) ** 2) < 4:
                     print('TERMINATION - at destination')
-                    return True
+                    return True'''
 
         # If out of lane
-        dis, _ = get_lane_dis(self.waypoints, ego_x, ego_y)
+        '''dis, _ = get_lane_dis(self.waypoints, ego_x, ego_y)
         if abs(dis) > self.out_lane_thres:
             print('TERMINATION - out of lane')
-            return True
+            return True'''
         #print('No termination')
         return False
