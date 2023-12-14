@@ -79,6 +79,7 @@ class CarlaEnv(gym.Env):
 
         self.episode_rewards = []
         self.actor_list = []
+        self.prev_acc = 0
 
         self.display_manager = None
         self.camera_manager = None
@@ -105,6 +106,7 @@ class CarlaEnv(gym.Env):
             'delta_V': spaces.Box(low=-100, high=100, shape=(1,), dtype=float),
             'speed_limit': spaces.Box(low=0, high=50, shape=(1,), dtype=float),
             'is_red_light': spaces.Box(low=0, high=1, shape=(1,), dtype=int),
+            'prev_acc': spaces.Box(low=-3, high=3, shape=(1,), dtype=float),
         }
 
         self.observation_space = spaces.Dict(observation_space_dict)
@@ -167,6 +169,9 @@ class CarlaEnv(gym.Env):
 
     def reset(self):
         print(f'-------------------------------------RESET {self.reset_step}--------------------------------------')
+
+        # Reset previous speed and acc (output of RL agent)
+        self.prev_acc = 0
 
         if self.reset_step != 0:
             # Log total episode reward
@@ -297,8 +302,6 @@ class CarlaEnv(gym.Env):
     def step(self, action):
         #print('------------------------------------STEP--------------------------------------')
         #return (self._get_obs(), 0, False, {'waypoints': 0, 'vehicle_front': 0})
-        throttle, brake = self.ego.get_control().throttle, self.ego.get_control().brake
-        original_control = self.ego.get_control()
 
         # Calculate acceleration and steering
         if self.discrete:
@@ -306,15 +309,16 @@ class CarlaEnv(gym.Env):
         else:
             acc = action[0]
 
-        # Convert acceleration to throttle and brake
+        # Convert acc to value between -3 and 3 and to throttle and brake values
         if acc > 0:
+            acc = np.clip(acc, 0, 3)
             throttle = np.clip(acc / 3, 0, 1)
             brake = 0
         else:
-            brake = np.clip(-acc / 8, 0, 1)
+            acc = -np.clip(-acc, 0, 3)
+            brake = np.clip(-acc / 5, 0, 1)
             throttle = 0
 
-        #throttle += 0.1
         # Apply control
         print('AI control', throttle, brake)
         act = carla.VehicleControl(throttle=throttle, steer=self.ego.get_control().steer, brake=brake)
@@ -325,11 +329,7 @@ class CarlaEnv(gym.Env):
         transform = carla.Transform(self.ego.get_transform().transform(carla.Location(x=-4, z=2.5)),
                                     self.ego.get_transform().rotation)
         self.spectator.set_transform(transform)
-
         self.world.tick()
-
-        # Reset the original control by the autopilot
-        #self.ego.apply_control(original_control)
 
         # Append actors polygon list
         vehicle_poly_dict = self._get_actor_polygons('vehicle.*')
@@ -355,7 +355,7 @@ class CarlaEnv(gym.Env):
         self.total_step += 1
 
         # Log single step reward
-        reward = self._get_reward()
+        reward = self._get_reward(acc)
         self.episode_rewards.append(reward)
         wandb.log({"step_reward": reward})
 
@@ -545,28 +545,25 @@ class CarlaEnv(gym.Env):
         }"""
         obs = {
             'speed': np.reshape(np.array(self.ego.get_velocity().length(), dtype=float), (1,)),
-            'distance': np.reshape(np.array(10.0, dtype=float), (1,)),
-            'delta_V': np.reshape(np.array(10.0, dtype=float), (1,)),
-            'speed_limit': np.reshape(np.array(40.0, dtype=float), (1,)),
-            'is_red_light': np.reshape(np.array(1 if self.computer_vision.get_red_light() else 0, dtype=int), (1,))
+            'distance': np.reshape(np.array(self.computer_vision.get_distance(), dtype=float), (1,)),
+            'delta_V': np.reshape(np.array(self.computer_vision.get_delta_v(), dtype=float), (1,)),
+            'speed_limit': np.reshape(np.array(self.desired_speed, dtype=float), (1,)),
+            'is_red_light': np.reshape(np.array(1 if self.computer_vision.get_red_light() else 0, dtype=int), (1,)),
+            'prev_acc': np.reshape(np.array(self.prev_acc, dtype=float), (1,))
         }
 
         return obs
 
-    def _get_reward(self):
+    def _get_reward(self, acc):
         """Calculate the step reward."""
         #return 1
         # reward for speed tracking
         speed = self.ego.get_velocity().length()
 
         # Calculate the acceleration and the change in acceleration to make the ride smooth and energy efficient
-        a = self.ego.get_acceleration()
-        acceleration = np.sqrt(a.x ** 2 + a.y ** 2)
-        try:
-            change_in_acc = abs(acceleration - self.prev_acceleration)
-        except:
-            change_in_acc = 0
-        self.prev_acceleration = acceleration
+        acc = abs(acc)
+        change_in_acc = abs(acc - self.prev_acc)
+        self.prev_acc = acc
 
         # reward for collision
         collision = 1 if len(self.collision_hist) > 0 else 0
@@ -590,8 +587,8 @@ class CarlaEnv(gym.Env):
         if collision:
             reward = -1000
         else:
-            print('v', speed, ', a', acceleration, ', da', change_in_acc, ', follow_e', following_distance_error)
-            reward = (1.5*speed + 20) - (10*to_fast + 3*acceleration + 1.5*change_in_acc + following_distance_error)
+            print('v', speed, ', a', acc, ', da', change_in_acc, ', follow_e', following_distance_error)
+            reward = (1.5*speed + 20) - (10*to_fast + 3*acc + 1.5*change_in_acc + following_distance_error)
 
         return reward
 
@@ -612,11 +609,11 @@ class CarlaEnv(gym.Env):
             return True
 
         # If at destination
-        '''if self.dests is not None:  # If at destination
+        if self.dests is not None:  # If at destination
             for dest in self.dests:
                 if np.sqrt((ego_x - dest[0]) ** 2 + (ego_y - dest[1]) ** 2) < 4:
                     print('TERMINATION - at destination')
-                    return True'''
+                    return True
 
         # If out of lane
         '''dis, _ = get_lane_dis(self.waypoints, ego_x, ego_y)
