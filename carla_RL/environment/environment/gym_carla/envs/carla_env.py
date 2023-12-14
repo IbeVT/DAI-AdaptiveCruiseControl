@@ -297,8 +297,8 @@ class CarlaEnv(gym.Env):
     def step(self, action):
         #print('------------------------------------STEP--------------------------------------')
         #return (self._get_obs(), 0, False, {'waypoints': 0, 'vehicle_front': 0})
-        throttle, brake = 1-self.ego.get_control().throttle, 1-self.ego.get_control().brake
-        print('before before', throttle, brake)
+        throttle, brake = self.ego.get_control().throttle, self.ego.get_control().brake
+        original_control = self.ego.get_control()
 
         # Calculate acceleration and steering
         if self.discrete:
@@ -308,15 +308,17 @@ class CarlaEnv(gym.Env):
 
         # Convert acceleration to throttle and brake
         if acc > 0:
-            throttle += np.clip(acc / 3, 0, 1)
+            throttle = np.clip(acc / 3, 0, 1)
+            brake = 0
         else:
-            brake += np.clip(-acc / 8, 0, 1)
+            brake = np.clip(-acc / 8, 0, 1)
+            throttle = 0
 
+        #throttle += 0.1
         # Apply control
-        print('before', throttle, brake)
-        act = carla.VehicleControl(throttle=float(throttle), steer=0, brake=float(brake))
+        print('AI control', throttle, brake)
+        act = carla.VehicleControl(throttle=throttle, steer=self.ego.get_control().steer, brake=brake)
         self.ego.apply_control(act)
-        print('after', self.ego.get_control().throttle, self.ego.get_control().brake)
 
 
         # Update the spectator's position to follow the ego vehicle
@@ -325,6 +327,9 @@ class CarlaEnv(gym.Env):
         self.spectator.set_transform(transform)
 
         self.world.tick()
+
+        # Reset the original control by the autopilot
+        #self.ego.apply_control(original_control)
 
         # Append actors polygon list
         vehicle_poly_dict = self._get_actor_polygons('vehicle.*')
@@ -552,8 +557,7 @@ class CarlaEnv(gym.Env):
         """Calculate the step reward."""
         #return 1
         # reward for speed tracking
-        v = self.ego.get_velocity()
-        speed = np.sqrt(v.x ** 2 + v.y ** 2)
+        speed = self.ego.get_velocity().length()
 
         # Calculate the acceleration and the change in acceleration to make the ride smooth and energy efficient
         a = self.ego.get_acceleration()
@@ -567,21 +571,27 @@ class CarlaEnv(gym.Env):
         # reward for collision
         collision = 1 if len(self.collision_hist) > 0 else 0
 
-        # reward for out of lane
-        ego_x, ego_y = get_pos(self.ego)
-        dis, w = get_lane_dis(self.waypoints, ego_x, ego_y)
-
-        # longitudinal speed
-        lspeed = np.array([v.x, v.y])
-        lspeed = np.dot(lspeed, w)
-
         # cost for too fast
-        to_fast = 1 if lspeed > self.desired_speed else 0
+        to_fast = 1 if speed > self.desired_speed else 0
+
+        # Ideal following distance
+        following_vehicle_speed = self.computer_vision.get_delta_v()
+        following_distance = self.computer_vision.get_distance()
+        if following_vehicle_speed is None or following_distance is None:
+            following_distance_error = 0
+        else:
+            ideal_following_distance = 5 + 2*following_vehicle_speed
+            if following_distance == 100 or following_distance > ideal_following_distance:   # No vehicle in front
+                following_distance_error = 0
+            else:
+                # How much to close is the ego vehicle to the vehicle in front (max 30m to close)
+                following_distance_error = min(abs(following_distance - ideal_following_distance), 30)
 
         if collision:
-            reward = -200
+            reward = -1000
         else:
-            reward = 1.5*lspeed - 10*to_fast - 2*acceleration - 2*change_in_acc - 0.1
+            print('v', speed, ', a', acceleration, ', da', change_in_acc, ', follow_e', following_distance_error)
+            reward = (1.5*speed + 20) - (10*to_fast + 3*acceleration + 1.5*change_in_acc + following_distance_error)
 
         return reward
 
@@ -602,16 +612,16 @@ class CarlaEnv(gym.Env):
             return True
 
         # If at destination
-        if self.dests is not None:  # If at destination
+        '''if self.dests is not None:  # If at destination
             for dest in self.dests:
                 if np.sqrt((ego_x - dest[0]) ** 2 + (ego_y - dest[1]) ** 2) < 4:
                     print('TERMINATION - at destination')
-                    return True
+                    return True'''
 
         # If out of lane
-        dis, _ = get_lane_dis(self.waypoints, ego_x, ego_y)
+        '''dis, _ = get_lane_dis(self.waypoints, ego_x, ego_y)
         if abs(dis) > self.out_lane_thres:
             print('TERMINATION - out of lane')
-            return True
+            return True'''
         #print('No termination')
         return False
