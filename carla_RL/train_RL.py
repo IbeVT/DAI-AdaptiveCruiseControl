@@ -6,9 +6,7 @@ from ray.tune.search import grid_search
 from ray.rllib.algorithms.ppo import PPO
 from ray.rllib.algorithms.dqn import DQN
 import gymnasium as gym
-
 from setuptools import setup
-
 from gymnasium.envs.registration import register
 from ray.tune.registry import register_env
 import sys
@@ -78,7 +76,7 @@ if __name__ == "__main__":
     print('Best checkpoint:', best_checkpoint)
 
     # load and restore model
-    agent = ppo.PPO(env=env_name)
+    agent = PPO(env=env_name)
     agent.restore(checkpoint_path)
     print(f"Agent loaded from saved model at {checkpoint_path}")
 
