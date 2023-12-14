@@ -188,8 +188,15 @@ class ComputerVision:
                 
             found = False
             for previous_box in previous_results:
-                class_id_previous = previous_box["class_id2"]
-                cords_previous = previous_box["cords2"]
+                
+                if "class_id" in previous_box:
+                    class_id_previous = previous_box["class_id"]
+                    cords_previous = previous_box["cords"]
+                    
+                if "class_id2" in previous_box:
+                    class_id_previous = previous_box["class_id2"]
+                    cords_previous = previous_box["cords2"]
+                
                 # Check if the class is the same
                 if class_id2 == class_id_previous:
                     # Check whether the boxes overlap
@@ -206,8 +213,15 @@ class ComputerVision:
             if not found:
                 # Check if a similar box was detected with low confidence in the previous frame
                 for previous_box in previous_low_conf_results:
-                    class_id_previous = previous_box["class_id2"]
-                    cords_previous = previous_box["cords2"]
+                    
+                    if "class_id" in previous_box:
+                        class_id_previous = previous_box["class_id"]
+                        cords_previous = previous_box["cords"]
+                    
+                    if "class_id2" in previous_box:
+                        class_id_previous = previous_box["class_id2"]
+                        cords_previous = previous_box["cords2"]
+                    
                     # Check if the class is the same
                     if class_id2 == class_id_previous:
                         # Check whether the boxes overlap
