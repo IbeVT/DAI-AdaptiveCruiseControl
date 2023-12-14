@@ -33,6 +33,7 @@ except ImportError:
 
 from pygame_recorder import ScreenRecorder
 
+
 class CustomTimer:
     def __init__(self):
         try:
@@ -265,7 +266,6 @@ def run_simulation(args, client):
 
         recorder = ScreenRecorder(args.width, args.height, 40)  # start the screen-recording.
         start_time = timer.time()
-        print('Recording time start at: ', start_time)
 
         # But the city now is probably quite empty, let's add a few more vehicles.
         transform.location += carla.Location(x=40, y=-3.2)
@@ -319,12 +319,9 @@ def run_simulation(args, client):
             if call_exit:
                 break
 
-
-
     finally:
         recorder.end_recording()  # stop the screen-recording.
         stop_time = timer.time()
-        print('Recording time stop at: ', stop_time)
         print('Time difference: ', stop_time - start_time)
 
         if display_manager:
