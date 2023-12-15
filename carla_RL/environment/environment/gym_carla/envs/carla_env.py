@@ -302,9 +302,9 @@ class CarlaEnv(gym.Env):
 
         self.routeplanner = RoutePlanner(self.ego, self.max_waypt)
         self.waypoints, _, self.vehicle_front = self.routeplanner.run_step()
-        print("\n\n\n\n\n\n\n\n\n\n\n\nWaypoints:")
+        """print("\n\n\n\n\n\n\n\n\n\n\n\nWaypoints:")
         print(self.waypoints)
-        print("\n\n\n\n\n\n\n\n\n\n\n\n")
+        print("\n\n\n\n\n\n\n\n\n\n\n\n")"""
 
         # # Linear interpolation to improve the results:
         # # Path interpolation parameters
@@ -365,7 +365,7 @@ class CarlaEnv(gym.Env):
         return self._get_obs()
 
     def step(self, action):
-        print(f'------------------------------------STEP {self.time_step} --------------------------------------')
+        #print(f'------------------------------------STEP {self.time_step} --------------------------------------')
         # return (self._get_obs(), 0, False, {'waypoints': 0, 'vehicle_front': 0})
 
         # Calculate acceleration and steering
@@ -385,14 +385,8 @@ class CarlaEnv(gym.Env):
         _, steer, _ = self.controller.get_commands()
 
         # Apply control
-        print('before after', self.ego.get_control())
-        print('AI control', throttle, brake, steer)
         act = carla.VehicleControl(throttle=throttle, steer=self.ego.get_control().steer, brake=brake)
-        print('act', act)
         self.ego.apply_control(act)
-
-        print('after', self.ego.get_control())
-        print()
 
         self.world.tick()
 
@@ -401,8 +395,6 @@ class CarlaEnv(gym.Env):
                                     self.ego.get_transform().rotation)
         self.spectator.set_transform(transform)
         self.world.tick()
-
-        print('after after', self.ego.get_control())
 
         # Append actors polygon list
         vehicle_poly_dict = self._get_actor_polygons('vehicle.*')
