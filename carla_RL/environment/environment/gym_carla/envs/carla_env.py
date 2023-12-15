@@ -421,11 +421,22 @@ class CarlaEnv(gym.Env):
         self.controller.update_waypoints(self.waypoints)
 
         # Update pose, timestamp
-        measurement_data, sensor_data = self.client.read_data()
-        current_x, current_y, current_yaw = \
-            get_current_pose(measurement_data)
-        current_speed = measurement_data.player_measurements.forward_speed
-        current_timestamp = float(measurement_data.game_timestamp) / 1000.0
+        # measurement_data, _ = self.client.read_data()
+        # current_x, current_y, current_yaw = \
+        # get_current_pose(measurement_data)
+        # current_speed = measurement_data.player_measurements.forward_speed
+        # current_timestamp = float(measurement_data.game_timestamp) / 1000.0
+
+
+        vehicle_transform = self.ego.get_transform()
+        current_x = vehicle_transform.location.x
+        current_y = vehicle_transform.location.y
+        current_yaw = vehicle_transform.rotation.yaw
+        current_speed = self.ego.get_velocity()
+
+        world_snapshot = self.world.get_snapshot()
+        # Get the current simulation time
+        current_timestamp = world_snapshot.timestamp.elapsed_seconds
 
         # Shift coordinates
         length = -1.5
