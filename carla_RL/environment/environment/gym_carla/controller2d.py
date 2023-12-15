@@ -151,6 +151,7 @@ class Controller2D(object):
         wheel_heading = yaw + steering_angle
         wheel_traveled_dis = v * (self._current_timestamp - self.vars.t_previous)
         print(x, y, wheel_traveled_dis)
+        wheel_traveled_dis = wheel_traveled_dis.length()
         return [x + wheel_traveled_dis * np.cos(wheel_heading), y + wheel_traveled_dis * np.sin(wheel_heading)]
 
     def calculate_steering(self, x, y, yaw, waypoints, v):
