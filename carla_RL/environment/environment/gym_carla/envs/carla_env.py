@@ -281,6 +281,7 @@ class CarlaEnv(gym.Env):
             except:
                 print('failed to add collision sensor')
 
+
         def get_collision_hist(event):
             impulse = event.normal_impulse
             intensity = np.sqrt(impulse.x ** 2 + impulse.y ** 2 + impulse.z ** 2)
@@ -385,20 +386,21 @@ class CarlaEnv(gym.Env):
         # Apply control
         print('before after', self.ego.get_control())
         print('AI control', throttle, brake, steer)
-        act = carla.VehicleControl()
-        act.throttle = 1 - self.ego.get_control().throttle
-        act.steer = self.ego.get_control().steer
-        act.brake = 1 - self.ego.get_control().brake
+        act = carla.VehicleControl(throttle=0.11, steer=self.ego.get_control().steer, brake=0.11)
+        print('act', act)
         self.ego.apply_control(act)
 
         print('after', self.ego.get_control())
         print()
+
+        self.world.tick()
 
         # Update the spectator's position to follow the ego vehicle
         transform = carla.Transform(self.ego.get_transform().transform(carla.Location(x=-4, z=2.5)),
                                     self.ego.get_transform().rotation)
         self.spectator.set_transform(transform)
         self.world.tick()
+
         print('after after', self.ego.get_control())
 
         # Append actors polygon list
