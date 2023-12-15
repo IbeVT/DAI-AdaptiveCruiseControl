@@ -52,7 +52,7 @@ class CarlaEnv(gym.Env):
             'port': 2000,  # connection port
             'town': 'Town03',  # which town to simulate
             'task_mode': 'random',  # mode of the task, [random, roundabout (only for Town03)]
-            'max_time_episode': 1000,  # maximum timesteps per episode
+            'max_time_episode': 750,  # maximum timesteps per episode
             'max_waypt': 12,  # maximum number of waypoints
             'obs_range': 32,  # observation range (meter)
             'd_behind': 12,  # distance behind the ego vehicle (meter)
@@ -679,6 +679,11 @@ class CarlaEnv(gym.Env):
             else:
                 # How much to close is the ego vehicle to the vehicle in front (max 30m to close)
                 following_distance_error = min(abs(following_distance - ideal_following_distance), 30)
+
+        # If the vehicle doesn't move, the negative reward for acceleration (braking) is not necessary
+        if v < 0.01:
+            acc = 0
+            change_in_acc = 0
 
         if collision:
             reward = -1000
