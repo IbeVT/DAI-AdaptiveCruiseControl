@@ -681,7 +681,7 @@ class CarlaEnv(gym.Env):
                 following_distance_error = min(abs(following_distance - ideal_following_distance), 30)
 
         # If the vehicle doesn't move, the negative reward for acceleration (braking) is not necessary
-        if v < 0.01:
+        if speed < 0.01:
             acc = 0
             change_in_acc = 0
 
