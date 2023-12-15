@@ -121,7 +121,8 @@ class CarlaEnv(gym.Env):
 
         # Try to disconnect to connected world
         print('connecting to Carla server...')
-        client = carla.Client('localhost', env_config['port'])
+        #client = carla.Client('localhost', env_config['port'])
+        client = carla.client.make_carla_client('localhost', env_config['port'])
         self.client = client
         try:
             client.unload_world()
