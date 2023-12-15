@@ -7,7 +7,7 @@
 import gym_carla.cutils
 import numpy as np
 import math
-import gym_carla.cutils
+import gym_carla.cutils as cutils
 
 class Controller2D(object):
     def __init__(self, waypoints, control_method):
