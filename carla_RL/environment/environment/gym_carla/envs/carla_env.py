@@ -28,9 +28,7 @@ import wandb
 
 from gym_carla.ComputerVision import ComputerVision
 from gym_carla.Managers import DisplayManager, CameraManager, RadarManager
-
 from gym_carla.controller2d import Controller2D
-from carla.client import make_carla_client
 
 wandb.init(project="CARLA_RL")
 
@@ -122,8 +120,11 @@ class CarlaEnv(gym.Env):
 
         # Try to disconnect to connected world
         print('connecting to Carla server...')
-        #client = carla.Client('localhost', env_config['port'])
-        client = make_carla_client('localhost', env_config['port'])
+        client = carla.Client('localhost', env_config['port'])
+        methods = [method for method in dir(client) if callable(getattr(client, method))]
+        print(methods)
+
+        #client = carla.client.make_carla_client('localhost', env_config['port'])
         self.client = client
         try:
             client.unload_world()
