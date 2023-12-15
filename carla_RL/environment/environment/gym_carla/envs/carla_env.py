@@ -8,6 +8,8 @@
 from __future__ import division
 
 import copy
+import math
+
 import numpy as np
 import pygame
 import random
@@ -27,12 +29,16 @@ import wandb
 from gym_carla.ComputerVision import ComputerVision
 from gym_carla.Managers import DisplayManager, CameraManager, RadarManager
 
+from gym_carla.controller2d import Controller2D
+
 wandb.init(project="CARLA_RL")
+
 
 class CarlaEnv(gym.Env):
     """An OpenAI gym wrapper for CARLA simulator."""
 
     def __init__(self):
+        self.waypoints = None
         print('------------------------------------INIT------------------------------------------\n\n\n')
         env_config = {
             'number_of_vehicles': 100,
@@ -85,6 +91,8 @@ class CarlaEnv(gym.Env):
         self.camera_manager = None
         self.radar_manager = None
 
+        self.controller = None
+
         # Destination
         if env_config['task_mode'] == 'roundabout':
             self.dests = [[4.46, -61.46, 0], [-49.53, -2.89, 0], [-6.48, 55.47, 0], [35.96, 3.33, 0]]
@@ -114,6 +122,7 @@ class CarlaEnv(gym.Env):
         # Try to disconnect to connected world
         print('connecting to Carla server...')
         client = carla.Client('localhost', env_config['port'])
+        self.client = client
         try:
             client.unload_world()
         except:
@@ -272,7 +281,6 @@ class CarlaEnv(gym.Env):
             except:
                 print('failed to add collision sensor')
 
-
         def get_collision_hist(event):
             impulse = event.normal_impulse
             intensity = np.sqrt(impulse.x ** 2 + impulse.y ** 2 + impulse.z ** 2)
@@ -292,16 +300,71 @@ class CarlaEnv(gym.Env):
 
         self.routeplanner = RoutePlanner(self.ego, self.max_waypt)
         self.waypoints, _, self.vehicle_front = self.routeplanner.run_step()
+        print("\n\n\n\n\n\n\n\n\n\n\n\nWaypoints:")
+        print(self.waypoints)
+        print("\n\n\n\n\n\n\n\n\n\n\n\n")
+
+        # # Linear interpolation to improve the results:
+        # # Path interpolation parameters
+        # INTERP_MAX_POINTS_PLOT = 10  # number of points used for displaying
+        # # lookahead path
+        # INTERP_LOOKAHEAD_DISTANCE = 20  # lookahead in meters
+        # INTERP_DISTANCE_RES = 0.01  # distance between interpolated points
+        # # Linear interpolation computations
+        # waypoints_np = np.array(self.waypoints)
+        # # Compute a list of distances between waypoints
+        # wp_distance = []   # distance array
+        # for i in range(1, waypoints_np.shape[0]):
+        #     wp_distance.append(
+        #             np.sqrt((waypoints_np[i, 0] - waypoints_np[i-1, 0])**2 +
+        #                     (waypoints_np[i, 1] - waypoints_np[i-1, 1])**2))
+        # wp_distance.append(0)  # last distance is 0 because it is the distance
+        #                        # from the last waypoint to the last waypoint
+        #
+        # # Linearly interpolate between waypoints and store in a list
+        # wp_interp      = []    # interpolated values
+        #                        # (rows = waypoints, columns = [x, y, v])
+        # wp_interp_hash = []    # hash table which indexes waypoints_np
+        #                        # to the index of the waypoint in wp_interp
+        # interp_counter = 0     # counter for current interpolated point index
+        # for i in range(waypoints_np.shape[0] - 1):
+        #     # Add original waypoint to interpolated waypoints list (and append
+        #     # it to the hash table)
+        #     wp_interp.append(list(waypoints_np[i]))
+        #     wp_interp_hash.append(interp_counter)
+        #     interp_counter+=1
+        #
+        #     # Interpolate to the next waypoint. First compute the number of
+        #     # points to interpolate based on the desired resolution and
+        #     # incrementally add interpolated points until the next waypoint
+        #     # is about to be reached.
+        #     num_pts_to_interp = int(np.floor(wp_distance[i] /\
+        #                                  float(INTERP_DISTANCE_RES)) - 1)
+        #     wp_vector = waypoints_np[i+1] - waypoints_np[i]
+        #     wp_uvector = wp_vector / np.linalg.norm(wp_vector)
+        #     for j in range(num_pts_to_interp):
+        #         next_wp_vector = INTERP_DISTANCE_RES * float(j+1) * wp_uvector
+        #         wp_interp.append(list(waypoints_np[i] + next_wp_vector))
+        #         interp_counter+=1
+        # # add last waypoint at the end
+        # wp_interp.append(list(waypoints_np[-1]))
+        # wp_interp_hash.append(interp_counter)
+        # interp_counter+=1
+        #
+        # self.waypoints_interpolated = wp_interp
 
         # Set the path for the autopilot
         location_list = [carla.Location(x=loc[0], y=loc[1], z=loc[2]) for loc in self.waypoints]
         self.traffic_manager.set_path(self.ego, location_list)
 
+        # As the autopilot does not work correctly, we use the Controller2D to control the steering of the ego vehicle
+        self.controller = Controller2D(self.waypoints, "MPC")
+
         return self._get_obs()
 
     def step(self, action):
         print(f'------------------------------------STEP {self.time_step} --------------------------------------')
-        #return (self._get_obs(), 0, False, {'waypoints': 0, 'vehicle_front': 0})
+        # return (self._get_obs(), 0, False, {'waypoints': 0, 'vehicle_front': 0})
 
         # Calculate acceleration and steering
         if self.discrete:
@@ -317,13 +380,15 @@ class CarlaEnv(gym.Env):
             brake = np.clip(-acc / 3, 0, 1)
             throttle = 0
 
+        _, steer, _ = self.controller.get_commands()
+
         # Apply control
         print('before after', self.ego.get_control())
-        print('AI control', throttle, brake)
+        print('AI control', throttle, brake, steer)
         act = carla.VehicleControl()
-        act.throttle = 1-self.ego.get_control().throttle
+        act.throttle = 1 - self.ego.get_control().throttle
         act.steer = self.ego.get_control().steer
-        act.brake = 1-self.ego.get_control().brake
+        act.brake = 1 - self.ego.get_control().brake
         self.ego.apply_control(act)
 
         print('after', self.ego.get_control())
@@ -349,6 +414,26 @@ class CarlaEnv(gym.Env):
         # route planner
         self.waypoints, _, self.vehicle_front = self.routeplanner.run_step()
 
+        # Update the waypoints of the controller
+        self.controller.update_waypoints(self.waypoints)
+
+        # Update pose, timestamp
+        measurement_data, sensor_data = self.client.read_data()
+        current_x, current_y, current_yaw = \
+            get_current_pose(measurement_data)
+        current_speed = measurement_data.player_measurements.forward_speed
+        current_timestamp = float(measurement_data.game_timestamp) / 1000.0
+
+        # Shift coordinates
+        length = -1.5
+        current_x, current_y = self.controller.get_shifted_coordinate(current_x, current_y, current_yaw, length)
+
+        # Update the other controller values and controls
+        self.controller.update_values(current_x, current_y, current_yaw,
+                                      current_speed,
+                                      current_timestamp, True, 0)
+        self.controller.update_controls()
+
         # state information
         info = {
             'waypoints': self.waypoints,
@@ -364,7 +449,7 @@ class CarlaEnv(gym.Env):
         self.episode_rewards.append(reward)
         wandb.log({"step_reward": reward})
 
-        #print('step end')
+        # print('step end')
         return (self._get_obs(), reward, self._terminal(), copy.deepcopy(info))
 
     def seed(self, seed=None):
@@ -472,7 +557,7 @@ class CarlaEnv(gym.Env):
             self.actor_list.append(vehicle)
 
         if vehicle is not None:
-            vehicle.set_autopilot()
+            vehicle.set_autopilot(False)
             self.ego = vehicle
             self.actor_list.append(vehicle)
             self.ego.show_debug_telemetry()
@@ -529,7 +614,7 @@ class CarlaEnv(gym.Env):
         return actor_poly_dict
 
     def _get_obs(self):
-        #return np.zeros(shape=(10,), dtype=np.float32)
+        # return np.zeros(shape=(10,), dtype=np.float32)
 
         """Get the observations."""
         self.computer_vision.process_data()
@@ -561,7 +646,7 @@ class CarlaEnv(gym.Env):
 
     def _get_reward(self, acc):
         """Calculate the step reward."""
-        #return 1
+        # return 1
         # reward for speed tracking
         speed = self.ego.get_velocity().length()
 
@@ -582,8 +667,8 @@ class CarlaEnv(gym.Env):
         if following_vehicle_speed is None or following_distance is None:
             following_distance_error = 0
         else:
-            ideal_following_distance = 5 + 2*following_vehicle_speed
-            if following_distance == 100 or following_distance > ideal_following_distance:   # No vehicle in front
+            ideal_following_distance = 5 + 2 * following_vehicle_speed
+            if following_distance == 100 or following_distance > ideal_following_distance:  # No vehicle in front
                 following_distance_error = 0
             else:
                 # How much to close is the ego vehicle to the vehicle in front (max 30m to close)
@@ -593,13 +678,13 @@ class CarlaEnv(gym.Env):
             reward = -1000
         else:
             print('v', speed, ', a', acc, ', da', change_in_acc, ', follow_e', following_distance_error)
-            reward = (1.5*speed + 20) - (10*to_fast + 3*acc + 1.5*change_in_acc + following_distance_error)
+            reward = (1.5 * speed + 20) - (10 * to_fast + 3 * acc + 1.5 * change_in_acc + following_distance_error)
 
         return reward
 
     def _terminal(self):
         """Calculate whether to terminate the current episode."""
-        #print('--------------------------------TERMINAL-----------------------------------------\n\n\n')
+        # print('--------------------------------TERMINAL-----------------------------------------\n\n\n')
         # Get ego state
         ego_x, ego_y = get_pos(self.ego)
 
@@ -625,5 +710,24 @@ class CarlaEnv(gym.Env):
         if abs(dis) > self.out_lane_thres:
             print('TERMINATION - out of lane')
             return True'''
-        #print('No termination')
+        # print('No termination')
         return False
+
+def get_current_pose(measurement):
+    """Obtains current x,y,yaw pose from the client measurements
+
+    Obtains the current x,y, and yaw pose from the client measurements.
+
+    Args:
+        measurement: The CARLA client measurements (from read_data())
+
+    Returns: (x, y, yaw)
+        x: X position in meters
+        y: Y position in meters
+        yaw: Yaw position in radians
+    """
+    x   = measurement.player_measurements.transform.location.x
+    y   = measurement.player_measurements.transform.location.y
+    yaw = math.radians(measurement.player_measurements.transform.rotation.yaw)
+
+    return (x, y, yaw)
