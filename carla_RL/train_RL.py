@@ -76,7 +76,7 @@ if __name__ == "__main__":
     print('Best checkpoint:', best_checkpoint)
 
     # load and restore model
-    agent = PPO(env=env_name)
+    agent = PPO(env='CustomCarlaEnv')
     agent.restore(checkpoint_path)
     print(f"Agent loaded from saved model at {checkpoint_path}")
 
