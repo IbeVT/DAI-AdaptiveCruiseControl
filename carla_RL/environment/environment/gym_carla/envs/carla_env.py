@@ -387,7 +387,7 @@ class CarlaEnv(gym.Env):
         # Apply control
         print('before after', self.ego.get_control())
         print('AI control', throttle, brake, steer)
-        act = carla.VehicleControl(throttle=0.11, steer=self.ego.get_control().steer, brake=0.11)
+        act = carla.VehicleControl(throttle=throttle, steer=self.ego.get_control().steer, brake=brake)
         print('act', act)
         self.ego.apply_control(act)
 
