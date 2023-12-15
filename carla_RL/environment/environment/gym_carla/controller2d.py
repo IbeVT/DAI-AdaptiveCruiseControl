@@ -96,6 +96,11 @@ class Controller2D(object):
     def calculate_throttle(self, t, v, v_desired):
         # Using PI Controller
         time_step = t - self.vars.t_previous
+        print(v)
+        try:
+            print('len', v.length())
+        except:
+            print(v.size())
         speed_error = v_desired - v
         k_term = self._kP*speed_error
         i_term = self.vars.i_term_previous + self._kI*time_step*speed_error
