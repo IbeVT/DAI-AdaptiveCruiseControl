@@ -319,5 +319,3 @@ class Controller2D(object):
         """
         self.vars.v_previous = v  # Store forward speed to be used in next step
         self.vars.t_previous = t
-
-
