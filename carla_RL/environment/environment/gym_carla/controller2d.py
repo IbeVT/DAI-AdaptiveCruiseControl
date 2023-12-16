@@ -96,7 +96,7 @@ class Controller2D(object):
     def calculate_throttle(self, t, v, v_desired):
         # Using PI Controller
         time_step = t - self.vars.t_previous
-        speed_error = v_desired - v.length()
+        speed_error = v_desired - v
         k_term = self._kP*speed_error
         i_term = self.vars.i_term_previous + self._kI*time_step*speed_error
         self.vars.i_term_previous = i_term
@@ -150,7 +150,6 @@ class Controller2D(object):
     def get_predicted_wheel_location(self, x, y, steering_angle, yaw, v):
         wheel_heading = yaw + steering_angle
         wheel_traveled_dis = v * (self._current_timestamp - self.vars.t_previous)
-        wheel_traveled_dis = wheel_traveled_dis.length()
         return [x + wheel_traveled_dis * np.cos(wheel_heading), y + wheel_traveled_dis * np.sin(wheel_heading)]
 
     def calculate_steering(self, x, y, yaw, waypoints, v):
