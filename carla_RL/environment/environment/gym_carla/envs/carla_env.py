@@ -304,58 +304,6 @@ class CarlaEnv(gym.Env):
 
         self.routeplanner = RoutePlanner(self.ego, self.max_waypt)
         self.waypoints, _, self.vehicle_front = self.routeplanner.run_step()
-        print("\n\n\n\n\n\n\n\n\n\n\n\nWaypoints:")
-        print(self.waypoints)
-        print("\n\n\n\n\n\n\n\n\n\n\n\n")
-
-        # # Linear interpolation to improve the results:
-        # # Path interpolation parameters
-        # INTERP_MAX_POINTS_PLOT = 10  # number of points used for displaying
-        # # lookahead path
-        # INTERP_LOOKAHEAD_DISTANCE = 20  # lookahead in meters
-        # INTERP_DISTANCE_RES = 0.01  # distance between interpolated points
-        # # Linear interpolation computations
-        # waypoints_np = np.array(self.waypoints)
-        # # Compute a list of distances between waypoints
-        # wp_distance = []   # distance array
-        # for i in range(1, waypoints_np.shape[0]):
-        #     wp_distance.append(
-        #             np.sqrt((waypoints_np[i, 0] - waypoints_np[i-1, 0])**2 +
-        #                     (waypoints_np[i, 1] - waypoints_np[i-1, 1])**2))
-        # wp_distance.append(0)  # last distance is 0 because it is the distance
-        #                        # from the last waypoint to the last waypoint
-        #
-        # # Linearly interpolate between waypoints and store in a list
-        # wp_interp      = []    # interpolated values
-        #                        # (rows = waypoints, columns = [x, y, v])
-        # wp_interp_hash = []    # hash table which indexes waypoints_np
-        #                        # to the index of the waypoint in wp_interp
-        # interp_counter = 0     # counter for current interpolated point index
-        # for i in range(waypoints_np.shape[0] - 1):
-        #     # Add original waypoint to interpolated waypoints list (and append
-        #     # it to the hash table)
-        #     wp_interp.append(list(waypoints_np[i]))
-        #     wp_interp_hash.append(interp_counter)
-        #     interp_counter+=1
-        #
-        #     # Interpolate to the next waypoint. First compute the number of
-        #     # points to interpolate based on the desired resolution and
-        #     # incrementally add interpolated points until the next waypoint
-        #     # is about to be reached.
-        #     num_pts_to_interp = int(np.floor(wp_distance[i] /\
-        #                                  float(INTERP_DISTANCE_RES)) - 1)
-        #     wp_vector = waypoints_np[i+1] - waypoints_np[i]
-        #     wp_uvector = wp_vector / np.linalg.norm(wp_vector)
-        #     for j in range(num_pts_to_interp):
-        #         next_wp_vector = INTERP_DISTANCE_RES * float(j+1) * wp_uvector
-        #         wp_interp.append(list(waypoints_np[i] + next_wp_vector))
-        #         interp_counter+=1
-        # # add last waypoint at the end
-        # wp_interp.append(list(waypoints_np[-1]))
-        # wp_interp_hash.append(interp_counter)
-        # interp_counter+=1
-        #
-        # self.waypoints_interpolated = wp_interp
 
         # Set the path for the autopilot
         location_list = [carla.Location(x=loc[0], y=loc[1], z=loc[2]) for loc in self.waypoints]
@@ -389,7 +337,7 @@ class CarlaEnv(gym.Env):
         # Apply control
         print('before after', self.ego.get_control())
         print('AI control', throttle, brake, steer)
-        act = carla.VehicleControl(throttle=0.11, steer=self.ego.get_control().steer, brake=0.11)
+        act = carla.VehicleControl(throttle=0.4, steer=steer, brake=0)
         print('act', act)
         self.ego.apply_control(act)
 
@@ -402,7 +350,6 @@ class CarlaEnv(gym.Env):
         transform = carla.Transform(self.ego.get_transform().transform(carla.Location(x=-4, z=2.5)),
                                     self.ego.get_transform().rotation)
         self.spectator.set_transform(transform)
-        self.world.tick()
 
         print('after after', self.ego.get_control())
 
@@ -419,8 +366,55 @@ class CarlaEnv(gym.Env):
         # route planner
         self.waypoints, _, self.vehicle_front = self.routeplanner.run_step()
 
+        # Linear interpolation to improve the results:
+        # Path interpolation parameters
+        INTERP_MAX_POINTS_PLOT = 10  # number of points used for displaying
+        # lookahead path
+        INTERP_LOOKAHEAD_DISTANCE = 20  # lookahead in meters
+        INTERP_DISTANCE_RES = 0.01  # distance between interpolated points
+        # Linear interpolation computations
+        waypoints_np = np.array(self.waypoints)
+        # Compute a list of distances between waypoints
+        wp_distance = []   # distance array
+        for i in range(1, waypoints_np.shape[0]):
+            wp_distance.append(
+                    np.sqrt((waypoints_np[i, 0] - waypoints_np[i-1, 0])**2 +
+                            (waypoints_np[i, 1] - waypoints_np[i-1, 1])**2))
+        wp_distance.append(0)  # last distance is 0 because it is the distance
+                               # from the last waypoint to the last waypoint
+
+        # Linearly interpolate between waypoints and store in a list
+        wp_interp      = []    # interpolated values
+                               # (rows = waypoints, columns = [x, y, v])
+        wp_interp_hash = []    # hash table which indexes waypoints_np
+                               # to the index of the waypoint in wp_interp
+        interp_counter = 0     # counter for current interpolated point index
+        for i in range(waypoints_np.shape[0] - 1):
+            # Add original waypoint to interpolated waypoints list (and append
+            # it to the hash table)
+            wp_interp.append(list(waypoints_np[i]))
+            wp_interp_hash.append(interp_counter)
+            interp_counter+=1
+
+            # Interpolate to the next waypoint. First compute the number of
+            # points to interpolate based on the desired resolution and
+            # incrementally add interpolated points until the next waypoint
+            # is about to be reached.
+            num_pts_to_interp = int(np.floor(wp_distance[i] /\
+                                         float(INTERP_DISTANCE_RES)) - 1)
+            wp_vector = waypoints_np[i+1] - waypoints_np[i]
+            wp_uvector = wp_vector / np.linalg.norm(wp_vector)
+            for j in range(num_pts_to_interp):
+                next_wp_vector = INTERP_DISTANCE_RES * float(j+1) * wp_uvector
+                wp_interp.append(list(waypoints_np[i] + next_wp_vector))
+                interp_counter+=1
+        # add last waypoint at the end
+        wp_interp.append(list(waypoints_np[-1]))
+        wp_interp_hash.append(interp_counter)
+        interp_counter+=1
+
         # Update the waypoints of the controller
-        self.controller.update_waypoints(self.waypoints)
+        self.controller.update_waypoints(wp_interp)
 
         # Update pose, timestamp
         # measurement_data, _ = self.client.read_data()
