@@ -49,7 +49,7 @@ if __name__ == "__main__":
                     "fcnet_hiddens": [1],
                     "fcnet_activation": "linear",
                 },
-            "lr": 0.001   #tune.grid_search([5e-3, 5e-4])
+            "lr": 0.0001   #tune.grid_search([5e-3, 5e-4])
         },
         run_config=train.RunConfig(
             #ignore_workers_failures=False,

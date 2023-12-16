@@ -52,7 +52,7 @@ class CarlaEnv(gym.Env):
             'port': 2000,  # connection port
             'town': 'Town03',  # which town to simulate
             'task_mode': 'random',  # mode of the task, [random, roundabout (only for Town03)]
-            'max_time_episode': 1000,  # maximum timesteps per episode
+            'max_time_episode': 750,  # maximum timesteps per episode
             'max_waypt': 12,  # maximum number of waypoints
             'obs_range': 32,  # observation range (meter)
             'd_behind': 12,  # distance behind the ego vehicle (meter)
@@ -121,8 +121,6 @@ class CarlaEnv(gym.Env):
         # Try to disconnect to connected world
         print('connecting to Carla server...')
         client = carla.Client('localhost', env_config['port'])
-        methods = [method for method in dir(client) if callable(getattr(client, method))]
-        print(methods)
 
         #client = carla.client.make_carla_client('localhost', env_config['port'])
         self.client = client
@@ -315,7 +313,7 @@ class CarlaEnv(gym.Env):
         return self._get_obs()
 
     def step(self, action):
-        print(f'------------------------------------STEP {self.time_step} --------------------------------------')
+        #print(f'------------------------------------STEP {self.time_step} --------------------------------------')
         # return (self._get_obs(), 0, False, {'waypoints': 0, 'vehicle_front': 0})
 
         # Calculate acceleration and steering
@@ -335,14 +333,10 @@ class CarlaEnv(gym.Env):
         _, steer, _ = self.controller.get_commands()
 
         # Apply control
-        print('before after', self.ego.get_control())
-        print('AI control', throttle, brake, steer)
-        act = carla.VehicleControl(throttle=0.4, steer=steer, brake=0)
-        print('act', act)
+        #act = carla.VehicleControl(throttle=throttle, steer=self.ego.get_control().steer, brake=brake)
+        print(steer)
+        act = carla.VehicleControl(throttle=0.4, steer=-steer, brake=0)
         self.ego.apply_control(act)
-
-        print('after', self.ego.get_control())
-        print()
 
         self.world.tick()
 
@@ -350,8 +344,6 @@ class CarlaEnv(gym.Env):
         transform = carla.Transform(self.ego.get_transform().transform(carla.Location(x=-4, z=2.5)),
                                     self.ego.get_transform().rotation)
         self.spectator.set_transform(transform)
-
-        print('after after', self.ego.get_control())
 
         # Append actors polygon list
         vehicle_poly_dict = self._get_actor_polygons('vehicle.*')
@@ -683,6 +675,11 @@ class CarlaEnv(gym.Env):
             else:
                 # How much to close is the ego vehicle to the vehicle in front (max 30m to close)
                 following_distance_error = min(abs(following_distance - ideal_following_distance), 30)
+
+        # If the vehicle doesn't move, the negative reward for acceleration (braking) is not necessary
+        if speed < 0.01:
+            acc = 0
+            change_in_acc = 0
 
         if collision:
             reward = -1000
