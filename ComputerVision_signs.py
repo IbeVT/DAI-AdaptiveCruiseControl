@@ -102,7 +102,7 @@ class ComputerVision:
                 
             # If the confidence is high enough, immediately save the box
             if conf > 0.5:
-                print("New box1 detected")
+                
                 self.boxes.append({"class_id": class_id, "cords": cords, "conf": conf})
                 if str(class_id) in self.vehicle_classes:
                     vehicle_boxes.append({"class_id": class_id, "cords": cords, "conf": conf})
@@ -170,8 +170,9 @@ class ComputerVision:
             conf2 = round(box2.conf[0].item(), 2)
             print("Object type class2:", class_id2)
             print("Coordinates class2:", cords2)
-            print("Probability class2:", conf2)
-            print("---")
+            
+            if cords2[0] > 640:
+                    print('\n\n\nD\n\nE\n\nR\n\nE\n\nC\n\nH\n\nA\n\n\n\n')
             
             if class_id2 != 'Green Light' and class_id2 != 'Red Light' and class_id2 != 'Stop':
                 self.delta_v = int(class_id2[-3:])
@@ -181,7 +182,6 @@ class ComputerVision:
                 
             
             if conf2 > 0.5:
-                print("New box2 detected")
                 self.boxes.append({"class_id2": class_id2, "cords2": cords2, "conf2": conf2})
                 if str(class_id) in self.vehicle_classes:
                     speed_boxes.append({"class_id2": class_id2, "cords2": cords2, "conf2": conf2})
@@ -237,6 +237,11 @@ class ComputerVision:
                                     speed_boxes.append({"class_id2": class_id2, "cords2": cords2, "conf2": conf2})
                                 found = True
                                 break
+            
+            #if found:
+                
+                
+                            
             if not found:
                 # Still save the box, for debugging purposes
                 self.low_conf_boxes.append({"class_id2": class_id2, "cords2": cords2, "conf2": conf2})
@@ -277,8 +282,7 @@ class ComputerVision:
             distance_to_box = math.sqrt((cords[0] - np.mean([box["cords"][0], box["cords"][2]])) ** 2 +
                                         ((cords[1] - np.mean([box["cords"][1], box["cords"][
                                             3]])) / 2) ** 2)  # Y is less important than X
-            print("Box:", box)
-            print("Distance to box:", distance_to_box)
+            
             if distance_to_box < smallest_distance_to_box:
                 self.following_vehicle_box = box
                 self.distance = distances[i]
