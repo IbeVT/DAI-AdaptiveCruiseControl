@@ -84,6 +84,7 @@ class CarlaEnv(gym.Env):
 
         self.actor_list = []
         self.prev_acc = 0
+        self.prev_RL_output = 0
 
         self.display_manager = None
         self.camera_manager = None
@@ -388,7 +389,7 @@ class CarlaEnv(gym.Env):
             acc = self.discrete_act[0][action // self.n_steer]
         else:
             acc = action[0]
-        
+
         wandb.log({"step_RL_output": acc})
 
         # Convert acc to value between -3 and 3 and to throttle and brake values
@@ -531,10 +532,14 @@ class CarlaEnv(gym.Env):
         self.total_step += 1
 
         # Get reward
+        obs = self._get_obs()
         reward = self._get_reward()
 
+        # Update input of model
+        self.prev_RL_output = acc
+
         # print('step end')
-        return (self._get_obs(), reward, self._terminal(), copy.deepcopy(info))
+        return (obs, reward, self._terminal(), copy.deepcopy(info))
 
     def seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)
