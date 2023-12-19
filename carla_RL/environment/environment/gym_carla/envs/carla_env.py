@@ -191,7 +191,7 @@ class CarlaEnv(gym.Env):
             wandb.log({"episode_reward": self.episode_reward})
             wandb.log({"episode_average_speed": np.mean(self.episode_speeds)})
             wandb.log({"episode_average_accel": np.mean(self.episode_accelerations)})
-            wandb.log({f"crashes_MA{self.crashes_ma_period}": np.sum(self.episode_crashes)})
+            wandb.log({f"episode_crashes_MA{self.crashes_ma_period}": np.mean(self.episode_crashes)})
 
         # Reset
         self.episode_reward = 0
@@ -199,7 +199,8 @@ class CarlaEnv(gym.Env):
         self.episode_accelerations = []
 
         if len(self.episode_crashes) > self.crashes_ma_period:
-            self.episode_crashes.pop()
+            self.episode_crashes = self.episode_crashes[-self.crashes_ma_period:]
+        self.episode_crashes.append(0)
 
         # Reset previous speed and acc (output of RL agent)
         self.prev_speed = 0
@@ -527,10 +528,8 @@ class CarlaEnv(gym.Env):
         self.time_step += 1
         self.total_step += 1
 
-        # Log single step reward
+        # Get reward
         reward = self._get_reward()
-        self.episode_reward += reward
-        wandb.log({"step_reward": reward})
 
         # print('step end')
         return (self._get_obs(), reward, self._terminal(), copy.deepcopy(info))
@@ -769,6 +768,17 @@ class CarlaEnv(gym.Env):
             #print('v', speed, ', a', acceleration, ', da', change_in_acc, ', follow_e', following_distance_error)
             reward = (1.5 * speed) - (10 * to_fast * (speed - self.desired_speed) + 3 * acceleration + 1.5 * change_in_acc + following_distance_error)
 
+
+        # Log wandb measurements
+        wandb.log({"step_reward": reward})
+        wandb.log({"step_speed": speed})
+        wandb.log({"step_acceleration": acceleration})
+
+        # Store wandb measurements
+        self.episode_reward += reward
+        self.episode_speeds.append(speed)
+        self.episode_accelerations.append(acceleration)
+
         return reward
 
     def _terminal(self):
@@ -780,6 +790,8 @@ class CarlaEnv(gym.Env):
         # If collides
         if len(self.collision_hist) > 0:
             print('TERMINATION - collision')
+            self.episode_crashes.pop()
+            self.episode_crashes.append(1)
             return True
 
         # If reach maximum timestep
