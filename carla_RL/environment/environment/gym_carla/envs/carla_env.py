@@ -388,7 +388,7 @@ class CarlaEnv(gym.Env):
         # Apply control
         #act = carla.VehicleControl(throttle=throttle, steer=self.ego.get_control().steer, brake=brake)
         print(steer)
-        act = carla.VehicleControl(throttle=0.4, steer=steer*180/np.pi, brake=0)
+        act = carla.VehicleControl(throttle=0.4, steer=steer*1/np.pi, brake=0)
         self.ego.apply_control(act)
 
         self.world.tick()
