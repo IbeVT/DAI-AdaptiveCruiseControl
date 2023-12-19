@@ -19,20 +19,20 @@ class YoloConfig:
 
 LABEL_DATAFRAME = pd.DataFrame(columns=['raw_value', 'color', 'coco_names_index'],
                                data=[
-                                     [ 4, (220, 20, 60), 0],
-                                     [ 2,   (0,  0,   142),2],
-                                     [ 20,   (0,  0,   70),7],
-                                     [ 21,   (0,  0,   230),3],
-                                     [ 22,   (119,  11,   32),1],
-                                     [ 23,   (0,  60,   100),5],
-                                     [ 24,   (0,  0,   90),70],
-                                     [18, (250, 170, 30), 9],
-                                     [12, (220, 220,  0), 80],
+                                     [ 4, (220, 20, 60), 0],      #pedestrian
+                                     [ 2,   (0,  0,   142),2],    # car
+                                     [ 20,   (0,  0,   70),5],    # truck
+                                     [ 21,   (0,  0,   230),3],   #  motorcycle
+                                     [ 22,   (119,  11,   32),1], #  bicycle
+                                     [ 23,   (0,  60,   100),4], #bus
+                                     [ 24,   (0,  0,   90),8], #caravan
+                                     [18, (250, 170, 30), 6],  #t light
+                                     [12, (220, 220,  0), 7], #t sign
                                ])
 
-TL_LIGHT_LABEL = {'DEFAULT': 9,
-                  'RED': 82,
-                  'GREEN': 81}
+TL_LIGHT_LABEL = {'DEFAULT': 6,
+                  'RED': 10,
+                  'GREEN': 9}
 
 LABEL_COLORS = np.array([
     (220, 20, 60),   # Pedestrian
@@ -46,19 +46,8 @@ LABEL_COLORS = np.array([
     (250, 170, 30),  # TrafficLight
 ])
 
-COCO_NAMES = ['person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train', 'truck', 'boat',
-              'traffic light', 'fire hydrant', 'stop sign', 'parking meter', 'bench', 'bird', 'cat', 'dog',
-              'horse', 'sheep', 'cow', 'elephant', 'bear', 'zebra', 'giraffe', 'backpack', 'umbrella',
-              'handbag', 'tie', 'suitcase', 'frisbee', 'skis', 'snowboard', 'sports ball', 'kite',
-              'baseball bat', 'baseball glove', 'skateboard', 'surfboard',
-              'tennis racket', 'bottle', 'wine glass', 'cup', 'fork', 'knife', 'spoon', 'bowl', 'banana',
-              'apple',
-              'sandwich', 'orange', 'broccoli', 'carrot', 'hot dog', 'pizza', 'donut', 'cake', 'chair', 'couch',
-              'potted plant', 'bed', 'dining table', 'toilet', 'tv', 'laptop', 'mouse', 'remote', 'keyboard',
-              'cell phone',
-              'microwave', 'oven', 'toaster', 'sink', 'refrigerator', 'book', 'clock', 'vase', 'scissors',
-              'teddy bear',
-              'hair drier', 'toothbrush', 'traffic sign', 'traffic light green', 'traffic light red']
+COCO_NAMES = ['person', 'bicycle', 'car', 'motorcycle', 'bus',  'truck',
+              'traffic light', 'traffic sign','caravan', 'traffic light green', 'traffic light red']
 
 
 def decrease_brightness(img, value=30):

@@ -1,10 +1,4 @@
 #!/bin/sh
-echo -n "Running first simulation"
-script_pid=$(python3 data_recorder_d.py -w worlds/world2.json &)
-sleep 20
-echo -n "killing first simulation"
-kill -INT $script_pid
-sleep 10
 echo -n " running second simulation"
 
 script_pid=$(python3 data_recorder_b.py -w worlds/world3.json &)

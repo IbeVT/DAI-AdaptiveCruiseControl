@@ -3,10 +3,6 @@ import json
 import os
 import signal
 import time
-
-import carla
-import carla
-import time
 import threading
 import signal
 import carla
@@ -19,26 +15,21 @@ from utils.transform import transform_to_carla_transform
 
 sig_interrupt = False
 duration= os.environ['DUR'] #seconds
-weather= carla.WeatherParameters(
-        cloudiness=00.0,
-        precipitation=40.0,
-        sun_altitude_angle=25.0,
-        wind_intensity=10.0)
 
-signal_handler(signal, franation_handler(signum,frame):
-        print("Killing map/weather")
-        sys.exit(0)
-           
+
+
+def termination_handler(signum,frame):
+   print("Killing map/weather")
+   sys.exit(0)
+
 signal.signal(signal.SIGALRM, termination_handler)
-           
+
 timer= threading.Timer(duration, lambda: os.kill(os.getpid() ,signal.SIGALRM))
 timer.daemon= True
 timer.start()
 def signal_handler(signal, frame):
-global sig_interrupt
-sig_interrupt = True
-global sig_interrupt
-sig_interrupt = True
+    global sig_interrupt
+    sig_interrupt = True
 
 
 class DataRecorder:
@@ -112,7 +103,6 @@ class DataRecorder:
 
     def start_record(self):
         self.setting_world_and_actors(self.world_config_file)
-        self.world.set_weather(weather)
         
         os.makedirs(self.base_save_dir, exist_ok=True)
         carla_logfile = "{}/carla_raw_record.log".format(self.base_save_dir)
@@ -184,8 +174,8 @@ def main():
     args = argparser.parse_args()
     data_recorder = DataRecorder(args)
     data_recorder.start_record()
+    
     timer.join()
-
 
 if __name__ == "__main__":
     # execute only if run as a script

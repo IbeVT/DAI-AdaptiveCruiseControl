@@ -23,7 +23,7 @@ duration= os.environ['DUR'] #seconds
 weather= carla.WeatherParameters(
         cloudiness=20.0,
         precipitation=00.0,
-        sun_altitude_angle=0.0,
+        sun_altitude_angle=90.0,
         wind_intensity=5.0)
 
 
