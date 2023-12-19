@@ -1,13 +1,15 @@
-# Adaptive cruise control
+# DAI-AdaptiveCruiseControl
 This repository contains the code of our CARLA Adaptive Cruise Control project for I-Distributed Artificial Intelligence.
+This branch contains scripts for the object detection including speed signs.
 
-Currently, there are only parts of the code, seperated in multiple branches as follows:
+| File | Description |
+| ---- | ---- |
+| ComputerVision_signs.py | Python file with the object detection of both vehicles and speed signs trained models |
+| LowpassFilter.py | File needed for the computer vision test |
+| Test_signs.py | Computer vision test code of the computer vision file with both models |
+| best.pt | Result model of the Carla vehicles training |
+| Signs_best.pt | Result model of the speed signs training |
+| traffic_signs.ipynb | Notebook with the signs training in google collab |
 
-| Branch | Content | Creator |
-| ---- | ---- | ---- |
-| RL | Attempt to create a RL agent | Stijn |
-| ComputerVision | Attempt to retrieve the sensor info from Carla and make predictions to feed to the RL agent | Ibe |
-| SensorLukas | Learning how to use the CARLA API | Lukas |
-| SensorAlexander | Learning how to use the CARLA API | Alexander |
-| Yolo | First experiments with and training of the YOLOv8 model | Ibe |
-| Dataset-setup | Gathering data and training the YOLOv8 model | Alberto & María |
+
+
