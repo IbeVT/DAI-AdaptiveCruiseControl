@@ -388,6 +388,8 @@ class CarlaEnv(gym.Env):
             acc = self.discrete_act[0][action // self.n_steer]
         else:
             acc = action[0]
+        
+        wandb.log({"step_RL_output": acc})
 
         # Convert acc to value between -3 and 3 and to throttle and brake values
         if acc > 0:
