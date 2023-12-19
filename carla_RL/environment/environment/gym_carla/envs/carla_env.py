@@ -91,6 +91,7 @@ class CarlaEnv(gym.Env):
         self.radar_manager = None
 
         self.controller = None
+        self.steer_method = "PurePursuit"
 
         # Destination
         if env_config['task_mode'] == 'roundabout':
@@ -360,7 +361,7 @@ class CarlaEnv(gym.Env):
         self.traffic_manager.set_path(self.ego, location_list)
 
         # As the autopilot does not work correctly, we use the Controller2D to control the steering of the ego vehicle
-        self.controller = Controller2D(self.waypoints_interpolated, "Stanley")
+        self.controller = Controller2D(self.waypoints_interpolated, self.steer_method)
 
         return self._get_obs()
 
@@ -474,7 +475,7 @@ class CarlaEnv(gym.Env):
         vehicle_transform = self.ego.get_transform()
         current_x = vehicle_transform.location.x
         current_y = vehicle_transform.location.y
-        current_yaw = vehicle_transform.rotation.yaw
+        current_yaw = np.radians(vehicle_transform.rotation.yaw)
         current_speed = self.ego.get_velocity()
 
         world_snapshot = self.world.get_snapshot()
@@ -482,7 +483,12 @@ class CarlaEnv(gym.Env):
         current_timestamp = world_snapshot.timestamp.elapsed_seconds
 
         # Shift coordinates
-        length = 1.5 # Depends on the chosen method
+        if self.steer_method == 'PurePursuit':
+            length = -1.5
+        elif self.steer_method == 'Stanley' or self.steer_method == 'MPC':
+            length = 1.5
+        else:
+            length = 0.0
         print("Current yaw:", current_yaw)
         current_x, current_y = self.controller.get_shifted_coordinate(current_x, current_y, current_yaw, length)
 
