@@ -897,7 +897,7 @@ class CarlaEnv(gym.Env):
             'speed': np.reshape(np.array(self.ego.get_velocity().length(), dtype=float), (1,)),
             'distance': np.reshape(np.array(self.computer_vision.get_distance(), dtype=float), (1,)),
             'delta_V': np.reshape(np.array(self.computer_vision.get_delta_v(), dtype=float), (1,)),
-            'speed_limit': np.reshape(np.array(self.desired_speed, dtype=float), (1,)),
+            'speed_limit': np.reshape(np.array(self.ego.get_speed_limit() / 3.6, dtype=float), (1,)),
             'is_red_light': np.reshape(np.array(1 if self.computer_vision.get_red_light() else 0, dtype=int), (1,)),
             'prev_acc': np.reshape(np.array(self.prev_RL_output, dtype=float), (1,))
         }
@@ -920,7 +920,7 @@ class CarlaEnv(gym.Env):
         collision = 1 if len(self.collision_hist) > 0 else 0
 
         # cost for too fast
-        to_fast = 1 if speed > self.desired_speed else 0
+        to_fast = 1 if speed > self.ego.get_speed_limit() / 3.6 else 0
 
         # Ideal following distance
         following_vehicle_speed = self.computer_vision.get_delta_v()
@@ -929,17 +929,26 @@ class CarlaEnv(gym.Env):
             following_distance_error = 0
         else:
             ideal_following_distance = 5 + 2 * following_vehicle_speed
-            if following_distance == 100 or following_distance > ideal_following_distance:  # No vehicle in front
+            if speed < 0.01 or following_distance == 100 or following_distance > ideal_following_distance:  # No vehicle in front
                 following_distance_error = 0
-            else:
+            elif following_distance < 0.1*ideal_following_distance:
                 # How much to close is the ego vehicle to the vehicle in front (max 30m to close)
-                following_distance_error = min(abs(following_distance - ideal_following_distance), 30)
+                following_distance_error = 30
+            elif following_distance < 0.3*ideal_following_distance:
+                # How much to close is the ego vehicle to the vehicle in front (max 30m to close)
+                following_distance_error = 10
+            elif following_distance < 0.5*ideal_following_distance:
+                # How much to close is the ego vehicle to the vehicle in front (max 30m to close)
+                following_distance_error = 3
+            elif following_distance < 0.8*ideal_following_distance:
+                # How much to close is the ego vehicle to the vehicle in front (max 30m to close)
+                following_distance_error = 1
 
         if collision:
-            reward = -20000
+            reward = -10000
         else:
             #print('v', speed, ', a', acceleration, ', da', change_in_acc, ', follow_e', following_distance_error)
-            reward = (1.5 * speed + 30) - (10 * to_fast * (speed - self.desired_speed) + 3 * acceleration + 1.5 * change_in_acc + following_distance_error)
+            reward = (1.5 * speed + 10) - (10 * to_fast * (speed - (self.ego.get_speed_limit() / 3.6)) + 2 * acceleration + 1 * change_in_acc + 0.5 * following_distance_error)
 
         # Log wandb measurements
         wandb.log({"step_reward": reward})
@@ -960,12 +969,21 @@ class CarlaEnv(gym.Env):
         # Get ego state
         ego_x, ego_y = get_pos(self.ego)
 
+        # Log out of lane
+        dis, _ = get_lane_dis(self.waypoints, ego_x, ego_y)
+        if abs(dis) > self.out_lane_thres:
+            wandb.log({"Respawn_out_of_lane": 1})
+        else:
+            wandb.log({"Respawn_out_of_lane": 0})
+
         # If collides
         if len(self.collision_hist) > 0:
             print('TERMINATION - collision')
             self.episode_crashes.pop()
             self.episode_crashes.append(1)
+            wandb.log({"Collision": 1})
             return True
+        wandb.log({"Collision": 0})
 
         # If reach maximum timestep
         if self.time_step > self.max_time_episode:
@@ -980,11 +998,12 @@ class CarlaEnv(gym.Env):
                     return True
 
         # If out of lane
-        dis, _ = get_lane_dis(self.waypoints, ego_x, ego_y)
+        #dis, _ = get_lane_dis(self.waypoints, ego_x, ego_y)
         if abs(dis) > self.out_lane_thres:
             print('TERMINATION - out of lane')
             self.respawn_without_reset()
             return False
+
 
         # print('No termination')
         return False
