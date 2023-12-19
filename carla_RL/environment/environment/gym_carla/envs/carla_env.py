@@ -763,10 +763,10 @@ class CarlaEnv(gym.Env):
             change_in_acc = 0
 
         if collision:
-            reward = -10000
+            reward = -20000
         else:
             #print('v', speed, ', a', acceleration, ', da', change_in_acc, ', follow_e', following_distance_error)
-            reward = (1.5 * speed) - (10 * to_fast * (speed - self.desired_speed) + 3 * acceleration + 1.5 * change_in_acc + following_distance_error)
+            reward = (1.5 * speed + 30) - (10 * to_fast * (speed - self.desired_speed) + 3 * acceleration + 1.5 * change_in_acc + following_distance_error)
 
 
         # Log wandb measurements
