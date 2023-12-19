@@ -745,13 +745,13 @@ class CarlaEnv(gym.Env):
 
         # If the vehicle doesn't move, the negative reward for acceleration (braking) is not necessary
         if speed < 0.01:
-            acc = 0
+            acceleration = 0
             change_in_acc = 0
 
         if collision:
             reward = -1000
         else:
-            print('v', speed, ', a', acc, ', da', change_in_acc, ', follow_e', following_distance_error)
+            print('v', speed, ', a', acceleration, ', da', change_in_acc, ', follow_e', following_distance_error)
             reward = (1.5 * speed + 20) - (10 * to_fast + 3 * acceleration + 1.5 * change_in_acc + following_distance_error)
 
         return reward
