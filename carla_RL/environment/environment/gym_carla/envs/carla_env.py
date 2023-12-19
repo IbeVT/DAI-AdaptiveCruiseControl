@@ -57,7 +57,7 @@ class CarlaEnv(gym.Env):
             'obs_range': 32,  # observation range (meter)
             'd_behind': 12,  # distance behind the ego vehicle (meter)
             'out_lane_thres': 2.0,  # threshold for out of lane
-            'desired_speed': 8,  # desired speed (m/s)
+            'desired_speed': 40/3.6,  # desired speed (m/s)
             'max_ego_spawn_times': 200,  # maximum times to spawn ego vehicle
             'display_route': True,  # whether to render the desired route
             'radar_fov': 40
@@ -709,6 +709,9 @@ class CarlaEnv(gym.Env):
         self.time_step += 1
         self.total_step += 1
 
+        # Set the desired speed to the speed limit of the ego vehicle
+        #self.desired_speed = self.ego.get_speed_limit()
+
         # Get reward
         obs = self._get_obs()
         reward = self._get_reward()
@@ -904,7 +907,7 @@ class CarlaEnv(gym.Env):
             'speed': np.reshape(np.array(self.ego.get_velocity().length(), dtype=float), (1,)),
             'distance': np.reshape(np.array(self.computer_vision.get_distance(), dtype=float), (1,)),
             'delta_V': np.reshape(np.array(self.computer_vision.get_delta_v(), dtype=float), (1,)),
-            'speed_limit': np.reshape(np.array(self.ego.get_speed_limit() / 3.6, dtype=float), (1,)),
+            'speed_limit': np.reshape(np.array(self.desired_speed / 3.6, dtype=float), (1,)),
             'is_red_light': np.reshape(np.array(1 if self.computer_vision.get_red_light() else 0, dtype=int), (1,)),
             'prev_acc': np.reshape(np.array(self.prev_RL_output, dtype=float), (1,))
         }
@@ -927,7 +930,7 @@ class CarlaEnv(gym.Env):
         collision = 1 if len(self.collision_hist) > 0 else 0
 
         # cost for too fast
-        to_fast = 1 if speed > self.ego.get_speed_limit() / 3.6 else 0
+        to_fast = 1 if speed > self.desired_speed / 3.6 else 0
 
         # Ideal following distance
         following_vehicle_speed = self.computer_vision.get_delta_v()
@@ -957,10 +960,10 @@ class CarlaEnv(gym.Env):
                 following_distance_error = 0.2
 
         if collision:
-            reward = -1000
+            reward = -2000
         else:
             #print('v', speed, ', a', acceleration, ', da', change_in_acc, ', follow_e', following_distance_error)
-            reward = (1.5 * speed) - (10 * to_fast * (speed - (self.ego.get_speed_limit() / 3.6)) + 2 * acceleration + 2 * change_in_acc + 2 * following_distance_error)
+            reward = (1.5 * speed) - (10 * to_fast * (speed - (self.desired_speed / 3.6)) + 2 * acceleration + 2 * change_in_acc + 2 * following_distance_error)
 
         # Log wandb measurements
         wandb.log({"step_reward": reward})
