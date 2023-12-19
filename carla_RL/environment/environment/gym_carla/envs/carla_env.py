@@ -91,7 +91,7 @@ class CarlaEnv(gym.Env):
         self.radar_manager = None
 
         self.controller = None
-        self.steer_method = "PurePursuit"
+        self.steer_method = "Stanley"
 
         # Destination
         if env_config['task_mode'] == 'roundabout':
@@ -374,6 +374,7 @@ class CarlaEnv(gym.Env):
             acc = action[0]
 
         # Convert acc to value between -3 and 3 and to throttle and brake values
+        print('acc', acc)
         if acc > 0:
             throttle = np.clip(acc / 3, 0, 1)
             brake = 0
@@ -385,7 +386,7 @@ class CarlaEnv(gym.Env):
 
         # Apply control
         #act = carla.VehicleControl(throttle=throttle, steer=self.ego.get_control().steer, brake=brake)
-        sensitivity = 10/np.pi
+        sensitivity = np.clip(3, -1, 1)
         act = carla.VehicleControl(throttle=throttle, steer=sensitivity*steer, brake=brake)
         self.ego.apply_control(act)
 
@@ -749,10 +750,10 @@ class CarlaEnv(gym.Env):
             change_in_acc = 0
 
         if collision:
-            reward = -1000
+            reward = -10000
         else:
             print('v', speed, ', a', acceleration, ', da', change_in_acc, ', follow_e', following_distance_error)
-            reward = (1.5 * speed + 20) - (10 * to_fast + 3 * acceleration + 1.5 * change_in_acc + following_distance_error)
+            reward = (1.5 * speed) - (10 * to_fast * (speed - self.desired_speed) + 3 * acceleration + 1.5 * change_in_acc + following_distance_error)
 
         return reward
 
