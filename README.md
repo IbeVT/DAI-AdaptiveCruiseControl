@@ -15,7 +15,6 @@ Currently, there are only parts of the code, seperated in multiple branches as f
 
 #DatasetSetup
 
-
 DataSetCreation/setVar.sh   - Script to set all the enviroment variables needed for our dataset creation
 DataSetCreation/carla__tool/carla_dataset_tools/fullDataset.sh - Script to run multiple scenarios for 1 hour each, recording from 6 different cars
 DataSetCreation/carla__tool/carla_dataset_tools/label_tools/yolo_label.py - labelling tool that creates our dataset (-r recordFolder)
