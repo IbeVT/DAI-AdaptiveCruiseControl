@@ -389,7 +389,7 @@ class CarlaEnv(gym.Env):
         #act = carla.VehicleControl(throttle=throttle, steer=self.ego.get_control().steer, brake=brake)
         print(steer)
         sensitivity = 10/np.pi
-        act = carla.VehicleControl(throttle=throttle steer=sensitivity*steer, brake=brake)
+        act = carla.VehicleControl(throttle=throttle, steer=sensitivity*steer, brake=brake)
         self.ego.apply_control(act)
 
         self.world.tick()
