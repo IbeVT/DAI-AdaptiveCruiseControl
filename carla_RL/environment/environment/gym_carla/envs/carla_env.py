@@ -82,7 +82,6 @@ class CarlaEnv(gym.Env):
         self.sensor_tick = self.dt
         self.radar_fov = env_config['radar_fov']
 
-        self.episode_rewards = []
         self.actor_list = []
         self.prev_acc = 0
 
@@ -180,17 +179,31 @@ class CarlaEnv(gym.Env):
         # self._init_renderer()
         print('init end')
 
+        # Initialise wandb logging
+        self.episode_crashes = []
+        self.crashes_ma_period = 20
+
     def reset(self):
         print(f'-------------------------------------RESET {self.reset_step}--------------------------------------')
+
+        if self.reset_step != 0:
+            # Log total episode reward
+            wandb.log({"episode_reward": self.episode_reward})
+            wandb.log({"episode_average_speed": np.mean(self.episode_speeds)})
+            wandb.log({"episode_average_accel": np.mean(self.episode_accelerations)})
+            wandb.log({f"crashes_MA{self.crashes_ma_period}": np.sum(self.episode_crashes)})
+
+        # Reset
+        self.episode_reward = 0
+        self.episode_speeds = []
+        self.episode_accelerations = []
+
+        if len(self.episode_crashes) > self.crashes_ma_period:
+            self.episode_crashes.pop()
 
         # Reset previous speed and acc (output of RL agent)
         self.prev_speed = 0
         self.prev_acc = 0
-
-        if self.reset_step != 0:
-            # Log total episode reward
-            wandb.log({"episode_reward": sum(self.episode_rewards)})
-            self.episode_rewards = []
 
         # Delete sensors, vehicles and walkers
         for actor in self.actor_list:
@@ -516,7 +529,7 @@ class CarlaEnv(gym.Env):
 
         # Log single step reward
         reward = self._get_reward()
-        self.episode_rewards.append(reward)
+        self.episode_reward += reward
         wandb.log({"step_reward": reward})
 
         # print('step end')
@@ -753,7 +766,7 @@ class CarlaEnv(gym.Env):
         if collision:
             reward = -10000
         else:
-            print('v', speed, ', a', acceleration, ', da', change_in_acc, ', follow_e', following_distance_error)
+            #print('v', speed, ', a', acceleration, ', da', change_in_acc, ', follow_e', following_distance_error)
             reward = (1.5 * speed) - (10 * to_fast * (speed - self.desired_speed) + 3 * acceleration + 1.5 * change_in_acc + following_distance_error)
 
         return reward
