@@ -943,6 +943,8 @@ class CarlaEnv(gym.Env):
             elif following_distance < 0.8*ideal_following_distance:
                 # How much to close is the ego vehicle to the vehicle in front (max 30m to close)
                 following_distance_error = 1
+            else:
+                following_distance_error = 0.2
 
         if collision:
             reward = -10000
