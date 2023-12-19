@@ -304,9 +304,6 @@ class CarlaEnv(gym.Env):
 
         self.routeplanner = RoutePlanner(self.ego, self.max_waypt)
         self.waypoints, _, self.vehicle_front = self.routeplanner.run_step()
-        """print("\n\n\n\n\n\n\n\n\n\n\n\nWaypoints:")
-        print(self.waypoints)
-        print("\n\n\n\n\n\n\n\n\n\n\n\n")"""
 
         # Linear interpolation to improve the results:
         # Path interpolation parameters
@@ -388,7 +385,6 @@ class CarlaEnv(gym.Env):
 
         # Apply control
         #act = carla.VehicleControl(throttle=throttle, steer=self.ego.get_control().steer, brake=brake)
-        print(steer)
         sensitivity = 10/np.pi
         act = carla.VehicleControl(throttle=throttle, steer=sensitivity*steer, brake=brake)
         self.ego.apply_control(act)
@@ -414,7 +410,7 @@ class CarlaEnv(gym.Env):
         # route planner
         self.waypoints, _, self.vehicle_front = self.routeplanner.run_step()
 
-        print("Waypoints:", self.waypoints)
+        #print("Waypoints:", self.waypoints)
 
         # Linear interpolation to improve the results:
         # Path interpolation parameters
@@ -491,11 +487,11 @@ class CarlaEnv(gym.Env):
             length = 1.5
         else:
             length = 0.0
-        print("Current yaw:", current_yaw)
+        #print("Current yaw:", current_yaw)
         current_x, current_y = self.controller.get_shifted_coordinate(current_x, current_y, current_yaw, length)
 
-        print("Current location:", current_x, current_y)
-        print("Next waypoints:", self.waypoints[0])
+        #print("Current location:", current_x, current_y)
+        #print("Next waypoints:", self.waypoints[0])
         closest_distance = np.linalg.norm(np.array([
             self.waypoints[0][0] - current_x,
             self.waypoints[0][1] - current_y]))
@@ -629,7 +625,7 @@ class CarlaEnv(gym.Env):
             self.actor_list.append(vehicle)
 
         if vehicle is not None:
-            vehicle.set_autopilot(False)
+            #vehicle.set_autopilot(False)
             self.ego = vehicle
             self.actor_list.append(vehicle)
             self.ego.show_debug_telemetry()
