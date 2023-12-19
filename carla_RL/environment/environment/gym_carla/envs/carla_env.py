@@ -569,8 +569,11 @@ class CarlaEnv(gym.Env):
         # Stop for yellow or red traffic lights
         traffic_light = self.ego.get_traffic_light_state()
         if traffic_light is not None and (traffic_light == carla.TrafficLightState.Yellow or traffic_light == carla.TrafficLightState.Red):
+            wandb.log({"red_light": 1})
             brake = 1
             throttle = 0
+        else:
+            wandb.log({"red_light": 0})
 
         sensitivity = 3
         act = carla.VehicleControl(throttle=float(throttle), steer=float(np.clip(sensitivity*steer, -1, 1)), brake=float(brake))
