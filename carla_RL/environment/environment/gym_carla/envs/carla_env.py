@@ -374,7 +374,7 @@ class CarlaEnv(gym.Env):
             acc = action[0]
 
         # Convert acc to value between -3 and 3 and to throttle and brake values
-        print('acc', acc)
+        print('---------------------------------------------acc\n\n\n\n\n\n', acc)
         if acc > 0:
             throttle = np.clip(acc / 3, 0, 1)
             brake = 0
@@ -386,8 +386,8 @@ class CarlaEnv(gym.Env):
 
         # Apply control
         #act = carla.VehicleControl(throttle=throttle, steer=self.ego.get_control().steer, brake=brake)
-        sensitivity = np.clip(3, -1, 1)
-        act = carla.VehicleControl(throttle=throttle, steer=sensitivity*steer, brake=brake)
+        sensitivity = 3
+        act = carla.VehicleControl(throttle=float(throttle), steer=float(np.clip(sensitivity*steer, -1, 1)), brake=float(brake))
         self.ego.apply_control(act)
 
         self.world.tick()
