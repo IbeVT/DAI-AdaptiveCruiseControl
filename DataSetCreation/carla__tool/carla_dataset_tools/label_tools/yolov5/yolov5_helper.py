@@ -101,9 +101,9 @@ def check_color(img):
 def write_yaml(output_path):
     os.makedirs(output_path, exist_ok=True)
     dict_file = {
-        'path': 'yolo_dataset',
-        'train': 'images/train',
-        'val': 'images/train',
+        'path': '',
+        'train': 'train',
+        'val': 'val',
         'test': '',
         'nc': len(COCO_NAMES),
         'names': COCO_NAMES
