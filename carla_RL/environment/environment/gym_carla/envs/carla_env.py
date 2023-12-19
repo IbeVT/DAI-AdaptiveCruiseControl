@@ -943,27 +943,26 @@ class CarlaEnv(gym.Env):
                 following_distance_error = 0
             elif following_distance < 0.05*ideal_following_distance:
                 # How much to close is the ego vehicle to the vehicle in front (max 30m to close)
-                following_distance_error = 60
+                following_distance_error = 30
             elif following_distance < 0.1*ideal_following_distance:
                 # How much to close is the ego vehicle to the vehicle in front (max 30m to close)
-                following_distance_error = 30
+                following_distance_error = 15
             elif following_distance < 0.3*ideal_following_distance:
                 # How much to close is the ego vehicle to the vehicle in front (max 30m to close)
-                following_distance_error = 10
+                following_distance_error = 8
             elif following_distance < 0.5*ideal_following_distance:
                 # How much to close is the ego vehicle to the vehicle in front (max 30m to close)
-                following_distance_error = 3
+                following_distance_error = 4
             elif following_distance < 0.8*ideal_following_distance:
                 # How much to close is the ego vehicle to the vehicle in front (max 30m to close)
-                following_distance_error = 1
+                following_distance_error = 1.5
             else:
-                following_distance_error = 0.2
+                following_distance_error = 0.5
 
-        if collision:
-            reward = -2000
-        else:
-            #print('v', speed, ', a', acceleration, ', da', change_in_acc, ', follow_e', following_distance_error)
-            reward = (1.5 * speed) - (10 * to_fast * (speed - (self.desired_speed / 3.6)) + 2 * acceleration + 2 * change_in_acc + 2 * following_distance_error)
+        reward = (1.5 * speed + 2) - (10 * to_fast * (speed - (self.desired_speed / 3.6)) + 2 * acceleration + 2 * change_in_acc + 3*following_distance_error)
+
+        """if collision:
+            reward = -2000"""
 
         # Log wandb measurements
         wandb.log({"step_reward": reward})
