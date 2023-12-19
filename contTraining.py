@@ -1,8 +1,3 @@
-# -*- coding: utf-8 -*-
-
-
-#Pip install `ultralytics` and [dependencies](https://github.com/ultralytics/ultralytics/blob/main/requirements.txt) and check software and hardware.
-
 import comet_ml
 import torch
 import ultralytics
@@ -18,12 +13,10 @@ from ultralytics import YOLO
 
 # Load a model
 #model = YOLO('yolov8n.yaml')  # build a new model from scratch
-model = YOLO('yolov8n.pt')  # load a pretrained model (recommended for training)
+model = YOLO('runs/detect/v2CarlaCV5/weights/last.pt')  # load a pretrained model (recommended for training)
 
 # Use the model
-results = model.train(data='/home/carla/NScripts/alb/DAI-AdaptiveCruiseControl/datasets/3/yolov5_carla.yaml',  name = 'v3CarlaCV', epochs=100, patience=5, batch = 16,
-      cache = True, imgsz=640, iou = 0.5,workers=0, save=True,save_period=1,
-      augment=False, degrees=0.0, fliplr=0.0, lr0=0.01,weight_decay=0.0005, optimizer='AdamW')  # train the model
+results = model.train(resume=True)
 
 results = model.val()  # evaluate model performance on the validation set
 
