@@ -374,7 +374,7 @@ class CarlaEnv(gym.Env):
             acc = action[0]
 
         # Convert acc to value between -3 and 3 and to throttle and brake values
-        print('---------------------------------------------acc\n\n\n\n\n\n', acc)
+        print('---------------------------------------------acc\n\n\n\n\n\n', acc, self.discrete, action[0])
         if acc > 0:
             throttle = np.clip(acc / 3, 0, 1)
             brake = 0
