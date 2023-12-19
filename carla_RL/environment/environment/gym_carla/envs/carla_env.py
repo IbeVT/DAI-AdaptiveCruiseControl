@@ -950,13 +950,14 @@ class CarlaEnv(gym.Env):
             reward = -10000
         else:
             #print('v', speed, ', a', acceleration, ', da', change_in_acc, ', follow_e', following_distance_error)
-            reward = (1.5 * speed + 10) - (10 * to_fast * (speed - (self.ego.get_speed_limit() / 3.6)) + 2 * acceleration + 1 * change_in_acc + 0.5 * following_distance_error)
+            reward = (1.5 * speed) - (10 * to_fast * (speed - (self.ego.get_speed_limit() / 3.6)) + 2 * acceleration + 1 * change_in_acc + 0.5 * following_distance_error)
 
         # Log wandb measurements
         wandb.log({"step_reward": reward})
         wandb.log({"step_speed": speed})
         wandb.log({"step_acceleration": acceleration})
         wandb.log({"step_to_fast": to_fast})
+        wandb.log({"following_distance/ideal_distance": following_distance / ideal_following_distance if following_distance_error != 0 else 10})
 
         # Store wandb measurements
         self.episode_reward += reward
