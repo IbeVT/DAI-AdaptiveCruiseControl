@@ -931,6 +931,9 @@ class CarlaEnv(gym.Env):
             ideal_following_distance = 5 + 2 * following_vehicle_speed
             if speed < 0.01 or following_distance == 100 or following_distance > ideal_following_distance:  # No vehicle in front
                 following_distance_error = 0
+            elif following_distance < 0.05*ideal_following_distance:
+                # How much to close is the ego vehicle to the vehicle in front (max 30m to close)
+                following_distance_error = 60
             elif following_distance < 0.1*ideal_following_distance:
                 # How much to close is the ego vehicle to the vehicle in front (max 30m to close)
                 following_distance_error = 30
@@ -947,10 +950,10 @@ class CarlaEnv(gym.Env):
                 following_distance_error = 0.2
 
         if collision:
-            reward = -10000
+            reward = -1000
         else:
             #print('v', speed, ', a', acceleration, ', da', change_in_acc, ', follow_e', following_distance_error)
-            reward = (1.5 * speed) - (10 * to_fast * (speed - (self.ego.get_speed_limit() / 3.6)) + 2 * acceleration + 1 * change_in_acc + 0.5 * following_distance_error)
+            reward = (1.5 * speed) - (10 * to_fast * (speed - (self.ego.get_speed_limit() / 3.6)) + 2 * acceleration + 2 * change_in_acc + 2 * following_distance_error)
 
         # Log wandb measurements
         wandb.log({"step_reward": reward})
