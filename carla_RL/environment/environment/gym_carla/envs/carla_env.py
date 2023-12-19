@@ -182,6 +182,7 @@ class CarlaEnv(gym.Env):
         print(f'-------------------------------------RESET {self.reset_step}--------------------------------------')
 
         # Reset previous speed and acc (output of RL agent)
+        self.prev_speed = 0
         self.prev_acc = 0
 
         if self.reset_step != 0:
@@ -516,7 +517,7 @@ class CarlaEnv(gym.Env):
         self.total_step += 1
 
         # Log single step reward
-        reward = self._get_reward(acc)
+        reward = self._get_reward()
         self.episode_rewards.append(reward)
         wandb.log({"step_reward": reward})
 
@@ -715,16 +716,17 @@ class CarlaEnv(gym.Env):
 
         return obs
 
-    def _get_reward(self, acc):
+    def _get_reward(self):
         """Calculate the step reward."""
         # return 1
         # reward for speed tracking
         speed = self.ego.get_velocity().length()
 
         # Calculate the acceleration and the change in acceleration to make the ride smooth and energy efficient
-        acc = abs(acc)
-        change_in_acc = abs(acc - self.prev_acc)
-        self.prev_acc = acc
+        acceleration = abs(speed - self.prev_speed)
+        change_in_acc = abs(acceleration - self.prev_acc)
+        self.prev_speed = speed
+        self.prev_acc = acceleration
 
         # reward for collision
         collision = 1 if len(self.collision_hist) > 0 else 0
@@ -754,7 +756,7 @@ class CarlaEnv(gym.Env):
             reward = -1000
         else:
             print('v', speed, ', a', acc, ', da', change_in_acc, ', follow_e', following_distance_error)
-            reward = (1.5 * speed + 20) - (10 * to_fast + 3 * acc + 1.5 * change_in_acc + following_distance_error)
+            reward = (1.5 * speed + 20) - (10 * to_fast + 3 * acceleration + 1.5 * change_in_acc + following_distance_error)
 
         return reward
 
