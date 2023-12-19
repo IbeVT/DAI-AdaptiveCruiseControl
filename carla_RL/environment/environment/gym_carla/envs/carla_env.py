@@ -995,8 +995,7 @@ class CarlaEnv(gym.Env):
         # If collides
         if len(self.collision_hist) > 0:
             print('TERMINATION - collision')
-            self.episode_crashes.pop()
-            self.episode_crashes.append(1)
+            self.episode_crashes[-1] = self.episode_crashes[-1] + 1
             wandb.log({"Collision": 1})
             return True
         wandb.log({"Collision": 0})
