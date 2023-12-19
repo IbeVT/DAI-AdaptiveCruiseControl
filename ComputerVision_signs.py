@@ -204,10 +204,22 @@ class ComputerVision:
                         if str(class_id2) in self.speed_classes:
                             speed_boxes.append({"class_id2": class_id2, "cords2": cords2, "conf2": conf2})
                             if class_id2 != 'Green Light' and class_id2 != 'Red Light' and class_id2 != 'Stop':
-                                if cords2[0] > 640 and cords[0] < 1000:
+                                if cords2[0] > 640 and cords[0] < 1000 and cords[1] > 360:
+                                    self.max_speed = int(class_id2[-3:])
                                     print('\n\n\nD\n\nE\n\nR\n\nE\n\nC\n\nH\n\nA\n\n\n\n')
-                                    self.delta_v = int(class_id2[-3:])
+                                    self.delta_v = self.max_speed
                                     print('speed prueba 1', self.delta_v)
+                                    
+                            if class_id2 == 'Red Light' or class_id2 == 'Stop':
+                                self.delta_v = 0
+                                if class_id2 == 'Stop':
+                                    time.sleep(5)
+                                    self.delta_v = self.max_speed
+                                    
+                            if class_id2 == 'Green Light':
+                                self.delta_v = self.max_speed
+                                
+                                
                         found = True
                         break
 
@@ -234,10 +246,21 @@ class ComputerVision:
                                 if str(class_id2) in self.speed_classes:
                                     speed_boxes.append({"class_id2": class_id2, "cords2": cords2, "conf2": conf2})
                                     if class_id2 != 'Green Light' and class_id2 != 'Red Light' and class_id2 != 'Stop':
-                                        if cords2[0] > 640 and cords[0] < 1000:
+                                        if cords2[0] > 640 and cords[0] < 1000 and cords[1] > 360:
+                                            self.max_speed = int(class_id2[-3:])
                                             print('\n\n\nD\n\nE\n\nR\n\nE\n\nC\n\nH\n\nA\n\n\n\n')
-                                            self.delta_v = int(class_id2[-3:])
+                                            self.delta_v = self.max_speed
                                             print('speed prueba 1', self.delta_v)
+                                            
+                                    if class_id2 == 'Red Light' or class_id2 == 'Stop':
+                                        self.delta_v = 0
+                                        if class_id2 == 'Stop':
+                                            time.sleep(5)
+                                            self.delta_v = self.max_speed
+                                            
+                                    if class_id2 == 'Green Light':
+                                        self.delta_v = self.max_speed
+                                    
                                 found = True
                                 break
                 
