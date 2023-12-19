@@ -488,6 +488,13 @@ class CarlaEnv(gym.Env):
         self.routeplanner = RoutePlanner(self.ego, self.max_waypt)
         self.waypoints, _, self.vehicle_front = self.routeplanner.run_step()
 
+        def get_collision_hist(event):
+            impulse = event.normal_impulse
+            intensity = np.sqrt(impulse.x ** 2 + impulse.y ** 2 + impulse.z ** 2)
+            self.collision_hist.append(intensity)
+            if len(self.collision_hist) > self.collision_hist_l:
+                self.collision_hist.pop(0)
+
         # Linear interpolation to improve the results:
         # Path interpolation parameters
         INTERP_MAX_POINTS_PLOT = 10  # number of points used for displaying
