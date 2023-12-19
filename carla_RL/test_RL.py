@@ -38,7 +38,7 @@ def main():
   obs, info = env.reset()
 
   # Use deterministic behaviour
-  #agent.config['explore'] = False
+  agent.config['explore'] = False
 
   while True:
       action = agent.compute_single_action(obs)
