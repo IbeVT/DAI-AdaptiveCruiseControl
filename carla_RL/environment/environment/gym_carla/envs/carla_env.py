@@ -961,8 +961,8 @@ class CarlaEnv(gym.Env):
 
         reward = (1.5 * speed + 2) - (10 * to_fast * (speed - (self.desired_speed / 3.6)) + 2 * acceleration + 2 * change_in_acc + 3*following_distance_error)
 
-        """if collision:
-            reward = -2000"""
+        #if collision:
+        #    reward = -2000
 
         # Log wandb measurements
         wandb.log({"step_reward": reward})
