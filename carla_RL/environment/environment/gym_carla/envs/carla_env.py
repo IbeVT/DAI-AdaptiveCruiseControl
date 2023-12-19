@@ -967,7 +967,7 @@ class CarlaEnv(gym.Env):
         wandb.log({"step_speed": speed})
         wandb.log({"step_acceleration": acceleration})
         wandb.log({"step_to_fast": to_fast})
-        wandb.log({"following_distance/ideal_distance": following_distance / ideal_following_distance if following_distance_error != 0 else 10})
+        wandb.log({"following_distance_to_ideal_distance": following_distance / ideal_following_distance if following_distance_error != 0 else 10})
 
         # Store wandb measurements
         self.episode_reward += reward
