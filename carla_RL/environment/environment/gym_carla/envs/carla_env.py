@@ -109,6 +109,7 @@ class CarlaEnv(gym.Env):
             self.action_space = spaces.Box(low=np.array([env_config['continuous_accel_range'][0]]),
                                            high=np.array([env_config['continuous_accel_range'][1]]),
                                            dtype=np.float32)  # acc
+
         observation_space_dict = {
             'speed': spaces.Box(low=-50, high=50, shape=(1,), dtype=float),
             'distance': spaces.Box(low=0, high=100, shape=(1,), dtype=float),
@@ -374,6 +375,7 @@ class CarlaEnv(gym.Env):
         else:
             acc = action[0]
         print('---------------------------------------------acc------------------------------------\n\n\n\n', acc)
+        print(self.action_space)
         # Convert acc to value between -3 and 3 and to throttle and brake values
         if acc > 0:
             throttle = np.clip(acc / 3, 0, 1)
