@@ -62,6 +62,8 @@ class CarlaEnv(gym.Env):
             'display_route': True,  # whether to render the desired route
             'radar_fov': 40
         }
+        self.env_config = env_config
+
         # parameters
         self.display_size = env_config['display_size']  # rendering screen size
         self.max_past_step = env_config['max_past_step']
@@ -559,7 +561,7 @@ class CarlaEnv(gym.Env):
         if self.discrete:
             acc = self.discrete_act[0][action // self.n_steer]
         else:
-            acc = action[0] / env_config['continuous_accel_range'][1]
+            acc = action[0] / self.env_config['continuous_accel_range'][1]
 
         wandb.log({"step_RL_output": acc})
 
