@@ -47,7 +47,7 @@ class CarlaEnv(gym.Env):
             'dt': 0.1,  # time interval between two frames
             'discrete': False,  # whether to use discrete control space
             'discrete_acc': [-3.0, 0.0, 3.0],  # discrete value of accelerations
-            'continuous_accel_range': [-10.0, 10.0],  # continuous acceleration range
+            'continuous_accel_range': [-100.0, 100.0],  # continuous acceleration range
             'ego_vehicle_filter': 'vehicle.lincoln*',  # filter for defining ego vehicle
             'port': 2000,  # connection port
             'town': 'Town03',  # which town to simulate
@@ -1002,7 +1002,9 @@ class CarlaEnv(gym.Env):
             print('TERMINATION - collision')
             self.episode_crashes[-1] = self.episode_crashes[-1] + 1
             wandb.log({"Collision": 1})
-            return True
+            self.respawn_without_reset()
+            return False
+            #return True
         wandb.log({"Collision": 0})
 
         # If reach maximum timestep
