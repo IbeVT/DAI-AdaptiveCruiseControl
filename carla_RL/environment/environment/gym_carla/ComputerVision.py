@@ -406,6 +406,9 @@ class ComputerVision:
         self.projection_matrix = K
         return K
 
+    def get_red_light(self):
+        return self.is_red_light
+
     def get_image_coordinates_from_radar_point(self, azimuth, altitude, depth):  # in radians
         # Based on https://carla.readthedocs.io/en/latest/tuto_G_bounding_boxes/
         # Convert RadarDetection to carla 3D location
