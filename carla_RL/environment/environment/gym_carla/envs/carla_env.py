@@ -917,6 +917,7 @@ class CarlaEnv(gym.Env):
             'is_red_light': np.reshape(np.array(1 if self.computer_vision.get_red_light() else 0, dtype=int), (1,)),
             'prev_acc': np.reshape(np.array(self.prev_RL_output, dtype=float), (1,))
         }
+        print('obs', obs)
 
         return obs
 
