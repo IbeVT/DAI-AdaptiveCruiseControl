@@ -155,9 +155,9 @@ class ComputerVision:
                 
             
             if conf2 > 0.5:
-                self.boxes.append({"class_id2": class_id2, "cords2": cords2, "conf2": conf2})
+                self.boxes.append({"class_id": class_id2, "cords": cords2, "conf": conf2})
                 if str(class_id2) in self.speed_classes:
-                    speed_boxes.append({"class_id2": class_id2, "cords2": cords2, "conf2": conf2})
+                    speed_boxes.append({"class_id": class_id2, "cords": cords2, "conf": conf2})
                 
                 continue
                
@@ -168,10 +168,7 @@ class ComputerVision:
                 if "class_id" in previous_box:
                     class_id_previous = previous_box["class_id"]
                     cords_previous = previous_box["cords"]
-                    
-                if "class_id2" in previous_box:
-                    class_id_previous = previous_box["class_id2"]
-                    cords_previous = previous_box["cords2"]
+
 
                 # Only stay stopped if the light is still detected
                 self.is_red_light = False
@@ -182,10 +179,10 @@ class ComputerVision:
                     if do_boxes_overlap(cords2, cords_previous):
                         # If approximately the same box was detected in the previous frame, we will suppose that it
                         # is indeed a true positive
-                        self.boxes.append({"class_id2": class_id2, "cords2": cords2, "conf2": conf2})
+                        self.boxes.append({"class_id": class_id2, "cords": cords2, "conf": conf2})
                         
                         if str(class_id2) in self.speed_classes:
-                            speed_boxes.append({"class_id2": class_id2, "cords2": cords2, "conf2": conf2})
+                            speed_boxes.append({"class_id": class_id2, "cords": cords2, "conf": conf2})
                             if class_id2 != 'Green Light' and class_id2 != 'Red Light' and class_id2 != 'Stop':
                                 if cords2[0] > 640 and cords[0] < 1000 and cords[1] > 360:
                                     self.max_speed = int(class_id2[-3:])
@@ -206,10 +203,7 @@ class ComputerVision:
                     if "class_id" in previous_box:
                         class_id_previous = previous_box["class_id"]
                         cords_previous = previous_box["cords"]
-                    
-                    if "class_id2" in previous_box:
-                        class_id_previous = previous_box["class_id2"]
-                        cords_previous = previous_box["cords2"]
+
                     
                     # Check if the class is the same
                     if class_id2 == class_id_previous:
@@ -217,12 +211,12 @@ class ComputerVision:
                         if do_boxes_overlap(cords2, cords_previous):
                             # If approximately the same box was detected in the previous frame, we will suppose that it
                             # is indeed a true positive
-                            if previous_box["conf2"] + conf2 > 0.6:
-                                self.boxes.append({"class_id2": class_id2, "cords2": cords2, "conf2": conf2})
+                            if previous_box["conf"] + conf2 > 0.6:
+                                self.boxes.append({"class_id": class_id2, "cords": cords2, "conf": conf2})
                                 if str(class_id2) in self.speed_classes:
-                                    speed_boxes.append({"class_id2": class_id2, "cords2": cords2, "conf2": conf2})
+                                    speed_boxes.append({"class_id": class_id2, "cords": cords2, "conf": conf2})
                                     if str(class_id2) in self.speed_classes:
-                                        speed_boxes.append({"class_id2": class_id2, "cords2": cords2, "conf2": conf2})
+                                        speed_boxes.append({"class_id": class_id2, "cords": cords2, "conf": conf2})
                                         if class_id2 != 'Green Light' and class_id2 != 'Red Light' and class_id2 != 'Stop':
                                             if cords2[0] > 640 and cords[0] < 1000 and cords[1] > 360:
                                                 self.max_speed = int(class_id2[-3:])
