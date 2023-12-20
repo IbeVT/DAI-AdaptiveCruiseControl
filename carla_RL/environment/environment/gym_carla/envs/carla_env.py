@@ -579,8 +579,8 @@ class CarlaEnv(gym.Env):
         red_light = self.ego.is_at_traffic_light()
         if red_light:
             wandb.log({"truth_red_light": 1})
-            brake = 1
-            throttle = 0
+            #brake = 1
+            #throttle = 0
         else:
             wandb.log({"truth_red_light": 0})
 
