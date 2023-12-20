@@ -38,8 +38,8 @@ if __name__ == "__main__":
             "framework": "torch",
             # "num_gpus": 0.5,
             "num_workers": 0,
-            "env": "CustomCarlaEnv",
-            #"env": "CartPole-v1",
+            #"env": "CustomCarlaEnv",
+            "env": "CartPole-v1",
             "env_config": {
                 "disable_env_checking": True,
                 "ignore_workers_failure": False,
