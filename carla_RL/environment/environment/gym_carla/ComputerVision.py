@@ -17,6 +17,8 @@ class ComputerVision:
         self.inverse_camera_matrix = None
         self.radar_points = None
         self.model = YOLO('/home/carla/PythonScripts/Stijn/DAI-AdaptiveCruiseControl/carla_RL/environment/environment/gym_carla/best.pt')
+        self.model2 = YOLO('/home/carla/PythonScripts/Stijn/DAI-AdaptiveCruiseControl/carla_RL/environment/environment/gym_carla/signs_best.pt')
+        self.speed_classes = ['Green Light', 'Red Light', 'Speed Limit 10', 'Speed Limit 100', 'Speed Limit 110', 'Speed Limit 120', 'Speed Limit 20', 'Speed Limit 30', 'Speed Limit 40', 'Speed Limit 50', 'Speed Limit 60', 'Speed Limit 70', 'Speed Limit 80', 'Speed Limit 90', 'Stop']
         self.vehicle_classes = ['bus', 'bike', 'car', 'motorcycle', 'vehicle']
         self.camera_x_pixels = 720
         self.camera_y_pixels = 1280
@@ -45,14 +47,19 @@ class ComputerVision:
             return
         results = self.model.predict(source=self.image, save=False, conf=0.1)
         result = results[0]
+        
+        results2 = self.model2.predict(source=self.image, save=False, conf=0.1)
+        result2 = results2[0]
 
-        # Check which car is in front, if any To find the vehicle in front, we will use the steer angle and the
-        # azimuth angle We do it as follows: 1. Get all boxes that are vehicles 2. Group all points that belong to
-        # the same box 3. For each box, calculate the median distance and speed 4. Calculate where the vector with
-        # length=median_distance, azimuth=steer_angle and altitude=mean_altitude_points would end on the camera 5.
-        # Calculate the distance from the vector to the center of the bounding box of the vehicle Reset the values
-        # Afterward, check if the center of the beam does not contain too much close points. The computer vision
-        # might have missed an object that is close.
+        # Check which car is in front, if any
+        # To find the vehicle in front, we will use the steer angle and the azimuth angle We do it as follows:
+        # 1. Get all boxes that are vehicles
+        # 2. Group all points that belong to the same box
+        # 3. For each box, calculate the median distance and speed
+        # 4. Calculate where the vector with length=median_distance, azimuth=steer_angle and
+        # altitude=mean_altitude_points would end on the camera
+        # 5. Calculate the distance from the vector to the center of the bounding box of the vehicle
+        # Reset the values
         self.following_vehicle_box = None
         self.following_vehicle_type = None
         self.distance = self.max_depth
@@ -79,6 +86,7 @@ class ComputerVision:
             self.wheel_angles = self.wheel_angles[-n_points:]
 
         vehicle_boxes = []
+        speed_boxes = []
         previous_results = self.boxes
         previous_low_conf_results = self.low_conf_boxes
         self.boxes = []
@@ -131,7 +139,112 @@ class ComputerVision:
             if not found:
                 # Still save the box, for debugging purposes
                 self.low_conf_boxes.append({"class_id": class_id, "cords": cords, "conf": conf})
+        
+        for box2 in result2.boxes:
+            
+            class_id2 = result2.names[box2.cls[0].item()]
+            cords2 = box2.xyxy[0].tolist()
+            cords2 = [round(x) for x in cords2]
+            conf2 = round(box2.conf[0].item(), 2)
+            print("Object type class2:", class_id2)
+            print("Coordinates class2:", cords2)
+            
+                
+                
+            
+            if conf2 > 0.5:
+                self.boxes.append({"class_id2": class_id2, "cords2": cords2, "conf2": conf2})
+                if str(class_id2) in self.speed_classes:
+                    speed_boxes.append({"class_id2": class_id2, "cords2": cords2, "conf2": conf2})
+                
+                continue
+               
+                
+            found = False
+            for previous_box in previous_results:
+                
+                if "class_id" in previous_box:
+                    class_id_previous = previous_box["class_id"]
+                    cords_previous = previous_box["cords"]
+                    
+                if "class_id2" in previous_box:
+                    class_id_previous = previous_box["class_id2"]
+                    cords_previous = previous_box["cords2"]
+                
+                # Check if the class is the same
+                if class_id2 == class_id_previous:
+                    # Check whether the boxes overlap
+                    if do_boxes_overlap(cords2, cords_previous):
+                        # If approximately the same box was detected in the previous frame, we will suppose that it
+                        # is indeed a true positive
+                        self.boxes.append({"class_id2": class_id2, "cords2": cords2, "conf2": conf2})
+                        
+                        if str(class_id2) in self.speed_classes:
+                            speed_boxes.append({"class_id2": class_id2, "cords2": cords2, "conf2": conf2})
+                            if class_id2 != 'Green Light' and class_id2 != 'Red Light' and class_id2 != 'Stop':
+                                if cords2[0] > 640 and cords[0] < 1000 and cords[1] > 360:
+                                    self.max_speed = int(class_id2[-3:])
+                                    print('\n\n\nD\n\nE\n\nR\n\nE\n\nC\n\nH\n\nA\n\n\n\n')
+                                    self.delta_v = self.max_speed
+                                    print('speed prueba 1', self.delta_v)
+                                    
+                            if class_id2 == 'Red Light' or class_id2 == 'Stop':
+                                self.delta_v = 0
+                                if class_id2 == 'Stop':
+                                    time.sleep(5)
+                                    self.delta_v = self.max_speed
+                                    
+                            if class_id2 == 'Green Light':
+                                self.delta_v = self.max_speed
+                                
+                                
+                        found = True
+                        break
 
+            if not found:
+                # Check if a similar box was detected with low confidence in the previous frame
+                for previous_box in previous_low_conf_results:
+                    
+                    if "class_id" in previous_box:
+                        class_id_previous = previous_box["class_id"]
+                        cords_previous = previous_box["cords"]
+                    
+                    if "class_id2" in previous_box:
+                        class_id_previous = previous_box["class_id2"]
+                        cords_previous = previous_box["cords2"]
+                    
+                    # Check if the class is the same
+                    if class_id2 == class_id_previous:
+                        # Check whether the boxes overlap
+                        if do_boxes_overlap(cords2, cords_previous):
+                            # If approximately the same box was detected in the previous frame, we will suppose that it
+                            # is indeed a true positive
+                            if previous_box["conf2"] + conf2 > 0.6:
+                                self.boxes.append({"class_id2": class_id2, "cords2": cords2, "conf2": conf2})
+                                if str(class_id2) in self.speed_classes:
+                                    speed_boxes.append({"class_id2": class_id2, "cords2": cords2, "conf2": conf2})
+                                    if str(class_id2) in self.speed_classes:
+                                        speed_boxes.append({"class_id2": class_id2, "cords2": cords2, "conf2": conf2})
+                                        if class_id2 != 'Green Light' and class_id2 != 'Red Light' and class_id2 != 'Stop':
+                                            if cords2[0] > 640 and cords[0] < 1000 and cords[1] > 360:
+                                                self.max_speed = int(class_id2[-3:])
+                                                self.target_speed = self.max_speed                                             
+                                        if class_id2 == 'Red Light' or class_id2 == 'Stop':
+                                            self.target_speed = 0
+                                            if class_id2 == 'Stop':
+                                                # Implement some logic that waits until the car can drive again
+                                                self.target_speed = self.max_speed
+                                                
+                                        if class_id2 == 'Green Light':
+                                            self.target_speed = self.max_speed
+                                    
+                                found = True
+                                break
+                
+            if not found:
+                # Still save the box, for debugging purposes
+                self.low_conf_boxes.append({"class_id2": class_id2, "cords2": cords2, "conf2": conf2})
+                
         # 2. Group all points that belong to the same box
         distances = []  # The distances of all points that belong to the i-th box
         velocities = []  # The speeds of all points that belong to the i-th box
@@ -285,9 +398,6 @@ class ComputerVision:
 
     def get_low_conf_boxes(self):
         return self.low_conf_boxes
-
-    def get_red_light(self):
-        return False
 
     def build_projection_matrix(self, w, h, fov):
         focal = w / (2.0 * np.tan(fov * np.pi / 360.0))
