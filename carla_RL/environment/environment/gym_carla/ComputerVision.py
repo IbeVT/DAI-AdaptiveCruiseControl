@@ -241,7 +241,7 @@ class ComputerVision:
                 
             if not found:
                 # Still save the box, for debugging purposes
-                self.low_conf_boxes.append({"class_id2": class_id2, "cords2": cords2, "conf2": conf2})
+                self.low_conf_boxes.append({"class_id": class_id2, "cords": cords2, "conf": conf2})
                 
         # 2. Group all points that belong to the same box
         distances = []  # The distances of all points that belong to the i-th box
