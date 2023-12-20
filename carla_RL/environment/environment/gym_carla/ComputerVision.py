@@ -31,6 +31,7 @@ class ComputerVision:
         self.distance = self.max_depth
         self.delta_v = self.max_speed
         self.steer_vector_endpoint = None
+        self.is_red_light = None
         self.wheel_angles = []
         self.radar_sample_rate = radar_sample_rate
         self.low_pass_filter = LowpassFilter(2, radar_sample_rate, 5)
@@ -170,7 +171,10 @@ class ComputerVision:
                 if "class_id2" in previous_box:
                     class_id_previous = previous_box["class_id2"]
                     cords_previous = previous_box["cords2"]
-                
+
+                # Only stay stopped if the light is still detected
+                self.is_red_light = False
+
                 # Check if the class is the same
                 if class_id2 == class_id_previous:
                     # Check whether the boxes overlap
@@ -184,19 +188,12 @@ class ComputerVision:
                             if class_id2 != 'Green Light' and class_id2 != 'Red Light' and class_id2 != 'Stop':
                                 if cords2[0] > 640 and cords[0] < 1000 and cords[1] > 360:
                                     self.max_speed = int(class_id2[-3:])
-                                    print('\n\n\nD\n\nE\n\nR\n\nE\n\nC\n\nH\n\nA\n\n\n\n')
-                                    self.delta_v = self.max_speed
-                                    print('speed prueba 1', self.delta_v)
-                                    
+                                    self.target_speed = self.max_speed
                             if class_id2 == 'Red Light' or class_id2 == 'Stop':
-                                self.delta_v = 0
-                                if class_id2 == 'Stop':
-                                    time.sleep(5)
-                                    self.delta_v = self.max_speed
+                                self.is_red_light = True
                                     
                             if class_id2 == 'Green Light':
                                 self.delta_v = self.max_speed
-                                
                                 
                         found = True
                         break
@@ -228,15 +225,15 @@ class ComputerVision:
                                         if class_id2 != 'Green Light' and class_id2 != 'Red Light' and class_id2 != 'Stop':
                                             if cords2[0] > 640 and cords[0] < 1000 and cords[1] > 360:
                                                 self.max_speed = int(class_id2[-3:])
-                                                self.target_speed = self.max_speed                                             
-                                        if class_id2 == 'Red Light' or class_id2 == 'Stop':
-                                            self.target_speed = 0
-                                            if class_id2 == 'Stop':
-                                                # Implement some logic that waits until the car can drive again
                                                 self.target_speed = self.max_speed
-                                                
-                                        if class_id2 == 'Green Light':
-                                            self.target_speed = self.max_speed
+                                        # if class_id2 == 'Red Light' or class_id2 == 'Stop':
+                                        #     self.target_speed = 0
+                                        #     if class_id2 == 'Stop':
+                                        #         # Implement some logic that waits until the car can drive again
+                                        #         self.target_speed = self.max_speed
+                                        #
+                                        # if class_id2 == 'Green Light':
+                                        #     self.target_speed = self.max_speed
                                     
                                 found = True
                                 break
