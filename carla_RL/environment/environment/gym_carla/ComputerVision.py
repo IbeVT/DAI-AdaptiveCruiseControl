@@ -31,7 +31,8 @@ class ComputerVision:
         self.distance = self.max_depth
         self.delta_v = self.max_speed
         self.steer_vector_endpoint = None
-        self.is_red_light = None
+        self.is_red_light = False
+        self.target_speed = 50
         self.wheel_angles = []
         self.radar_sample_rate = radar_sample_rate
         self.low_pass_filter = LowpassFilter(2, radar_sample_rate, 5)

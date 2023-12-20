@@ -907,7 +907,8 @@ class CarlaEnv(gym.Env):
             'speed': np.reshape(np.array(self.ego.get_velocity().length(), dtype=float), (1,)),
             'distance': np.reshape(np.array(self.computer_vision.get_distance(), dtype=float), (1,)),
             'delta_V': np.reshape(np.array(self.computer_vision.get_delta_v(), dtype=float), (1,)),
-            'speed_limit': np.reshape(np.array(self.desired_speed, dtype=float), (1,)),
+            # 'speed_limit': np.reshape(np.array(self.desired_speed, dtype=float), (1,)),
+            'speed_limit': np.reshape(np.array(self.computer_vision.target_speed/3.6, dtype=float), (1,)),
             'is_red_light': np.reshape(np.array(1 if self.computer_vision.get_red_light() else 0, dtype=int), (1,)),
             'prev_acc': np.reshape(np.array(self.prev_RL_output, dtype=float), (1,))
         }
