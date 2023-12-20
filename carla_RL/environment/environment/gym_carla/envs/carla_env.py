@@ -579,8 +579,6 @@ class CarlaEnv(gym.Env):
         red_light = self.ego.is_at_traffic_light()
         if red_light:
             wandb.log({"truth_red_light": 1})
-            #brake = 1
-            #throttle = 0
         else:
             wandb.log({"truth_red_light": 0})
 
@@ -967,7 +965,10 @@ class CarlaEnv(gym.Env):
                 following_distance_error = 0.5
 
         reward = (1.5 * speed + 2) - (10 * to_fast * (speed - (self.desired_speed)) + 2 * acceleration + 2 * change_in_acc + 3*following_distance_error)
+
+        # Reward to test if the RL can simply achieve the desired speed
         reward = (1.5 * speed) - (10 * to_fast * (speed - (self.desired_speed)))
+
         #if collision:
         #    reward = -2000
 
