@@ -36,6 +36,10 @@ def main():
   # inference
   env = gym.make("CustomCarlaEnv")
   obs, info = env.reset()
+
+  # Use deterministic behaviour
+  agent.config['explore'] = False
+
   while True:
       action = agent.compute_single_action(obs)
       obs, reward, done, info = env.step(action)

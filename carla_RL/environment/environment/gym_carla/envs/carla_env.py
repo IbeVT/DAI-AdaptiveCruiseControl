@@ -47,7 +47,7 @@ class CarlaEnv(gym.Env):
             'dt': 0.1,  # time interval between two frames
             'discrete': False,  # whether to use discrete control space
             'discrete_acc': [-3.0, 0.0, 3.0],  # discrete value of accelerations
-            'continuous_accel_range': [-3.0, 3.0],  # continuous acceleration range
+            'continuous_accel_range': [-1.0, 1.0],  # continuous acceleration range
             'ego_vehicle_filter': 'vehicle.lincoln*',  # filter for defining ego vehicle
             'port': 2000,  # connection port
             'town': 'Town03',  # which town to simulate
@@ -57,7 +57,7 @@ class CarlaEnv(gym.Env):
             'obs_range': 32,  # observation range (meter)
             'd_behind': 12,  # distance behind the ego vehicle (meter)
             'out_lane_thres': 2.0,  # threshold for out of lane
-            'desired_speed': 8,  # desired speed (m/s)
+            'desired_speed': 30 / 3.6,  # desired speed (m/s)
             'max_ego_spawn_times': 200,  # maximum times to spawn ego vehicle
             'display_route': True,  # whether to render the desired route
             'radar_fov': 40
@@ -82,9 +82,9 @@ class CarlaEnv(gym.Env):
         self.sensor_tick = self.dt
         self.radar_fov = env_config['radar_fov']
 
-        self.episode_rewards = []
         self.actor_list = []
         self.prev_acc = 0
+        self.prev_RL_output = 0
 
         self.display_manager = None
         self.camera_manager = None
@@ -106,15 +106,17 @@ class CarlaEnv(gym.Env):
         if self.discrete:
             self.action_space = spaces.Discrete(self.n_acc)
         else:
-            self.action_space = spaces.Box(np.array([env_config['continuous_accel_range'][0]]),
-                                           np.array([env_config['continuous_accel_range'][1]]), dtype=np.float32)  # acc
+            self.action_space = spaces.Box(low=np.array([env_config['continuous_accel_range'][0]]),
+                                           high=np.array([env_config['continuous_accel_range'][1]]),
+                                           dtype=np.float32)  # acc
+
         observation_space_dict = {
             'speed': spaces.Box(low=-50, high=50, shape=(1,), dtype=float),
             'distance': spaces.Box(low=0, high=100, shape=(1,), dtype=float),
             'delta_V': spaces.Box(low=-100, high=100, shape=(1,), dtype=float),
             'speed_limit': spaces.Box(low=0, high=50, shape=(1,), dtype=float),
             'is_red_light': spaces.Box(low=0, high=1, shape=(1,), dtype=int),
-            'prev_acc': spaces.Box(low=-3, high=3, shape=(1,), dtype=float),
+            'prev_acc': spaces.Box(low=-1, high=1, shape=(1,), dtype=float),
         }
 
         self.observation_space = spaces.Dict(observation_space_dict)
@@ -178,16 +180,32 @@ class CarlaEnv(gym.Env):
         # self._init_renderer()
         print('init end')
 
+        # Initialise wandb logging
+        self.episode_crashes = []
+        self.crashes_ma_period = 20
+
     def reset(self):
         print(f'-------------------------------------RESET {self.reset_step}--------------------------------------')
 
-        # Reset previous speed and acc (output of RL agent)
-        self.prev_acc = 0
-
         if self.reset_step != 0:
             # Log total episode reward
-            wandb.log({"episode_reward": sum(self.episode_rewards)})
-            self.episode_rewards = []
+            wandb.log({"episode_reward": self.episode_reward})
+            wandb.log({"episode_average_speed": np.mean(self.episode_speeds)})
+            wandb.log({"episode_average_accel": np.mean(self.episode_accelerations)})
+            wandb.log({f"episode_crashes_MA{self.crashes_ma_period}": np.mean(self.episode_crashes)})
+
+        # Reset
+        self.episode_reward = 0
+        self.episode_speeds = []
+        self.episode_accelerations = []
+
+        if len(self.episode_crashes) > self.crashes_ma_period:
+            self.episode_crashes = self.episode_crashes[-self.crashes_ma_period:]
+        self.episode_crashes.append(0)
+
+        # Reset previous speed and acc (output of RL agent)
+        self.prev_speed = 0
+        self.prev_acc = 0
 
         # Delete sensors, vehicles and walkers
         for actor in self.actor_list:
@@ -303,9 +321,6 @@ class CarlaEnv(gym.Env):
 
         self.routeplanner = RoutePlanner(self.ego, self.max_waypt)
         self.waypoints, _, self.vehicle_front = self.routeplanner.run_step()
-        """print("\n\n\n\n\n\n\n\n\n\n\n\nWaypoints:")
-        print(self.waypoints)
-        print("\n\n\n\n\n\n\n\n\n\n\n\n")"""
 
         # Linear interpolation to improve the results:
         # Path interpolation parameters
@@ -365,6 +380,177 @@ class CarlaEnv(gym.Env):
 
         return self._get_obs()
 
+    def respawn_without_reset(self):
+        # Reset previous speed and acc (output of RL agent)
+        self.prev_speed = 0
+        self.prev_acc = 0
+
+        # Delete sensors, vehicles and walkers
+        for actor in self.actor_list:
+            try:
+                actor.stop()
+            except:
+                pass
+
+            try:
+                actor.destroy()
+            except:
+                pass
+        self.actor_list = []
+
+        # Clear sensor objects
+        self.display_manager.destroy()
+        self.collision_sensor = None
+        self.camera_manager = None
+        self.radar_manager = None
+        self.display_manager = None
+
+        # Display manager
+        display_width, display_height = [1280, 720]
+        self.display_manager = DisplayManager(grid_size=[1, 1], window_size=[display_width, display_height])
+
+        # Disable sync mode
+        self._set_synchronous_mode(True)
+
+        # Spawn surrounding vehicles
+        random.shuffle(self.vehicle_spawn_points)
+        count = self.number_of_vehicles
+
+        if count > 0:
+            for spawn_point in self.vehicle_spawn_points:
+                if self._try_spawn_random_vehicle_at(spawn_point, number_of_wheels=[4]):
+                    count -= 1
+                if count <= 0:
+                    break
+
+        while count > 0:
+            if self._try_spawn_random_vehicle_at(random.choice(self.vehicle_spawn_points), number_of_wheels=[4]):
+                count -= 1
+
+        # Spawn pedestrians
+        random.shuffle(self.walker_spawn_points)
+        count = self.number_of_walkers
+        if count > 0:
+            for spawn_point in self.walker_spawn_points:
+                if self._try_spawn_random_walker_at(spawn_point):
+                    count -= 1
+                if count <= 0:
+                    break
+        while count > 0:
+            if self._try_spawn_random_walker_at(random.choice(self.walker_spawn_points)):
+                count -= 1
+
+        # Get actors polygon list
+        self.vehicle_polygons = []
+        vehicle_poly_dict = self._get_actor_polygons('vehicle.*')
+        self.vehicle_polygons.append(vehicle_poly_dict)
+        self.walker_polygons = []
+        walker_poly_dict = self._get_actor_polygons('walker.*')
+        self.walker_polygons.append(walker_poly_dict)
+
+        # Spawn the ego vehicle
+        ego_spawn_times = 0
+        while True:
+            if ego_spawn_times > self.max_ego_spawn_times:
+                print('-----------------------------RESET IN RESET-------------------------\n\n\n', flush=True)
+                self.reset()
+
+            if self.task_mode == 'random':
+                transform = random.choice(self.vehicle_spawn_points)
+            if self.task_mode == 'roundabout':
+                self.start = [52.1 + np.random.uniform(-5, 5), -4.2, 178.66]  # random
+                # self.start=[52.1,-4.2, 178.66] # static
+                transform = set_carla_transform(self.start)
+            if self._try_spawn_ego_vehicle_at(transform):
+                break
+            else:
+                ego_spawn_times += 1
+                time.sleep(0.1)
+
+        self._spawn_sensors()
+
+        while True:
+            try:
+                # Add collision sensor
+                self.collision_sensor = self.world.spawn_actor(self.collision_bp, carla.Transform(), attach_to=self.ego)
+                self.actor_list.append(self.collision_sensor)
+                self.collision_sensor.listen(lambda event: get_collision_hist(event))
+                break
+            except:
+                print('failed to add collision sensor')
+
+        self.collision_hist = []
+
+        # Enable sync mode
+        self.settings.synchronous_mode = True
+        self.world.apply_settings(self.settings)
+
+        self.routeplanner = RoutePlanner(self.ego, self.max_waypt)
+        self.waypoints, _, self.vehicle_front = self.routeplanner.run_step()
+
+        def get_collision_hist(event):
+            impulse = event.normal_impulse
+            intensity = np.sqrt(impulse.x ** 2 + impulse.y ** 2 + impulse.z ** 2)
+            self.collision_hist.append(intensity)
+            if len(self.collision_hist) > self.collision_hist_l:
+                self.collision_hist.pop(0)
+
+        # Linear interpolation to improve the results:
+        # Path interpolation parameters
+        INTERP_MAX_POINTS_PLOT = 10  # number of points used for displaying
+        # lookahead path
+        INTERP_LOOKAHEAD_DISTANCE = 20  # lookahead in meters
+        INTERP_DISTANCE_RES = 0.01  # distance between interpolated points
+        # Linear interpolation computations
+        waypoints_np = np.array(self.waypoints)
+        # Compute a list of distances between waypoints
+        wp_distance = []   # distance array
+        for i in range(1, waypoints_np.shape[0]):
+            wp_distance.append(
+                    np.sqrt((waypoints_np[i, 0] - waypoints_np[i-1, 0])**2 +
+                            (waypoints_np[i, 1] - waypoints_np[i-1, 1])**2))
+        wp_distance.append(0)  # last distance is 0 because it is the distance
+                               # from the last waypoint to the last waypoint
+
+        # Linearly interpolate between waypoints and store in a list
+        wp_interp      = []    # interpolated values
+                               # (rows = waypoints, columns = [x, y, v])
+        wp_interp_hash = []    # hash table which indexes waypoints_np
+                               # to the index of the waypoint in wp_interp
+        interp_counter = 0     # counter for current interpolated point index
+        for i in range(waypoints_np.shape[0] - 1):
+            # Add original waypoint to interpolated waypoints list (and append
+            # it to the hash table)
+            wp_interp.append(list(waypoints_np[i]))
+            wp_interp_hash.append(interp_counter)
+            interp_counter+=1
+
+            # Interpolate to the next waypoint. First compute the number of
+            # points to interpolate based on the desired resolution and
+            # incrementally add interpolated points until the next waypoint
+            # is about to be reached.
+            num_pts_to_interp = int(np.floor(wp_distance[i] /\
+                                         float(INTERP_DISTANCE_RES)) - 1)
+            wp_vector = waypoints_np[i+1] - waypoints_np[i]
+            wp_uvector = wp_vector / np.linalg.norm(wp_vector)
+            for j in range(num_pts_to_interp):
+                next_wp_vector = INTERP_DISTANCE_RES * float(j+1) * wp_uvector
+                wp_interp.append(list(waypoints_np[i] + next_wp_vector))
+                interp_counter+=1
+        # add last waypoint at the end
+        wp_interp.append(list(waypoints_np[-1]))
+        wp_interp_hash.append(interp_counter)
+        interp_counter+=1
+
+        self.waypoints_interpolated = wp_interp
+
+        # Set the path for the autopilot
+        location_list = [carla.Location(x=loc[0], y=loc[1], z=loc[2]) for loc in self.waypoints]
+        self.traffic_manager.set_path(self.ego, location_list)
+
+        # As the autopilot does not work correctly, we use the Controller2D to control the steering of the ego vehicle
+        self.controller = Controller2D(self.waypoints_interpolated, self.steer_method)
+
     def step(self, action):
         #print(f'------------------------------------STEP {self.time_step} --------------------------------------')
         # return (self._get_obs(), 0, False, {'waypoints': 0, 'vehicle_front': 0})
@@ -375,20 +561,29 @@ class CarlaEnv(gym.Env):
         else:
             acc = action[0]
 
+        wandb.log({"step_RL_output": acc})
+
         # Convert acc to value between -3 and 3 and to throttle and brake values
         if acc > 0:
-            throttle = np.clip(acc / 3, 0, 1)
+            throttle = np.clip(acc, 0, 1)
             brake = 0
         else:
-            brake = np.clip(-acc / 3, 0, 1)
+            brake = np.clip(-acc, 0, 1)
             throttle = 0
 
         _, steer, _ = self.controller.get_commands()
 
-        # Apply control
-        #act = carla.VehicleControl(throttle=throttle, steer=self.ego.get_control().steer, brake=brake)
-        print(steer)
-        act = carla.VehicleControl(throttle=0.4, steer=steer*10/np.pi, brake=0)
+        # Stop for yellow or red traffic lights
+        traffic_light = self.ego.get_traffic_light_state()
+        if traffic_light is not None and (traffic_light == carla.TrafficLightState.Yellow or traffic_light == carla.TrafficLightState.Red):
+            wandb.log({"red_light": 1})
+            brake = 1
+            throttle = 0
+        else:
+            wandb.log({"red_light": 0})
+
+        sensitivity = 3
+        act = carla.VehicleControl(throttle=float(throttle), steer=float(np.clip(sensitivity*steer, -1, 1)), brake=float(brake))
         self.ego.apply_control(act)
 
         self.world.tick()
@@ -412,7 +607,7 @@ class CarlaEnv(gym.Env):
         # route planner
         self.waypoints, _, self.vehicle_front = self.routeplanner.run_step()
 
-        print("Waypoints:", self.waypoints)
+        #print("Waypoints:", self.waypoints)
 
         # Linear interpolation to improve the results:
         # Path interpolation parameters
@@ -489,11 +684,11 @@ class CarlaEnv(gym.Env):
             length = 1.5
         else:
             length = 0.0
-        print("Current yaw:", current_yaw)
+        #print("Current yaw:", current_yaw)
         current_x, current_y = self.controller.get_shifted_coordinate(current_x, current_y, current_yaw, length)
 
-        print("Current location:", current_x, current_y)
-        print("Next waypoints:", self.waypoints[0])
+        #print("Current location:", current_x, current_y)
+        #print("Next waypoints:", self.waypoints[0])
         closest_distance = np.linalg.norm(np.array([
             self.waypoints[0][0] - current_x,
             self.waypoints[0][1] - current_y]))
@@ -514,13 +709,18 @@ class CarlaEnv(gym.Env):
         self.time_step += 1
         self.total_step += 1
 
-        # Log single step reward
-        reward = self._get_reward(acc)
-        self.episode_rewards.append(reward)
-        wandb.log({"step_reward": reward})
+        # Set the desired speed to the speed limit of the ego vehicle
+        #self.desired_speed = self.ego.get_speed_limit() / 3.6
+
+        # Get reward
+        obs = self._get_obs()
+        reward = self._get_reward()
+
+        # Update input of model
+        self.prev_RL_output = acc
 
         # print('step end')
-        return (self._get_obs(), reward, self._terminal(), copy.deepcopy(info))
+        return (obs, reward, self._terminal(), copy.deepcopy(info))
 
     def seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)
@@ -627,7 +827,7 @@ class CarlaEnv(gym.Env):
             self.actor_list.append(vehicle)
 
         if vehicle is not None:
-            vehicle.set_autopilot(False)
+            #vehicle.set_autopilot(False)
             self.ego = vehicle
             self.actor_list.append(vehicle)
             self.ego.show_debug_telemetry()
@@ -709,21 +909,22 @@ class CarlaEnv(gym.Env):
             'delta_V': np.reshape(np.array(self.computer_vision.get_delta_v(), dtype=float), (1,)),
             'speed_limit': np.reshape(np.array(self.desired_speed, dtype=float), (1,)),
             'is_red_light': np.reshape(np.array(1 if self.computer_vision.get_red_light() else 0, dtype=int), (1,)),
-            'prev_acc': np.reshape(np.array(self.prev_acc, dtype=float), (1,))
+            'prev_acc': np.reshape(np.array(self.prev_RL_output, dtype=float), (1,))
         }
 
         return obs
 
-    def _get_reward(self, acc):
+    def _get_reward(self):
         """Calculate the step reward."""
         # return 1
         # reward for speed tracking
         speed = self.ego.get_velocity().length()
 
         # Calculate the acceleration and the change in acceleration to make the ride smooth and energy efficient
-        acc = abs(acc)
-        change_in_acc = abs(acc - self.prev_acc)
-        self.prev_acc = acc
+        acceleration = abs(speed - self.prev_speed)
+        change_in_acc = abs(acceleration - self.prev_acc)
+        self.prev_speed = speed
+        self.prev_acc = acceleration
 
         # reward for collision
         collision = 1 if len(self.collision_hist) > 0 else 0
@@ -738,22 +939,42 @@ class CarlaEnv(gym.Env):
             following_distance_error = 0
         else:
             ideal_following_distance = 5 + 2 * following_vehicle_speed
-            if following_distance == 100 or following_distance > ideal_following_distance:  # No vehicle in front
+            if speed < 0.01 or following_distance == 100 or following_distance > ideal_following_distance:  # No vehicle in front
                 following_distance_error = 0
-            else:
+            elif following_distance < 0.05*ideal_following_distance:
                 # How much to close is the ego vehicle to the vehicle in front (max 30m to close)
-                following_distance_error = min(abs(following_distance - ideal_following_distance), 30)
+                following_distance_error = 30
+            elif following_distance < 0.1*ideal_following_distance:
+                # How much to close is the ego vehicle to the vehicle in front (max 30m to close)
+                following_distance_error = 15
+            elif following_distance < 0.3*ideal_following_distance:
+                # How much to close is the ego vehicle to the vehicle in front (max 30m to close)
+                following_distance_error = 8
+            elif following_distance < 0.5*ideal_following_distance:
+                # How much to close is the ego vehicle to the vehicle in front (max 30m to close)
+                following_distance_error = 4
+            elif following_distance < 0.8*ideal_following_distance:
+                # How much to close is the ego vehicle to the vehicle in front (max 30m to close)
+                following_distance_error = 1.5
+            else:
+                following_distance_error = 0.5
 
-        # If the vehicle doesn't move, the negative reward for acceleration (braking) is not necessary
-        if speed < 0.01:
-            acc = 0
-            change_in_acc = 0
+        reward = (1.5 * speed + 2) - (10 * to_fast * (speed - (self.desired_speed)) + 2 * acceleration + 2 * change_in_acc + 3*following_distance_error)
 
-        if collision:
-            reward = -1000
-        else:
-            print('v', speed, ', a', acc, ', da', change_in_acc, ', follow_e', following_distance_error)
-            reward = (1.5 * speed + 20) - (10 * to_fast + 3 * acc + 1.5 * change_in_acc + following_distance_error)
+        #if collision:
+        #    reward = -2000
+
+        # Log wandb measurements
+        wandb.log({"step_reward": reward})
+        wandb.log({"step_speed": speed})
+        wandb.log({"step_acceleration": acceleration})
+        wandb.log({"step_to_fast": to_fast})
+        wandb.log({"following_distance_to_ideal_distance": following_distance / ideal_following_distance if following_distance_error != 0 else 10})
+
+        # Store wandb measurements
+        self.episode_reward += reward
+        self.episode_speeds.append(speed)
+        self.episode_accelerations.append(acceleration)
 
         return reward
 
@@ -763,10 +984,20 @@ class CarlaEnv(gym.Env):
         # Get ego state
         ego_x, ego_y = get_pos(self.ego)
 
+        # Log out of lane
+        dis, _ = get_lane_dis(self.waypoints, ego_x, ego_y)
+        if abs(dis) > self.out_lane_thres:
+            wandb.log({"Respawn_out_of_lane": 1})
+        else:
+            wandb.log({"Respawn_out_of_lane": 0})
+
         # If collides
         if len(self.collision_hist) > 0:
             print('TERMINATION - collision')
+            self.episode_crashes[-1] = self.episode_crashes[-1] + 1
+            wandb.log({"Collision": 1})
             return True
+        wandb.log({"Collision": 0})
 
         # If reach maximum timestep
         if self.time_step > self.max_time_episode:
@@ -781,10 +1012,13 @@ class CarlaEnv(gym.Env):
                     return True
 
         # If out of lane
-        '''dis, _ = get_lane_dis(self.waypoints, ego_x, ego_y)
+        #dis, _ = get_lane_dis(self.waypoints, ego_x, ego_y)
         if abs(dis) > self.out_lane_thres:
             print('TERMINATION - out of lane')
-            return True'''
+            self.respawn_without_reset()
+            return False
+
+
         # print('No termination')
         return False
 
