@@ -966,7 +966,7 @@ class CarlaEnv(gym.Env):
                 following_distance_error = 0.5
 
         reward = (1.5 * speed + 2) - (10 * to_fast * (speed - (self.desired_speed)) + 2 * acceleration + 2 * change_in_acc + 3*following_distance_error)
-
+        reward = (1.5 * speed) - (10 * to_fast * (speed - (self.desired_speed)))
         #if collision:
         #    reward = -2000
 
