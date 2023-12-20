@@ -32,8 +32,8 @@ if __name__ == "__main__":
             max_concurrent_trials=1,
         ),
         param_space={
-            #"disable_env_checking": True,
-            #"ignore_workers_failure": False,
+            "disable_env_checking": True,
+            "ignore_workers_failure": False,
             "max_concurrent_trials": 1,
             "framework": "torch",
             # "num_gpus": 0.5,
@@ -41,8 +41,8 @@ if __name__ == "__main__":
             "env": "CustomCarlaEnv",
             #"env": "CartPole-v1",
             "env_config": {
-                #"disable_env_checking": True,
-                #"ignore_workers_failure": False,
+                "disable_env_checking": True,
+                "ignore_workers_failure": False,
             },
             "model":
                 {
