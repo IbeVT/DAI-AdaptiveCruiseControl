@@ -32,8 +32,8 @@ if __name__ == "__main__":
             max_concurrent_trials=1,
         ),
         param_space={
-            "disable_env_checking": True,
-            "ignore_workers_failure": False,
+            #"disable_env_checking": True,
+            #"ignore_workers_failure": False,
             "max_concurrent_trials": 1,
             "framework": "torch",
             # "num_gpus": 0.5,
@@ -46,8 +46,8 @@ if __name__ == "__main__":
             },
             "model":
                 {
-                    "fcnet_hiddens": [1],
-                    "fcnet_activation": "linear",
+                    "fcnet_hiddens": [64],
+                    "fcnet_activation": "relu",
                 },
             "lr": 0.0001   #tune.grid_search([5e-3, 5e-4])
         },
