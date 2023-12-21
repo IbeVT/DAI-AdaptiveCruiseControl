@@ -195,14 +195,6 @@ class CameraManager(SensorManager):
                 except:
                     pass
 
-                """speed_lim = self.computer_vision.target_speed
-                try:
-                    speed_lim = round(speed_lim)
-                    text, rect = font.render(f'Speed limit: {speed_lim}', (0, 255, 0))
-                    self.surface.blit(text, (10, 10))
-                except:
-                    pass"""
-
                 # Display the vehicle category on screen.
                 text, rect = font.render(following_bb["class_id"], (0, 255, 0))
                 y -= rect.height + 10
@@ -378,14 +370,14 @@ def run_simulation(args, client):
 
         if testCase == 2:
             print('Initiating test case 2.')
-            spawn_point_1 = spawn_points[5]
-            spawn_point_2 = spawn_points[11]
+            spawn_point_1 = spawn_points[21]
+            spawn_point_2 = spawn_points[100]
             # Create route:
             route = []
             for i in range(100):
                 route.append('Straight')  # 'Left', 'Right', 'Straight'
 
-            max_vehicles = 10
+            max_vehicles = 20
             spawn_delay = 20
             counter = spawn_delay
             alt = False
@@ -432,11 +424,11 @@ def run_simulation(args, client):
             print('Initiating test case 3.')
             spawn_point_1 = spawn_points[19]
             spawn_point_2 = spawn_points[25]
-            spawn_point_ego = spawn_points[60]
+            spawn_point_ego = spawn_points[66]
             # Create route:
             route = ['Straight']
 
-            max_vehicles = 100
+            max_vehicles = 50
             spawn_delay = 20
             counter = spawn_delay
             alt = False
@@ -559,7 +551,7 @@ def run_simulation(args, client):
             for i in range(100):
                 route.append('Straight')
 
-            max_vehicles = 100
+            max_vehicles = 50
             spawn_delay = 20
             counter = spawn_delay
 
@@ -579,7 +571,7 @@ def run_simulation(args, client):
                         vehicle.set_autopilot(True)  # Give TM control over vehicle
                         update_traffic_manager(traffic_manager, actor=vehicle, speed_diff=0, route=route,
                                                lane_change=True,
-                                               change_rate=10)
+                                               change_rate=1)
 
                         vehicle = None
 
