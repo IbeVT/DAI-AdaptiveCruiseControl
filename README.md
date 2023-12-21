@@ -9,6 +9,10 @@ This branch contains a working demo of all of the computer vision parts. It can 
 ## RL
 This branch contains the RL environment. The agent can be trained, but it does not learn anything due to problems with the steering controller. While training, it does show the data of the camera, overlayed with the computer vision data.
 
+
+## Dataset-setup
+This branch contains bash scripts that use Python scripts that allow us to create datasets recorded in different towns and different weathers. To do this it has scripts capable of recording images, and segmentation images in Carla. It has labeling tools that take both images and create labels for the bounding boxes necessary in the original image. it also contains scripts to merge these datasets into one avoiding naming errors.
+
 ## Other branches
 
 | Branch | Status | Content | Creator |
@@ -16,6 +20,5 @@ This branch contains the RL environment. The agent can be trained, but it does n
 | ComputerVision | Deprecated | Attempt to retrieve the sensor info from Carla and make predictions to feed to the RL agent | Ibe |
 | Sensors | |Configuring sensors with carla PythonAPI.  | Lukas |
 | Yolo | Deprecated |First experiments with and training of the YOLOv8 model | Ibe |
-| Dataset-setup | | Gathering data and training the YOLOv8 model | Alberto & María |
 | traffic-signs | Deprecated | Training YOLOv8 model on traffic sign recognition & implementation in Carla | Maria |
 
