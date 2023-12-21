@@ -1,8 +1,8 @@
-<-> DESCRIPTION <->
+# DESCRIPTION
 This branch tries to combine computer vision of vehicles, signs, traffic lights, etc. to train the RL 
 agent (using PPO) to maximise the reward function. 
 
-<-> OVERVIEW <->
+# OVERVIEW
 carla_RL contains everything related to the actual RL. In this folder, Checkpoints contains saved agents, 
 environment contains everything related to the interaction with carla, test_RL.py can be used to test 
 saved agents using their checkpoint, and train_RL is used to train the PPO agent. The most important 
@@ -11,10 +11,7 @@ setting up the carla environment, observations, actions, rewards, etc. All the o
 ComputerVision.py and controller2d.py are used in the carla_env.py file to implement the correct 
 behaviour.
 
-Results.docx describes the logging using wandb, the findings, and insights. This document also describes
-our results and explains why we think that the results were as they were.
-
-<-> HOW TO USE <->
+# HOW TO USE
 Steps from when you have a SSH connection:
 1) cd ..
 2) cd /home/carla/PythonScripts/Stijn/DAI-AdaptiveCruiseControl
