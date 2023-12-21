@@ -47,7 +47,7 @@ class CarlaEnv(gym.Env):
             'dt': 0.1,  # time interval between two frames
             'discrete': False,  # whether to use discrete control space
             'discrete_acc': [-3.0, 0.0, 3.0],  # discrete value of accelerations
-            'continuous_accel_range': [-100.0, 100.0],  # continuous acceleration range
+            'continuous_accel_range': [-1.0, 1.0],  # continuous acceleration range
             'ego_vehicle_filter': 'vehicle.lincoln*',  # filter for defining ego vehicle
             'port': 2000,  # connection port
             'town': 'Town03',  # which town to simulate
@@ -586,7 +586,7 @@ class CarlaEnv(gym.Env):
         wandb.log({"observed_red_light": 0})
 
         sensitivity = 2
-        act = carla.VehicleControl(throttle=float(throttle), steer=float(np.clip(sensitivity*steer, -1, 1)), brake=float(brake))
+        act = carla.VehicleControl(throttle=0.5, steer=float(np.clip(sensitivity*steer, -1, 1)), brake=0)
         self.ego.apply_control(act)
 
         self.world.tick()
@@ -1025,7 +1025,7 @@ class CarlaEnv(gym.Env):
         #dis, _ = get_lane_dis(self.waypoints, ego_x, ego_y)
         if abs(dis) > self.out_lane_thres:
             print('TERMINATION - out of lane')
-            self.respawn_without_reset()
+            #self.respawn_without_reset()
             return False
 
 
