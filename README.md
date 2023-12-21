@@ -15,5 +15,5 @@ The computer vision model is able to detect the following classes:
 
 To run the script, you need to run the command:
 `python3 TestComputerVision.py -t x`
-With x the number of the testcase (1, 2 or 3). This indicates which predifined route will be followed and where the cars will be spawned. The models of the cars are chosen randomly.
+With x the number of the testcase (1, 2 or 3). This indicates which predefined route will be followed and where the cars will be spawned. The models of the cars are chosen randomly.
 
