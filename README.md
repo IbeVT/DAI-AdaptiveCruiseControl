@@ -17,5 +17,5 @@ This branch contains the RL environment. The agent can be trained, but it does n
 | Sensors | |Configuring sensors with carla PythonAPI.  | Lukas |
 | Yolo | Deprecated |First experiments with and training of the YOLOv8 model | Ibe |
 | Dataset-setup | | Gathering data and training the YOLOv8 model | Alberto & María |
-| traffic-signs | | Training YOLOv8 model on traffic sign recognition & inplementation in Carla | Maria |
+| traffic-signs | Deprecated | Training YOLOv8 model on traffic sign recognition & implementation in Carla | Maria |
 
