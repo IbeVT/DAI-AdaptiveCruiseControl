@@ -11,6 +11,9 @@ setting up the carla environment, observations, actions, rewards, etc. All the o
 ComputerVision.py and controller2d.py are used in the carla_env.py file to implement the correct 
 behaviour.
 
+Results.docx describes the logging using wandb, the findings, and insights. This document also describes
+our results and explains why we think that the results were as they were.
+
 <-> HOW TO USE <->
 Steps from when you have a SSH connection:
 1) cd ..
