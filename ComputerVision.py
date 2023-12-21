@@ -15,7 +15,7 @@ class ComputerVision:
         self.vehicle = vehicle
         self.inverse_camera_matrix = None
         self.radar_points = None
-        self.model = YOLO('models/bestOwn.pt')
+        self.model = YOLO('models/best.pt')
         self.model2 = YOLO('models/signs_best.pt')
         self.speed_classes = ['Green Light', 'Red Light', 'Speed Limit 10', 'Speed Limit 100', 'Speed Limit 110', 'Speed Limit 120', 'Speed Limit 20', 'Speed Limit 30', 'Speed Limit 40', 'Speed Limit 50', 'Speed Limit 60', 'Speed Limit 70', 'Speed Limit 80', 'Speed Limit 90', 'Stop']
         self.vehicle_classes = ['bus', 'bike', 'car', 'motorcycle', 'motorbike', 'vehicle']
@@ -31,7 +31,7 @@ class ComputerVision:
         self.delta_v = self.max_speed
         self.steer_vector_endpoint = None
         self.is_red_light = False
-        self.target_speed = 50
+        self.target_speed = self.vehicle.get_speed_limit()
         self.wheel_angles = []
         self.radar_sample_rate = radar_sample_rate
         self.low_pass_filter = LowpassFilter(2, radar_sample_rate, 5)
@@ -292,7 +292,7 @@ class ComputerVision:
         candidate_velocities = []
         candidate_distances = []
         candidate_points_in_box = []
-        following_azimuth = 10
+        following_azimuth = 15
         for i, box in enumerate(vehicle_boxes):
             # If there are no points in the box, skip it
             if math.isnan(azimuths[i]):

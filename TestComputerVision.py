@@ -165,6 +165,7 @@ class CameraManager(SensorManager):
         # Create surface from image array.
         if self.display_man.render_enabled() and self.camera_array is not None:
             self.surface = pygame.surfarray.make_surface(self.camera_array.swapaxes(0, 1))
+
             # Draw bounding boxes on screen.
             # Draw the bounding box of the followed vehicle.
             if (following_bb is not None) and (self.surface is not None):
@@ -194,19 +195,25 @@ class CameraManager(SensorManager):
                 except:
                     pass
 
-                speed_lim = self.computer_vision.target_speed
+                """speed_lim = self.computer_vision.target_speed
                 try:
                     speed_lim = round(speed_lim)
                     text, rect = font.render(f'Speed limit: {speed_lim}', (0, 255, 0))
-                    y -= rect.height + 10
-                    self.surface.blit(text, (x, y))
+                    self.surface.blit(text, (10, 10))
                 except:
-                    pass
+                    pass"""
 
                 # Display the vehicle category on screen.
                 text, rect = font.render(following_bb["class_id"], (0, 255, 0))
                 y -= rect.height + 10
                 self.surface.blit(text, (x, y))
+
+
+            speed_lim = self.computer_vision.target_speed
+            speed_lim = round(speed_lim)
+            font = pygame.freetype.SysFont('Arial', 30)
+            text, rect = font.render(f'Speed limit: {speed_lim}', (255, 255, 255))
+            self.surface.blit(text, (10, 10))
 
             # Draw all other bounding boxes on screen.
             boxes = self.computer_vision.get_boxes()
@@ -228,6 +235,8 @@ class CameraManager(SensorManager):
                                          (x_lower, y_lower, x_upper - x_lower, y_upper - y_lower), 2)
 
 
+
+
 class RadarManager(SensorManager):
     def __init__(self, world, display_man, transform, attached, sensor_options, display_pos,
                  computer_vision):
@@ -245,7 +254,7 @@ class RadarManager(SensorManager):
     def update_radar(self, radar_points):
         self.computer_vision.radar_points = radar_points
 
-    # Draws the radar points on the screen. It sh   ould be executed AFTER the camera has been drawn.
+    # Draws the radar points on the screen. It should be executed AFTER the camera has been drawn.
     def draw_radar(self):
         radar_points = self.computer_vision.radar_points
         if radar_points is not None:
@@ -297,32 +306,29 @@ def run_simulation(args, client):
     and connecting to the carla client passed.
     """
     testCase = args.testcase
-    # set town and aerial spectator based on the test case
+    # set town based on the test case
     if testCase == 1 or testCase == 2 or testCase == 3:
         town = client.load_world('Town02')
-        # specLocation = carla.Location(x=90, y=180, z=200)
     elif testCase == 4:
         client.load_world('Town03')
-        # specLocation = carla.Location(x=0, y=0, z=500)
     elif testCase == 5:
         client.load_world('Town04')
-        # specLocation = carla.Location(x=0, y=0, z=500)
     elif testCase == 6:
-        client.load_world('Town7')
-        # specLocation = carla.Location(x=150, y=150, z=300)
+        client.load_world('Town07')
 
     display_manager = None
     vehicle = None
     vehicle_list = []
     timer = CustomTimer()
 
+    # start the screen recording.
+    recorder = ScreenRecorder(args.width, args.height, 15)
+
     try:
         # Getting the world
         world = client.get_world()
         # get original_settings to reset the world after use.
         original_settings = world.get_settings()
-
-
 
         if args.sync:
             traffic_manager = client.get_trafficmanager(8000)
@@ -333,12 +339,17 @@ def run_simulation(args, client):
             world.apply_settings(settings)
 
         # set a random weather preset.
-        set_weather(world)
+        #set_weather(world)
+        world.set_weather(carla.WeatherParameters.ClearNoon)
 
         spawn_points = world.get_map().get_spawn_points()
         blueprint = world.get_blueprint_library()
         ego_bp = blueprint.find('vehicle.mercedes.coupe_2020')
         vehicle_bp = random.choice(blueprint.filter('vehicle.*.*'))
+
+        # Set a seed so behaviour can be repeated if necessary
+        traffic_manager.set_random_device_seed(2)
+        random.seed(2)
 
         if testCase == 1:
             print('Initiating test case 1.')
@@ -349,7 +360,7 @@ def run_simulation(args, client):
                 route.append('Straight')  # 'Left', 'Right', 'Straight'
 
             # spawn first car
-            vehicle = world.spawn_actor(vehicle_bp, spawn_point_1)
+            vehicle = world.spawn_actor(ego_bp, spawn_point_1)
             print('created vehicle: %s' % vehicle.type_id)
             vehicle.set_autopilot(True)
             vehicle_list.append(vehicle)
@@ -374,7 +385,7 @@ def run_simulation(args, client):
             for i in range(100):
                 route.append('Straight')  # 'Left', 'Right', 'Straight'
 
-            max_vehicles = 20
+            max_vehicles = 10
             spawn_delay = 20
             counter = spawn_delay
             alt = False
@@ -586,8 +597,7 @@ def run_simulation(args, client):
             print('created ego: %s' % ego_vehicle.type_id)
             vehicle_list.append(ego_vehicle)
             ego_vehicle.set_autopilot(True)
-            update_traffic_manager(traffic_manager, actor=ego_vehicle, speed_diff=0, route=route, lane_change=True,
-                                   change_rate=2)
+            update_traffic_manager(traffic_manager, actor=ego_vehicle, speed_diff=0, route=route, lane_change=False)
 
         if testCase == 6:
             print('Initiating test case 6.')
@@ -599,8 +609,8 @@ def run_simulation(args, client):
             for i in range(100):
                 route.append('Straight')
 
-            max_vehicles = 50
-            spawn_delay = 20
+            max_vehicles = 15
+            spawn_delay = 40
             counter = spawn_delay
             alt = False
 
@@ -665,9 +675,7 @@ def run_simulation(args, client):
                                       'sensor_tick': '0.1', 'vertical_fov': f'{camera_v_fov}'}, display_pos=[0, 0],
                                      computer_vision=computer_vision)
 
-        # start the screen recording.
-        recorder = ScreenRecorder(args.width, args.height, 20)
-        start_time = timer.time()
+
 
 
         # Simulation loop
@@ -707,8 +715,6 @@ def run_simulation(args, client):
             display_manager.destroy()
 
         recorder.end_recording()  # stop the screen-recording.
-        stop_time = timer.time()
-        print('Time difference: ', stop_time - start_time)
 
         client.apply_batch([carla.command.DestroyActor(x) for x in vehicle_list])
 
