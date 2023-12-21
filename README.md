@@ -3,11 +3,9 @@ This branch contains a test scenario to visualize the performance of the compute
 
 The computer vision model is able to detect the following classes:
 - Vehicle Classes:
-  - bus
-  - bike
-  - car
-  - motorcycle
   - vehicle
+  - motorcycle
+  - motorbike
 
 - Speed Classes:
   - Green Light
