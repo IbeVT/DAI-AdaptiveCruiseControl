@@ -188,10 +188,6 @@ class ComputerVision:
                                     self.target_speed = self.max_speed
                             if class_id2 == 'Red Light' or class_id2 == 'Stop':
                                 self.is_red_light = True
-                                    
-                            if class_id2 == 'Green Light':
-                                self.delta_v = self.max_speed
-                                
                         found = True
                         break
 
