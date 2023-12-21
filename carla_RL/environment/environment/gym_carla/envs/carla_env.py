@@ -915,6 +915,7 @@ class CarlaEnv(gym.Env):
             'is_red_light': np.reshape(np.array(1 if self.computer_vision.get_red_light() else 0, dtype=int), (1,)),
             'prev_acc': np.reshape(np.array(self.prev_RL_output, dtype=float), (1,))
         }
+
         print('obs', obs)
 
         return obs
@@ -978,7 +979,9 @@ class CarlaEnv(gym.Env):
         wandb.log({"step_acceleration": acceleration})
         wandb.log({"step_to_fast": to_fast})
         wandb.log({"following_distance_to_ideal_distance": following_distance / ideal_following_distance if following_distance_error != 0 else 10})
-
+        wandb.log({"observed_speed_limit": self.computer_vision.target_speed / 3.6})
+        wandb.log({"truth_speed_limit": self.ego.get_speed_limit() / 3.6})
+        
         # Store wandb measurements
         self.episode_reward += reward
         self.episode_speeds.append(speed)
