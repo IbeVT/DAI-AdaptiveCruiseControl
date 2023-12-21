@@ -194,6 +194,15 @@ class CameraManager(SensorManager):
                 except:
                     pass
 
+                speed_lim = self.computer_vision.target_speed
+                try:
+                    speed_lim = round(speed_lim)
+                    text, rect = font.render(f'Speed limit: {speed_lim}', (0, 255, 0))
+                    y -= rect.height + 10
+                    self.surface.blit(text, (x, y))
+                except:
+                    pass
+
                 # Display the vehicle category on screen.
                 text, rect = font.render(following_bb["class_id"], (0, 255, 0))
                 y -= rect.height + 10

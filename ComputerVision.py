@@ -16,15 +16,22 @@ class ComputerVision:
         self.inverse_camera_matrix = None
         self.radar_points = None
         self.model = YOLO('models/bestOwn.pt')
+        self.model2 = YOLO('models/signs_best.pt')
+        self.speed_classes = ['Green Light', 'Red Light', 'Speed Limit 10', 'Speed Limit 100', 'Speed Limit 110', 'Speed Limit 120', 'Speed Limit 20', 'Speed Limit 30', 'Speed Limit 40', 'Speed Limit 50', 'Speed Limit 60', 'Speed Limit 70', 'Speed Limit 80', 'Speed Limit 90', 'Stop']
         self.vehicle_classes = ['bus', 'bike', 'car', 'motorcycle', 'vehicle']
         self.camera_x_pixels = 720
         self.camera_y_pixels = 1280
         self.n_points = 50
         self.max_depth = 100
         self.max_speed = 120 / 3.6  # 120 km/h
+        self.max_distance_following_vehicle = 50  # The maximum distance between the endpoint of the steer vector and the center of the bounding box of the vehicle
         self.following_vehicle_box = None
         self.following_vehicle_type = None
-        self.distance = None
+        self.distance = self.max_depth
+        self.delta_v = self.max_speed
+        self.steer_vector_endpoint = None
+        self.is_red_light = False
+        self.target_speed = 50
         self.wheel_angles = []
         self.radar_sample_rate = radar_sample_rate
         self.low_pass_filter = LowpassFilter(2, radar_sample_rate, 5)
@@ -41,13 +48,18 @@ class ComputerVision:
             return
         results = self.model.predict(source=self.image, save=False, conf=0.1)
         result = results[0]
+        
+        results2 = self.model2.predict(source=self.image, save=False, conf=0.1)
+        result2 = results2[0]
 
         # Check which car is in front, if any
         # To find the vehicle in front, we will use the steer angle and the azimuth angle We do it as follows:
         # 1. Get all boxes that are vehicles
         # 2. Group all points that belong to the same box
-        # 3. For each box, calculate the median distance, speed and azimuth
-        # 5. Use the values to determine which car to follow, if any
+        # 3. For each box, calculate the median distance and speed
+        # 4. Calculate where the vector with length=median_distance, azimuth=steer_angle and
+        # altitude=mean_altitude_points would end on the camera
+        # 5. Calculate the distance from the vector to the center of the bounding box of the vehicle
         # Reset the values
         self.following_vehicle_box = None
         self.following_vehicle_type = None
@@ -57,7 +69,7 @@ class ComputerVision:
         # center of the bounding box of the vehicle
         wheel_locations = carla.VehicleWheelLocation()
         self.wheel_angles.append(self.vehicle.get_wheel_steer_angle(wheel_locations.FL_Wheel))
-        n_points = self.radar_sample_rate * 2  # Use the data from the last 2 seconds for the low pass filter
+        n_points = int(self.radar_sample_rate * 2)  # Use the data from the last 2 seconds for the low pass filter
         # If the list is too short for filtering, just use the last value. It only happens for the first two seconds
         # anyway.
         list_len = len(self.wheel_angles)
@@ -75,6 +87,7 @@ class ComputerVision:
             self.wheel_angles = self.wheel_angles[-n_points:]
 
         vehicle_boxes = []
+        speed_boxes = []
         previous_results = self.boxes
         previous_low_conf_results = self.low_conf_boxes
         self.boxes = []
@@ -84,10 +97,6 @@ class ComputerVision:
             cords = box.xyxy[0].tolist()
             cords = [round(x) for x in cords]
             conf = round(box.conf[0].item(), 2)
-            # print("Object type:", class_id)
-            # print("Coordinates:", cords)
-            # print("Probability:", conf)
-            # print("---")
             # If the confidence is high enough, immediately save the box
             if conf > 0.5:
                 self.boxes.append({"class_id": class_id, "cords": cords, "conf": conf})
@@ -131,7 +140,102 @@ class ComputerVision:
             if not found:
                 # Still save the box, for debugging purposes
                 self.low_conf_boxes.append({"class_id": class_id, "cords": cords, "conf": conf})
+        
+        for box2 in result2.boxes:
+            
+            class_id2 = result2.names[box2.cls[0].item()]
+            cords2 = box2.xyxy[0].tolist()
+            cords2 = [round(x) for x in cords2]
+            conf2 = round(box2.conf[0].item(), 2)
+            print("Object type class2:", class_id2)
+            print("Coordinates class2:", cords2)
+            
+                
+                
+            
+            if conf2 > 0.5:
+                self.boxes.append({"class_id": class_id2, "cords": cords2, "conf": conf2})
+                if str(class_id2) in self.speed_classes:
+                    speed_boxes.append({"class_id": class_id2, "cords": cords2, "conf": conf2})
+                
+                continue
+               
+                
+            found = False
+            for previous_box in previous_results:
+                
+                if "class_id" in previous_box:
+                    class_id_previous = previous_box["class_id"]
+                    cords_previous = previous_box["cords"]
 
+
+                # Only stay stopped if the light is still detected
+                self.is_red_light = False
+
+                # Check if the class is the same
+                if class_id2 == class_id_previous:
+                    # Check whether the boxes overlap
+                    if do_boxes_overlap(cords2, cords_previous):
+                        # If approximately the same box was detected in the previous frame, we will suppose that it
+                        # is indeed a true positive
+                        self.boxes.append({"class_id": class_id2, "cords": cords2, "conf": conf2})
+                        
+                        if str(class_id2) in self.speed_classes:
+                            speed_boxes.append({"class_id": class_id2, "cords": cords2, "conf": conf2})
+                            if class_id2 != 'Green Light' and class_id2 != 'Red Light' and class_id2 != 'Stop':
+                                if cords2[0] > 640 and cords[0] < 1000 and cords[1] > 360:
+                                    self.max_speed = int(class_id2[-3:])
+                                    self.target_speed = self.max_speed
+                            if class_id2 == 'Red Light' or class_id2 == 'Stop':
+                                self.is_red_light = True
+                                    
+                            if class_id2 == 'Green Light':
+                                self.delta_v = self.max_speed
+                                
+                        found = True
+                        break
+
+            if not found:
+                # Check if a similar box was detected with low confidence in the previous frame
+                for previous_box in previous_low_conf_results:
+                    
+                    if "class_id" in previous_box:
+                        class_id_previous = previous_box["class_id"]
+                        cords_previous = previous_box["cords"]
+
+                    
+                    # Check if the class is the same
+                    if class_id2 == class_id_previous:
+                        # Check whether the boxes overlap
+                        if do_boxes_overlap(cords2, cords_previous):
+                            # If approximately the same box was detected in the previous frame, we will suppose that it
+                            # is indeed a true positive
+                            if previous_box["conf"] + conf2 > 0.6:
+                                self.boxes.append({"class_id": class_id2, "cords": cords2, "conf": conf2})
+                                if str(class_id2) in self.speed_classes:
+                                    speed_boxes.append({"class_id": class_id2, "cords": cords2, "conf": conf2})
+                                    if str(class_id2) in self.speed_classes:
+                                        speed_boxes.append({"class_id": class_id2, "cords": cords2, "conf": conf2})
+                                        if class_id2 != 'Green Light' and class_id2 != 'Red Light' and class_id2 != 'Stop':
+                                            if cords2[0] > 640 and cords[0] < 1000 and cords[1] > 360:
+                                                self.max_speed = int(class_id2[-3:])
+                                                self.target_speed = self.max_speed
+                                        # if class_id2 == 'Red Light' or class_id2 == 'Stop':
+                                        #     self.target_speed = 0
+                                        #     if class_id2 == 'Stop':
+                                        #         # Implement some logic that waits until the car can drive again
+                                        #         self.target_speed = self.max_speed
+                                        #
+                                        # if class_id2 == 'Green Light':
+                                        #     self.target_speed = self.max_speed
+                                    
+                                found = True
+                                break
+                
+            if not found:
+                # Still save the box, for debugging purposes
+                self.low_conf_boxes.append({"class_id": class_id2, "cords": cords2, "conf": conf2})
+                
         # 2. Group all points that belong to the same box
         distances = []  # The distances of all points that belong to the i-th box
         velocities = []  # The speeds of all points that belong to the i-th box
@@ -164,10 +268,10 @@ class ComputerVision:
             # Only remove if there are enough points left, if not, the car itself is probably not moving
             if vehicle_boxes[i]["class_id"] == "bike" or vehicle_boxes[i]["class_id"] == "motorcycle":
                 # Use a different threshold for bieks and motorbikes, as they are smaller, and thus, more points in the bounding box are reflected on the ground
-                if len(ind_to_remove) > 7*len(array)/8:
+                if len(ind_to_remove) > 7 * len(array) / 8:
                     continue
             else:
-                if len(ind_to_remove) > 2*len(array)/3:
+                if len(ind_to_remove) > 2 * len(array) / 3:
                     continue
 
             # Remove the elements in reverse order to avoid changing the indices of the elements that still need to be removed
@@ -176,7 +280,6 @@ class ComputerVision:
                 del distances[i][j]
                 del azimuths[i][j]
                 del points_in_box[i][j]
-
 
         # Take the median
         distances = [np.median(i) for i in distances]
@@ -196,12 +299,9 @@ class ComputerVision:
                 continue
             angle_diff = steer_angle - azimuths[i]
 
-            if abs(angle_diff) < np.radians(10) or abs(azimuths[i]) < np.radians(20):
+            if abs(angle_diff) < np.radians(10):
                 # Calculate the absolute speed of the other car. If it is rapidly approaching, it will drive in th other direction
                 box_velocity = velocities[i] + car_speed
-                print("Car velocity:", car_speed)
-                print("Box velocity:", box_velocity)
-                print("Delta v:", velocities[i])
                 if box_velocity > -5:
                     candidates.append(box)
                     candidate_velocities.append(velocities[i])
@@ -237,7 +337,6 @@ class ComputerVision:
                         self.distance = candidate_distances[index]
                         self.delta_v = candidate_velocities[index]
                         self.object_points = candidate_points_in_box[index]
-            print("Following vehicle:", self.following_vehicle_box)
 
         # If the car is close to a bus, the computer vision might not be able to detect it. In that case,
         # we still want to use the radar distance. Therefore, we need some sort of detection to check whether there
@@ -257,7 +356,7 @@ class ComputerVision:
             if abs(value + car_speed) < 1:
                 ind_to_remove.append(i)
         # Only remove if there are enough points left, if not, the car itself is probably not moving
-        if len(ind_to_remove) < 2*len(radar_center_velocities)/3:
+        if len(ind_to_remove) < 2 * len(radar_center_velocities) / 3:
             # Remove the elements in reverse order to avoid changing the indices of the elements that still need to be removed
             for i in sorted(ind_to_remove, reverse=True):
                 del radar_center_velocities[i]
@@ -272,7 +371,6 @@ class ComputerVision:
             self.distance = self.max_depth
         if math.isnan(self.delta_v):
             self.delta_v = self.max_speed
-
 
     def get_current_bounding_box(self):
         return self.following_vehicle_box
@@ -292,9 +390,6 @@ class ComputerVision:
     def get_low_conf_boxes(self):
         return self.low_conf_boxes
 
-    def get_red_light(self):
-        return False
-
     def build_projection_matrix(self, w, h, fov):
         focal = w / (2.0 * np.tan(fov * np.pi / 360.0))
         K = np.identity(3)
@@ -303,6 +398,9 @@ class ComputerVision:
         K[1, 2] = h / 2.0
         self.projection_matrix = K
         return K
+
+    def get_red_light(self):
+        return self.is_red_light
 
     def get_image_coordinates_from_radar_point(self, azimuth, altitude, depth):  # in radians
         # Based on https://carla.readthedocs.io/en/latest/tuto_G_bounding_boxes/
@@ -355,7 +453,6 @@ def do_boxes_overlap(box1, box2):
     # If the above conditions are not met, the boxes overlap
     return True
 
-
 def is_box2_closer(box1, box2):
     x1_lower, y1_lower, x1_upper, y1_upper = box1["cords"]
     x2_lower, y2_lower, x2_upper, y2_upper = box2["cords"]
@@ -374,7 +471,6 @@ def is_box2_closer(box1, box2):
 
     # If the above conditions are not met, box2 is closer
     return True
-
 
 def is_point_in_box(box, point):
     x_lower, y_lower, x_upper, y_upper = box
