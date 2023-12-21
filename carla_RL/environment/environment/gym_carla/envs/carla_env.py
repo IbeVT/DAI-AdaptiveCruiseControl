@@ -585,8 +585,8 @@ class CarlaEnv(gym.Env):
         self.computer_vision.get_red_light()
         wandb.log({"observed_red_light": 0})
 
-        sensitivity = 2
-        act = carla.VehicleControl(throttle=0.5, steer=float(np.clip(sensitivity*steer, -1, 1)), brake=0)
+        sensitivity = 2.5
+        act = carla.VehicleControl(throttle=float(throttle), steer=float(np.clip(sensitivity*steer, -1, 1)), brake=float(brake))
         self.ego.apply_control(act)
 
         self.world.tick()
@@ -1025,7 +1025,7 @@ class CarlaEnv(gym.Env):
         #dis, _ = get_lane_dis(self.waypoints, ego_x, ego_y)
         if abs(dis) > self.out_lane_thres:
             print('TERMINATION - out of lane')
-            #self.respawn_without_reset()
+            self.respawn_without_reset()
             return False
 
 
